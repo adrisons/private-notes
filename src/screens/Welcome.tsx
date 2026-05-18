@@ -2,11 +2,10 @@ import { Button } from "../ui/Button";
 
 interface WelcomeProps {
   onPickFolder?: () => void;
-  disabled?: boolean;
   disabledReason?: string;
 }
 
-export function Welcome({ onPickFolder, disabled, disabledReason }: WelcomeProps) {
+export function Welcome({ onPickFolder, disabledReason }: WelcomeProps) {
   return (
     <section className="mx-auto flex h-full max-w-xl flex-col items-start justify-center gap-6 px-6">
       <div>
@@ -20,14 +19,12 @@ export function Welcome({ onPickFolder, disabled, disabledReason }: WelcomeProps
         </p>
       </div>
       <div className="flex items-center gap-3">
-        <Button onClick={onPickFolder} disabled={disabled}>
-          Choose folder
-        </Button>
+        <Button onClick={onPickFolder}>Choose folder</Button>
         <span className="text-xs text-[var(--color-muted-foreground)]">
           Requires a Chromium-based browser.
         </span>
       </div>
-      {disabled && disabledReason ? (
+      {disabledReason ? (
         <p className="text-sm text-[var(--color-danger)]">{disabledReason}</p>
       ) : null}
     </section>

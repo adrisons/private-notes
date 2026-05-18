@@ -7,7 +7,9 @@ import { NoteHeader } from "./screens/NoteHeader";
 import { EmptyState } from "./screens/EmptyState";
 import { SearchPanel } from "./screens/SearchPanel";
 import { Editor } from "./editor/Editor";
-import { isFileSystemAccessSupported, pickFolder } from "./lib/fs/picker";
+import { pickFolder } from "./lib/fs/picker";
+import { getCompatibility } from "./lib/compatibility";
+import { Unsupported } from "./screens/Unsupported";
 import { openOrInitialize } from "./lib/fs/vault";
 import {
   createNote,
@@ -38,7 +40,7 @@ interface CurrentNote {
   savedAt: string | null;
 }
 
-const supported = isFileSystemAccessSupported();
+const compat = getCompatibility();
 
 export function App() {
   const [vault, setVault] = useState<VaultState | null>(null);
@@ -155,9 +157,18 @@ export function App() {
 
   const handleDelete = useCallback(async () => {
     if (!vault || !current) return;
-    await deleteNote({ root: vault.root }, current.record.id);
+    const deletedId = current.record.id;
+    await deleteNote({ root: vault.root }, deletedId);
     setCurrent(null);
     await refreshList(vault.root);
+    // Drop the embeddings file too. Cheap and avoids stale hits.
+    if (embedderRef.current) {
+      const live = await listNotes({ root: vault.root });
+      await pruneOrphans(
+        vault.root,
+        live.map((n) => n.id),
+      );
+    }
   }, [vault, current, refreshList]);
 
   const persist = useCallback(
@@ -170,8 +181,13 @@ export function App() {
           : prev,
       );
       await refreshList(vault.root);
+      // Re-embed just this note in the background so semantic search stays
+      // current. Errors are non-fatal — the next full reindex will recover.
+      if (embedderRef.current && embedderReady) {
+        void reindex(vault.root, [updated], embedderRef.current).catch(() => {});
+      }
     },
-    [vault, refreshList],
+    [vault, refreshList, embedderReady],
   );
 
   const debouncedPersist = useDebouncedCallback(persist, 500);
@@ -202,17 +218,20 @@ export function App() {
     if (!vault) setCurrent(null);
   }, [vault]);
 
+  if (!compat.supported) {
+    return (
+      <AppShell header={<Logo />}>
+        <Unsupported reasons={compat.reasons} />
+      </AppShell>
+    );
+  }
+
   if (!vault) {
     return (
       <AppShell header={<Logo />}>
         <Welcome
           onPickFolder={handlePick}
-          disabled={!supported}
-          disabledReason={
-            !supported
-              ? "This browser does not support the File System Access API. Open the app in Chrome, Edge, Brave, Opera, or Arc."
-              : (error ?? undefined)
-          }
+          disabledReason={error ?? undefined}
         />
       </AppShell>
     );
