@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+/* Base resets and typography (extended in design-system step). */
+:root {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
