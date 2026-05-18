@@ -47,3 +47,35 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
+
+/* Editor surface. We keep it lightweight — no @tailwindcss/typography needed. */
+.prose-like {
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.prose-like p {
+  margin: 0 0 1em 0;
+}
+
+.prose-like p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-like strong {
+  font-weight: 600;
+}
+
+.prose-like em {
+  font-style: italic;
+}
+
+.prose-like u {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose-like s,
+.prose-like del {
+  text-decoration: line-through;
+}
