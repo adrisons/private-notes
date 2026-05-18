@@ -3,6 +3,7 @@ import { cn } from "../lib/cn";
 
 interface ToolbarProps {
   editor: Editor | null;
+  onPickImage?: (file: File) => void | Promise<void>;
 }
 
 interface Action {
@@ -39,7 +40,7 @@ const ACTIONS: Action[] = [
   },
 ];
 
-export function EditorToolbar({ editor }: ToolbarProps) {
+export function EditorToolbar({ editor, onPickImage }: ToolbarProps) {
   return (
     <div className="flex items-center gap-1 border-b border-[var(--color-border)] px-3 py-2">
       {ACTIONS.map((a) => {
@@ -68,6 +69,30 @@ export function EditorToolbar({ editor }: ToolbarProps) {
           </button>
         );
       })}
+      {onPickImage ? (
+        <label
+          className={cn(
+            "ml-2 inline-flex h-8 cursor-pointer items-center gap-1 rounded-md px-2 text-sm",
+            "hover:bg-[var(--color-muted)]",
+            !editor && "pointer-events-none opacity-40",
+          )}
+          aria-label="Insert image"
+          title="Insert image"
+        >
+          <span aria-hidden>🖼</span>
+          <span>Image</span>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void onPickImage(file);
+              e.currentTarget.value = "";
+            }}
+          />
+        </label>
+      ) : null}
     </div>
   );
 }

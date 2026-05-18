@@ -12,9 +12,14 @@ interface EditorProps {
   /** Initial markdown content. Re-applied when this value changes. */
   value: string;
   onChange?: (markdown: string) => void;
+  /**
+   * Asynchronously upload an image and return the relative `src` to insert as
+   * a block-level image. The caller persists the file into the vault.
+   */
+  onUploadImage?: (file: File) => Promise<string>;
 }
 
-export function Editor({ value, onChange }: EditorProps) {
+export function Editor({ value, onChange, onUploadImage }: EditorProps) {
   const html = useMemo(() => markdownToHtml(value), [value]);
 
   const editor = useEditor({
@@ -57,9 +62,25 @@ export function Editor({ value, onChange }: EditorProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [html, editor]);
 
+  const insertImage = async (file: File) => {
+    if (!editor || !onUploadImage) return;
+    const src = await onUploadImage(file);
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: "attachmentImage",
+        attrs: { src, alt: file.name },
+      })
+      .run();
+  };
+
   return (
     <div className="flex h-full flex-col">
-      <EditorToolbar editor={editor ?? null} />
+      <EditorToolbar
+        editor={editor ?? null}
+        onPickImage={onUploadImage ? insertImage : undefined}
+      />
       <div className="flex-1 overflow-y-auto">
         <EditorContent editor={editor} />
       </div>
