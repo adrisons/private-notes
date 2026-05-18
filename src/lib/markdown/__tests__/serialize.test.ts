@@ -52,4 +52,21 @@ describe("serializeDoc", () => {
       serializeDoc(doc(p({ text: "a" }), p({ text: "b" }))),
     ).toBe("a\n\nb");
   });
+
+  it("emits an attachmentImage as its own paragraph", () => {
+    const out = serializeDoc({
+      type: "doc",
+      content: [
+        p({ text: "before" }),
+        {
+          type: "attachmentImage",
+          attrs: { src: "attachments/x/abc.png", alt: "kitten" },
+        },
+        p({ text: "after" }),
+      ],
+    });
+    expect(out).toBe(
+      "before\n\n![kitten](attachments/x/abc.png)\n\nafter",
+    );
+  });
 });

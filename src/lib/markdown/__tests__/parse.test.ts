@@ -17,4 +17,10 @@ describe("markdownToHtml", () => {
   it("passes through inline <u> for underline", () => {
     expect(markdownToHtml("<u>under</u>")).toContain("<u>under</u>");
   });
+
+  it("unwraps standalone image paragraphs", () => {
+    const html = markdownToHtml("![cat](attachments/x/abc.png)");
+    expect(html).not.toMatch(/<p>\s*<img/);
+    expect(html).toContain("<img");
+  });
 });

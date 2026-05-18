@@ -45,10 +45,25 @@ function serializeText(node: PMTextNode): string {
   return `${lead}${wrapText(core, marks)}${tail}`;
 }
 
+function escapeImageAlt(alt: string): string {
+  return alt.replace(/\]/g, "\\]");
+}
+
+function escapeImageSrc(src: string): string {
+  return src.replace(/\)/g, "\\)");
+}
+
 export function serializeDoc(doc: PMDoc): string {
-  const paragraphs = (doc.content ?? []).map((p) => {
-    if (p.type !== "paragraph") return "";
-    return (p.content ?? []).map(serializeText).join("");
+  const blocks = (doc.content ?? []).map((node) => {
+    if (node.type === "paragraph") {
+      return (node.content ?? []).map(serializeText).join("");
+    }
+    if (node.type === "attachmentImage") {
+      const alt = escapeImageAlt(node.attrs.alt ?? "");
+      const src = escapeImageSrc(node.attrs.src);
+      return `![${alt}](${src})`;
+    }
+    return "";
   });
-  return paragraphs.join("\n\n").replace(/\n+$/, "");
+  return blocks.join("\n\n").replace(/\n+$/, "");
 }

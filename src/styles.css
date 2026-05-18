@@ -79,3 +79,15 @@ body {
 .prose-like del {
   text-decoration: line-through;
 }
+
+/* Image attachments are always full-width blocks. */
+.prose-like .attachment-figure {
+  margin: 1.5em 0;
+}
+
+.prose-like .attachment-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+}

@@ -66,8 +66,9 @@ export async function writeBytes(
 ): Promise<void> {
   const file = await getFile(root, path, { create: true });
   const writable = await file.createWritable();
-  // Wrap into a Blob to normalize the union into a FileSystemWriteChunkType.
-  await writable.write(data instanceof Blob ? data : new Blob([data]));
+  // Cast to bypass the ArrayBufferLike vs ArrayBuffer friction in the DOM lib;
+  // all three branches are valid FileSystemWriteChunkType values at runtime.
+  await writable.write(data as unknown as FileSystemWriteChunkType);
   await writable.close();
 }
 

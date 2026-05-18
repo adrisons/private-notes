@@ -17,9 +17,15 @@ export interface PMParagraphNode {
   content?: PMInlineNode[];
 }
 
+export interface PMImageNode {
+  type: "attachmentImage";
+  attrs: { src: string; alt?: string };
+}
+
 export type PMInlineNode = PMTextNode;
+export type PMBlockNode = PMParagraphNode | PMImageNode;
 
 export interface PMDoc {
   type: "doc";
-  content?: Array<PMParagraphNode>;
+  content?: PMBlockNode[];
 }

@@ -1,6 +1,7 @@
 import { useEditor, EditorContent, type Editor as TiptapEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
+import { AttachmentImage } from "./extensions/AttachmentImage";
 import { useEffect, useMemo } from "react";
 import { markdownToHtml } from "../lib/markdown/parse";
 import { serializeDoc } from "../lib/markdown/serialize";
@@ -31,6 +32,7 @@ export function Editor({ value, onChange }: EditorProps) {
         horizontalRule: false,
       }),
       Underline,
+      AttachmentImage,
     ],
     content: html,
     onUpdate: ({ editor }) => {
