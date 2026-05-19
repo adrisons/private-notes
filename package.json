@@ -1,8 +1,9 @@
 {
-  "name": "private-notes-llm",
+  "name": "private-notes",
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "packageManager": "pnpm@11.0.8",
   "description": "Local-first private notes with on-device semantic search (embeddings).",
   "scripts": {
     "dev": "vite",

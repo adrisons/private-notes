@@ -17,9 +17,19 @@ interface EditorProps {
    * a block-level image. The caller persists the file into the vault.
    */
   onUploadImage?: (file: File) => Promise<string>;
+  /**
+   * Resolve a relative attachment path into a URL the browser can load
+   * (usually a `blob:` URL backed by the vault file handle).
+   */
+  resolveImageSrc?: (src: string) => Promise<string | null>;
 }
 
-export function Editor({ value, onChange, onUploadImage }: EditorProps) {
+export function Editor({
+  value,
+  onChange,
+  onUploadImage,
+  resolveImageSrc,
+}: EditorProps) {
   const html = useMemo(() => markdownToHtml(value), [value]);
 
   const editor = useEditor({
@@ -37,7 +47,9 @@ export function Editor({ value, onChange, onUploadImage }: EditorProps) {
         horizontalRule: false,
       }),
       Underline,
-      AttachmentImage,
+      AttachmentImage.configure({
+        resolveSrc: resolveImageSrc ?? (async (s: string) => s),
+      }),
     ],
     content: html,
     onUpdate: ({ editor }) => {

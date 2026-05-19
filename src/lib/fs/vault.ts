@@ -37,7 +37,7 @@ export async function inspectFolder(
   return {
     kind: "incompatible",
     reason:
-      "Folder is not empty and is not a private-notes-llm vault. Choose a different folder.",
+      "Folder is not empty and is not a private-notes vault. Choose a different folder.",
   };
 }
 

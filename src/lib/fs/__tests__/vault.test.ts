@@ -46,7 +46,7 @@ describe("openOrInitialize", () => {
     const { initialized } = await openOrInitialize(root);
     expect(initialized).toBe(true);
     const manifestText = await readText(root, PATHS.manifest);
-    expect(JSON.parse(manifestText).app).toBe("private-notes-llm");
+    expect(JSON.parse(manifestText).app).toBe("private-notes");
     const indexText = await readText(root, PATHS.index);
     expect(JSON.parse(indexText).notes).toEqual([]);
   });

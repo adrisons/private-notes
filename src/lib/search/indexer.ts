@@ -4,6 +4,7 @@ import { sha1Hex } from "../attachments/hash";
 import {
   clearSemanticIndex,
   deleteNoteEmbeddings,
+  iterateNoteEmbeddings,
   readNoteEmbeddings,
   readSemanticManifest,
   writeNoteEmbeddings,
@@ -169,7 +170,6 @@ export async function pruneOrphans(
   liveIds: Iterable<string>,
 ): Promise<number> {
   const live = new Set(liveIds);
-  const { iterateNoteEmbeddings } = await import("./index-fs");
   const stale: string[] = [];
   for await (const rec of iterateNoteEmbeddings(root)) {
     if (!live.has(rec.noteId)) stale.push(rec.noteId);

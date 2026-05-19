@@ -2,7 +2,16 @@
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
 
-/* Vercel-inspired design tokens. Light + system dark via `prefers-color-scheme`. */
+/*
+ * Vercel-inspired design tokens.
+ *
+ * Theming model:
+ * - @theme sets the design tokens Tailwind v4 turns into utilities at build
+ *   time. We seed it with the light palette.
+ * - The runtime palette is then layered on top with CSS variables that follow
+ *   the `data-theme` attribute on <html>. When nothing is set, the
+ *   `prefers-color-scheme` media query supplies the dark values.
+ */
 @theme {
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -20,8 +29,31 @@
   --color-danger: #b91c1c;
 }
 
+/* Explicit light theme — wins over the system dark media query below. */
+html[data-theme="light"] {
+  --color-background: #ffffff;
+  --color-foreground: #0a0a0a;
+  --color-muted: #fafafa;
+  --color-muted-foreground: #6b7280;
+  --color-border: #ededed;
+  --color-accent: #0a0a0a;
+  --color-accent-foreground: #ffffff;
+}
+
+/* Explicit dark theme. */
+html[data-theme="dark"] {
+  --color-background: #0a0a0a;
+  --color-foreground: #fafafa;
+  --color-muted: #111111;
+  --color-muted-foreground: #8a8a8a;
+  --color-border: #1f1f1f;
+  --color-accent: #fafafa;
+  --color-accent-foreground: #0a0a0a;
+}
+
+/* Follow the OS when no explicit choice has been made. */
 @media (prefers-color-scheme: dark) {
-  @theme {
+  html:not([data-theme]) {
     --color-background: #0a0a0a;
     --color-foreground: #fafafa;
     --color-muted: #111111;
@@ -90,4 +122,15 @@ body {
   width: 100%;
   height: auto;
   border-radius: 6px;
+}
+
+.prose-like .attachment-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px dashed var(--color-border);
+  border-radius: 6px;
+  color: var(--color-muted-foreground);
+  font-size: 0.875rem;
 }

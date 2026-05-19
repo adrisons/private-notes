@@ -33,7 +33,7 @@ export async function pickFolder(
         ) => Promise<FileSystemDirectoryHandle>;
       }
     ).showDirectoryPicker({
-      id: options.id ?? "private-notes-llm",
+      id: options.id ?? "private-notes",
       mode: "readwrite",
       startIn: options.startIn ?? "documents",
     });

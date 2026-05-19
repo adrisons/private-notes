@@ -1,4 +1,4 @@
-# private-notes-llm
+# private-notes
 
 Local-first private notes with on-device semantic search.
 
@@ -59,12 +59,14 @@ Embeddings of different models are never mixed. Changing the model deletes the i
 ## Scripts
 
 ```bash
-npm install
-npm run dev        # start Vite dev server
-npm run test       # run Vitest
-npm run typecheck  # tsc --noEmit
-npm run build      # production build
+pnpm install
+pnpm dev           # start Vite dev server
+pnpm test          # run Vitest
+pnpm typecheck     # tsc --noEmit
+pnpm build         # production build
 ```
+
+This repo pins the package manager via the `packageManager` field in `package.json`. Use [pnpm](https://pnpm.io/) (Corepack: `corepack enable`).
 
 ## Status
 
