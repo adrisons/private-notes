@@ -17,6 +17,12 @@ import { pickFolder } from "./lib/fs/picker";
 import { getCompatibility } from "./lib/compatibility";
 import { Unsupported } from "./screens/Unsupported";
 import { openOrInitialize } from "./lib/fs/vault";
+import { ensureReadWritePermission, hasReadWritePermission } from "./lib/fs/permissions";
+import {
+  clearVaultHandle,
+  loadVaultHandle,
+  persistVaultHandle,
+} from "./lib/fs/vault-handle-store";
 import {
   createNote,
   deleteNote,
@@ -69,45 +75,91 @@ export function App() {
   } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [booting, setBooting] = useState(true);
 
   const refreshList = useCallback(async (root: FileSystemDirectoryHandle) => {
     setNotes(await listNotes({ root }));
   }, []);
+
+  const activateVault = useCallback(
+    async (handle: FileSystemDirectoryHandle) => {
+      await ensureReadWritePermission(handle);
+      await openOrInitialize(handle);
+      await persistVaultHandle(handle);
+      setVault({ root: handle });
+      imageCacheRef.current?.dispose();
+      imageCacheRef.current = new AttachmentURLCache(handle);
+      await refreshList(handle);
+    },
+    [refreshList],
+  );
+
+  // Re-open the last vault after a dev HMR reload or a normal page refresh.
+  useEffect(() => {
+    if (!compat.supported) {
+      setBooting(false);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const handle = await loadVaultHandle();
+        if (!handle || cancelled) return;
+        if (!(await hasReadWritePermission(handle))) return;
+        await activateVault(handle);
+      } catch {
+        await clearVaultHandle();
+      } finally {
+        if (!cancelled) setBooting(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activateVault]);
 
   const handlePick = useCallback(async () => {
     try {
       setError(null);
       const handle = await pickFolder();
       if (!handle) return;
-      await openOrInitialize(handle);
-      setVault({ root: handle });
-      imageCacheRef.current?.dispose();
-      imageCacheRef.current = new AttachmentURLCache(handle);
-      await refreshList(handle);
-      // Spin up search + embedder lazily — the worker downloads the model in
-      // the background on first use.
-      void (async () => {
-        try {
-          if (!searchApiRef.current) {
-            searchApiRef.current = await loadSearchApi();
-          }
-          if (!embedderRef.current) {
-            const { TransformersEmbedder, DEFAULT_MODEL_ID } = await import(
-              "./lib/search/transformers-embedder"
-            );
-            const emb = new TransformersEmbedder(DEFAULT_MODEL_ID);
-            embedderRef.current = emb;
-            await emb.ready();
-            setEmbedderReady(true);
-          }
-        } catch (err) {
-          setError((err as Error).message);
-        }
-      })();
+      await activateVault(handle);
     } catch (err) {
       setError((err as Error).message);
     }
-  }, [refreshList]);
+  }, [activateVault]);
+
+  // Spin up search + embedder when a vault is active. Kept out of the folder
+  // picker path so a dev HMR cycle after the first dynamic import cannot race
+  // with `setVault` and strand the UI on the welcome screen.
+  useEffect(() => {
+    if (!vault) {
+      setEmbedderReady(false);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        if (!searchApiRef.current) {
+          searchApiRef.current = await loadSearchApi();
+        }
+        if (!embedderRef.current) {
+          const { TransformersEmbedder, DEFAULT_MODEL_ID } = await import(
+            "./lib/search/transformers-embedder"
+          );
+          const emb = new TransformersEmbedder(DEFAULT_MODEL_ID);
+          embedderRef.current = emb;
+          await emb.ready();
+        }
+        if (!cancelled) setEmbedderReady(true);
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [vault]);
 
   const runReindex = useCallback(async () => {
     if (!vault || !embedderRef.current) return;
@@ -285,6 +337,16 @@ export function App() {
     return (
       <AppShell header={headerNode}>
         <Unsupported reasons={compat.reasons} />
+      </AppShell>
+    );
+  }
+
+  if (booting) {
+    return (
+      <AppShell header={headerNode}>
+        <div className="flex h-full items-center justify-center text-sm text-[var(--color-muted-foreground)]">
+          Loading…
+        </div>
       </AppShell>
     );
   }

@@ -4,6 +4,12 @@
 
 declare global {
   interface FileSystemDirectoryHandle {
+    queryPermission(descriptor: {
+      mode: "read" | "readwrite";
+    }): Promise<PermissionState>;
+    requestPermission(descriptor: {
+      mode: "read" | "readwrite";
+    }): Promise<PermissionState>;
     entries(): AsyncIterableIterator<
       [string, FileSystemFileHandle | FileSystemDirectoryHandle]
     >;
