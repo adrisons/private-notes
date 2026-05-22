@@ -68,6 +68,10 @@ pnpm build         # production build
 
 This repo pins the package manager via the `packageManager` field in `package.json`. Use [pnpm](https://pnpm.io/) (Corepack: `corepack enable`).
 
+## Architecture & decisions
+
+Engineering docs (architecture overview and ADRs): **[docs/README.md](./docs/README.md)**.
+
 ## Status
 
 Early development. See commit history for incremental milestones.
