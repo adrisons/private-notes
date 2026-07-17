@@ -105,4 +105,159 @@ describe("serializeDoc", () => {
       }),
     ).toBe("```\n\n```");
   });
+
+  it("serializes headings", () => {
+    expect(
+      serializeDoc({
+        type: "doc",
+        content: [
+          {
+            type: "heading",
+            attrs: { level: 1 },
+            content: [{ type: "text", text: "Title" }],
+          },
+          {
+            type: "heading",
+            attrs: { level: 2 },
+            content: [{ type: "text", text: "Section" }],
+          },
+        ],
+      }),
+    ).toBe("# Title\n\n## Section");
+  });
+
+  it("serializes heading levels up to H5", () => {
+    expect(
+      serializeDoc({
+        type: "doc",
+        content: [
+          {
+            type: "heading",
+            attrs: { level: 4 },
+            content: [{ type: "text", text: "Detail" }],
+          },
+          {
+            type: "heading",
+            attrs: { level: 5 },
+            content: [{ type: "text", text: "Minor" }],
+          },
+        ],
+      }),
+    ).toBe("#### Detail\n\n##### Minor");
+  });
+
+  it("serializes bullet and ordered lists", () => {
+    expect(
+      serializeDoc({
+        type: "doc",
+        content: [
+          {
+            type: "bulletList",
+            content: [
+              {
+                type: "listItem",
+                content: [p({ text: "alpha" })],
+              },
+              {
+                type: "listItem",
+                content: [p({ text: "beta" })],
+              },
+            ],
+          },
+          {
+            type: "orderedList",
+            content: [
+              {
+                type: "listItem",
+                content: [p({ text: "one" })],
+              },
+              {
+                type: "listItem",
+                content: [p({ text: "two" })],
+              },
+            ],
+          },
+        ],
+      }),
+    ).toBe("- alpha\n- beta\n\n1. one\n2. two");
+  });
+
+  it("serializes nested bullet lists", () => {
+    expect(
+      serializeDoc({
+        type: "doc",
+        content: [
+          {
+            type: "bulletList",
+            content: [
+              {
+                type: "listItem",
+                content: [
+                  p({ text: "parent" }),
+                  {
+                    type: "bulletList",
+                    content: [
+                      {
+                        type: "listItem",
+                        content: [p({ text: "child" })],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    ).toBe("- parent\n  - child");
+  });
+
+  it("serializes blockquotes", () => {
+    expect(
+      serializeDoc({
+        type: "doc",
+        content: [
+          {
+            type: "blockquote",
+            content: [
+              p({ text: "first line" }),
+              p({ text: "second line" }),
+            ],
+          },
+        ],
+      }),
+    ).toBe("> first line\n>\n> second line");
+  });
+
+  it("serializes marked text inside list items", () => {
+    expect(
+      serializeDoc({
+        type: "doc",
+        content: [
+          {
+            type: "bulletList",
+            content: [
+              {
+                type: "listItem",
+                content: [p({ text: "bold", marks: ["bold"] })],
+              },
+            ],
+          },
+        ],
+      }),
+    ).toBe("- **bold**");
+  });
+
+  it("serializes horizontal rules", () => {
+    expect(
+      serializeDoc({
+        type: "doc",
+        content: [
+          p({ text: "before" }),
+          { type: "horizontalRule" },
+          p({ text: "after" }),
+        ],
+      }),
+    ).toBe("before\n\n---\n\nafter");
+  });
 });

@@ -94,6 +94,96 @@ body {
   margin-bottom: 0;
 }
 
+.prose-like h1,
+.prose-like h2,
+.prose-like h3,
+.prose-like h4,
+.prose-like h5 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.prose-like h1,
+.prose-like h2,
+.prose-like h3 {
+  margin: 1.5em 0 0.5em;
+}
+
+.prose-like h4,
+.prose-like h5 {
+  margin: 1.25em 0 0.35em;
+}
+
+.prose-like h1:first-child,
+.prose-like h2:first-child,
+.prose-like h3:first-child,
+.prose-like h4:first-child,
+.prose-like h5:first-child {
+  margin-top: 0;
+}
+
+.prose-like h1 {
+  font-size: 1.875rem;
+  letter-spacing: -0.03em;
+}
+
+.prose-like h2 {
+  font-size: 1.5rem;
+}
+
+.prose-like h3 {
+  font-size: 1.25rem;
+}
+
+.prose-like h4 {
+  font-size: 1.125rem;
+}
+
+.prose-like h5 {
+  font-size: 1rem;
+  color: var(--color-muted-foreground);
+}
+
+.prose-like ul,
+.prose-like ol {
+  margin: 0 0 1em 0;
+  padding-left: 1.5em;
+}
+
+.prose-like ul {
+  list-style-type: disc;
+}
+
+.prose-like ol {
+  list-style-type: decimal;
+}
+
+.prose-like li {
+  margin: 0.25em 0;
+}
+
+.prose-like li p {
+  margin: 0;
+}
+
+.prose-like blockquote {
+  margin: 1em 0;
+  padding-left: 1em;
+  border-left: 3px solid var(--color-border);
+  color: var(--color-muted-foreground);
+}
+
+.prose-like blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-like hr {
+  margin: 2em 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
 .prose-like strong {
   font-weight: 600;
 }

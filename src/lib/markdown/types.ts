@@ -17,6 +17,33 @@ export interface PMParagraphNode {
   content?: PMInlineNode[];
 }
 
+export interface PMHeadingNode {
+  type: "heading";
+  attrs: { level: number };
+  content?: PMInlineNode[];
+}
+
+export interface PMListItemNode {
+  type: "listItem";
+  content?: PMBlockNode[];
+}
+
+export interface PMBulletListNode {
+  type: "bulletList";
+  content?: PMListItemNode[];
+}
+
+export interface PMOrderedListNode {
+  type: "orderedList";
+  attrs?: { start?: number };
+  content?: PMListItemNode[];
+}
+
+export interface PMBlockquoteNode {
+  type: "blockquote";
+  content?: PMBlockNode[];
+}
+
 export interface PMImageNode {
   type: "attachmentImage";
   attrs: { src: string; alt?: string };
@@ -28,8 +55,20 @@ export interface PMCodeBlockNode {
   content?: PMTextNode[];
 }
 
+export interface PMHorizontalRuleNode {
+  type: "horizontalRule";
+}
+
 export type PMInlineNode = PMTextNode;
-export type PMBlockNode = PMParagraphNode | PMImageNode | PMCodeBlockNode;
+export type PMBlockNode =
+  | PMParagraphNode
+  | PMHeadingNode
+  | PMBulletListNode
+  | PMOrderedListNode
+  | PMBlockquoteNode
+  | PMImageNode
+  | PMCodeBlockNode
+  | PMHorizontalRuleNode;
 
 export interface PMDoc {
   type: "doc";

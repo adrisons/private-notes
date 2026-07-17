@@ -36,16 +36,8 @@ export function Editor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        // We do not yet support headings/lists/blockquotes. Disable the
-        // toolbar-less keyboard shortcuts so users do not produce nodes the
-        // serializer cannot round-trip yet.
-        heading: false,
-        bulletList: false,
-        orderedList: false,
-        listItem: false,
         codeBlock: false,
-        blockquote: false,
-        horizontalRule: false,
+        heading: { levels: [1, 2, 3, 4, 5] },
       }),
       FencedCodeBlock,
       Underline,

@@ -30,4 +30,20 @@ describe("markdownToHtml", () => {
     expect(html).toContain("<code");
     expect(html).toContain("hello");
   });
+
+  it("converts headings, lists, and blockquotes", () => {
+    const html = markdownToHtml(
+      "# Title\n\n- a\n- b\n\n> quoted",
+    );
+    expect(html).toContain("<h1>Title</h1>");
+    expect(html).toContain("<ul>");
+    expect(html).toContain("<li>a</li>");
+    expect(html).toContain("<blockquote>");
+    expect(html).toContain("quoted");
+  });
+
+  it("converts horizontal rules to hr", () => {
+    const html = markdownToHtml("above\n\n---\n\nbelow");
+    expect(html).toContain("<hr");
+  });
 });
