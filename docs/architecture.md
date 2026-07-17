@@ -30,11 +30,12 @@ flowchart TB
   .private-notes/          # app metadata (ADR-002, ADR-008)
     manifest.json
     index.json
+    attachment-refs.json   # note ids per attachment path (ADR-006)
   .semantic-index/         # vector index (ADR-004)
     manifest.json
     notes/<noteId>.json
   notes/YYYY/MM/          # Markdown + YAML frontmatter
-  attachments/<noteId>/   # content-addressed files (ADR-006)
+  attachments/<sha1>.<ext>   # content-addressed, globally deduplicated (ADR-006)
 ```
 
 Details: [ADR-002](./adr/002-note-storage-format.md), [ADR-004](./adr/004-semantic-index-persistence.md).

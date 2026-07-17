@@ -33,6 +33,7 @@ import {
 } from "./lib/notes/storage";
 import { resolveVaultStartup } from "./lib/notes/startup";
 import { storeAttachment } from "./lib/attachments/storage";
+import { addRef } from "./lib/attachments/refs";
 import { AttachmentURLCache } from "./lib/attachments/cache";
 import type { NoteRecord } from "./lib/fs/types";
 import { useDebouncedCallback } from "./lib/useDebouncedCallback";
@@ -253,10 +254,17 @@ export function App() {
     [current],
   );
 
+  const invalidateAttachmentCache = useCallback((paths: string[]) => {
+    for (const path of paths) {
+      imageCacheRef.current?.invalidate(path);
+    }
+  }, []);
+
   const handleDelete = useCallback(async () => {
     if (!vault || !pendingDeleteId) return;
     const deletedId = pendingDeleteId;
-    await deleteNote({ root: vault.root }, deletedId);
+    const gcAttachments = await deleteNote({ root: vault.root }, deletedId);
+    invalidateAttachmentCache(gcAttachments);
     if (current?.record.id === deletedId) setCurrent(null);
     setPendingDeleteId(null);
     await refreshList(vault.root);
@@ -268,7 +276,7 @@ export function App() {
         live.map((n) => n.id),
       );
     }
-  }, [vault, pendingDeleteId, current, refreshList]);
+  }, [vault, pendingDeleteId, current, refreshList, invalidateAttachmentCache]);
 
   const handleDuplicate = useCallback(
     async (id: string) => {
@@ -296,7 +304,12 @@ export function App() {
   const persist = useCallback(
     async (id: string, title: string, body: string) => {
       if (!vault) return;
-      const updated = await updateNote({ root: vault.root }, id, { title, body });
+      const { gcAttachments, ...updated } = await updateNote(
+        { root: vault.root },
+        id,
+        { title, body },
+      );
+      invalidateAttachmentCache(gcAttachments);
       setCurrent((prev) =>
         prev && prev.record.id === id
           ? { ...prev, record: updated, savedAt: updated.updatedAt }
@@ -311,7 +324,7 @@ export function App() {
           .catch(() => {});
       }
     },
-    [vault, refreshList, embedderReady],
+    [vault, refreshList, embedderReady, invalidateAttachmentCache],
   );
 
   const debouncedPersist = useDebouncedCallback(persist, 500);
@@ -331,7 +344,8 @@ export function App() {
   const onUploadImage = useCallback(
     async (file: File): Promise<string> => {
       if (!vault || !current) throw new Error("No active note");
-      const result = await storeAttachment(vault.root, current.record.id, file);
+      const result = await storeAttachment(vault.root, file);
+      await addRef(vault.root, current.record.id, result.path);
       return result.path;
     },
     [vault, current],

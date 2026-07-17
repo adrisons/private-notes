@@ -15,7 +15,7 @@
 2. **Paths are stable:** `notes/YYYY/MM/<slug>-<id>.md`. Title changes update frontmatter and index only — the file path does not move (`path.ts`).
 3. **Central index:** `.private-notes/index.json` holds `NoteRecord[]` for listing; the filesystem is the source of truth for body content.
 4. **Vault manifest:** `.private-notes/manifest.json` with app signature `private-notes` and `SCHEMA_VERSION` ([ADR-008](./008-schema-compatibility.md)).
-5. **Safe delete:** remove entry from index first, then delete the file (and attachment folder as applicable).
+5. **Safe delete:** remove entry from index first, then delete the file; drop attachment refs and garbage-collect orphan blobs ([ADR-006](./006-attachments-cache.md)).
 6. **IDs:** opaque string ids (see `src/lib/notes/id.ts`) embedded in the filename.
 
 ## Consequences

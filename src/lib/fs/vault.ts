@@ -10,6 +10,7 @@ import {
   buildManifest,
   validateManifestJson,
 } from "./manifest";
+import { buildEmptyAttachmentRefs } from "../attachments/refs";
 import { PATHS, type Manifest, type ValidationResult } from "./types";
 
 /**
@@ -55,6 +56,11 @@ export async function initializeVault(
     root,
     PATHS.index,
     JSON.stringify(buildEmptyIndex(), null, 2),
+  );
+  await writeText(
+    root,
+    PATHS.attachmentRefs,
+    JSON.stringify(buildEmptyAttachmentRefs(), null, 2),
   );
   return manifest;
 }

@@ -33,7 +33,6 @@ describe("AttachmentURLCache", () => {
     await initializeVault(root);
     const stored = await storeAttachment(
       root,
-      "n1",
       fakeFile("a.png", "image/png", [1, 2, 3]),
     );
 
@@ -47,7 +46,6 @@ describe("AttachmentURLCache", () => {
     await initializeVault(root);
     const stored = await storeAttachment(
       root,
-      "n1",
       fakeFile("a.png", "image/png", [9, 9]),
     );
     const cache = new AttachmentURLCache(root);
@@ -60,6 +58,28 @@ describe("AttachmentURLCache", () => {
     const root = makeFakeRoot();
     await initializeVault(root);
     const cache = new AttachmentURLCache(root);
-    expect(await cache.resolve("attachments/nope/missing.png")).toBeNull();
+    expect(await cache.resolve("attachments/missing.png")).toBeNull();
+  });
+
+  it("invalidate drops a cached blob so the next resolve re-reads disk", async () => {
+    const root = makeFakeRoot();
+    await initializeVault(root);
+    const stored = await storeAttachment(
+      root,
+      fakeFile("a.png", "image/png", [9, 9]),
+    );
+    const cache = new AttachmentURLCache(root);
+    const first = await cache.resolve(stored.path);
+    expect(first).toMatch(/^blob:/);
+
+    cache.invalidate(stored.path);
+
+    // After GC the file is gone; without invalidate resolve would still return
+    // the revoked blob URL from the in-memory map (now cleared).
+    const attachmentsDir = await root.getDirectoryHandle("attachments");
+    await attachmentsDir.removeEntry(stored.path.split("/").pop()!);
+
+    const second = await cache.resolve(stored.path);
+    expect(second).toBeNull();
   });
 });

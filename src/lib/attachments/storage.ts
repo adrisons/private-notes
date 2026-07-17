@@ -3,7 +3,7 @@ import { PATHS } from "../fs/types";
 import { pickExtension, sha1Hex } from "./hash";
 
 export interface StoredAttachment {
-  /** Relative path under the vault root, e.g. "attachments/01H.../abc.png". */
+  /** Relative path under the vault root, e.g. "attachments/abc123....png". */
   path: string;
   /** SHA-1 of the bytes, used as the file name. */
   hash: string;
@@ -18,18 +18,17 @@ export interface AttachmentInput {
 }
 
 /**
- * Persists an attachment into `attachments/<noteId>/<sha1>.<ext>`. Content-
- * addressed naming means uploading the same image twice is a no-op.
+ * Persists an attachment into `attachments/<sha1>.<ext>`. Content-addressed
+ * naming deduplicates globally — the same bytes share one file across notes.
  */
 export async function storeAttachment(
   root: FileSystemDirectoryHandle,
-  noteId: string,
   file: AttachmentInput,
 ): Promise<StoredAttachment> {
   const buf = await file.arrayBuffer();
   const hash = await sha1Hex(buf);
   const ext = pickExtension(file);
-  const path = `${PATHS.attachments}/${noteId}/${hash}.${ext}`;
+  const path = `${PATHS.attachments}/${hash}.${ext}`;
   if (!(await fileExists(root, path))) {
     await writeBytes(root, path, buf);
   }

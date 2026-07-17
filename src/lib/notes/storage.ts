@@ -1,6 +1,13 @@
 import { readText, writeText, fileExists } from "../fs/handle";
 import { PATHS, type NoteIndex, type NoteRecord } from "../fs/types";
 import { buildEmptyIndex } from "../fs/manifest";
+import { deleteOrphanAttachments } from "../attachments/gc";
+import { extractAttachmentPaths } from "../attachments/paths";
+import {
+  addRefsForBody,
+  dropNoteRefs,
+  syncRefsForBodyChange,
+} from "../attachments/refs";
 import { parseNote, serializeNote, type ParsedNote } from "./frontmatter";
 import { buildNotePath } from "./path";
 import { ulid } from "./id";
@@ -84,7 +91,7 @@ export async function updateNote(
   io: NoteIO,
   id: string,
   patch: UpdateInput,
-): Promise<NoteRecord> {
+): Promise<NoteRecord & { gcAttachments: string[] }> {
   const index = await readIndex(io.root);
   const idx = index.notes.findIndex((n) => n.id === id);
   if (idx < 0) throw new Error(`Note ${id} not found`);
@@ -110,9 +117,19 @@ export async function updateNote(
     body,
   );
   await writeText(io.root, current.path, newText);
+  let gcAttachments: string[] = [];
+  if (patch.body !== undefined && patch.body !== existing.body) {
+    gcAttachments = await syncRefsForBodyChange(
+      io.root,
+      current.id,
+      existing.body,
+      body,
+    );
+    await deleteOrphanAttachments(io.root, gcAttachments);
+  }
   index.notes[idx] = updated;
   await writeIndex(io.root, index);
-  return updated;
+  return { ...updated, gcAttachments };
 }
 
 export async function duplicateNote(
@@ -123,13 +140,28 @@ export async function duplicateNote(
   if (!source) return null;
   const title = source.parsed.frontmatter.title;
   const copyTitle = title.trim() ? `${title} (copy)` : "Untitled (copy)";
-  return createNote(io, { title: copyTitle, body: source.parsed.body });
+  const copy = await createNote(io, {
+    title: copyTitle,
+    body: source.parsed.body,
+  });
+  await addRefsForBody(io.root, copy.id, source.parsed.body);
+  return copy;
 }
 
-export async function deleteNote(io: NoteIO, id: string): Promise<void> {
+export async function deleteNote(
+  io: NoteIO,
+  id: string,
+): Promise<string[]> {
   const index = await readIndex(io.root);
   const record = index.notes.find((n) => n.id === id);
-  if (!record) return;
+  if (!record) return [];
+
+  let attachmentPaths: Set<string> = new Set();
+  if (await fileExists(io.root, record.path)) {
+    const text = await readText(io.root, record.path);
+    attachmentPaths = extractAttachmentPaths(parseNote(text).body);
+  }
+
   // Remove the index entry first so a half-deleted note is invisible.
   index.notes = index.notes.filter((n) => n.id !== id);
   await writeIndex(io.root, index);
@@ -141,6 +173,10 @@ export async function deleteNote(io: NoteIO, id: string): Promise<void> {
     dir = await dir.getDirectoryHandle(seg);
   }
   await dir.removeEntry(fileName);
+
+  const gcAttachments = await dropNoteRefs(io.root, id, attachmentPaths);
+  await deleteOrphanAttachments(io.root, gcAttachments);
+  return gcAttachments;
 }
 
 export async function listNotes(io: NoteIO): Promise<NoteRecord[]> {

@@ -23,15 +23,14 @@ function fakeFile(name: string, type: string, bytes: number[]): {
 }
 
 describe("storeAttachment", () => {
-  it("writes the file under attachments/<noteId>/<sha1>.<ext>", async () => {
+  it("writes the file under attachments/<sha1>.<ext>", async () => {
     const root = makeFakeRoot();
     await initializeVault(root);
     const result = await storeAttachment(
       root,
-      "01HX",
       fakeFile("cat.png", "image/png", [1, 2, 3]),
     );
-    expect(result.path).toMatch(/^attachments\/01HX\/[0-9a-f]{40}\.png$/);
+    expect(result.path).toMatch(/^attachments\/[0-9a-f]{40}\.png$/);
     expect(await fileExists(root, result.path)).toBe(true);
   });
 
@@ -40,14 +39,30 @@ describe("storeAttachment", () => {
     await initializeVault(root);
     const a = await storeAttachment(
       root,
-      "n",
       fakeFile("a.png", "image/png", [1, 2, 3]),
     );
     const b = await storeAttachment(
       root,
-      "n",
       fakeFile("b.png", "image/png", [1, 2, 3]),
     );
     expect(a.path).toBe(b.path);
+  });
+
+  it("deduplicates globally across separate store calls", async () => {
+    const root = makeFakeRoot();
+    await initializeVault(root);
+    const a = await storeAttachment(
+      root,
+      fakeFile("a.png", "image/png", [4, 5, 6]),
+    );
+    await storeAttachment(root, fakeFile("b.png", "image/png", [4, 5, 6]));
+    const attachmentsDir = await root.getDirectoryHandle("attachments");
+    let count = 0;
+    for await (const entry of attachmentsDir.entries()) {
+      void entry;
+      count++;
+    }
+    expect(count).toBe(1);
+    expect(a.path).toMatch(/^attachments\/[0-9a-f]{40}\.png$/);
   });
 });

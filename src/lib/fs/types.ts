@@ -1,6 +1,7 @@
 /**
  * Persistent schema for the on-disk vault. Bumping `SCHEMA_VERSION` is a
  * breaking change and requires either a migration or a refusal to open.
+ * See docs/adr/008-schema-compatibility.md
  */
 export const APP_SIGNATURE = "private-notes" as const;
 export const SCHEMA_VERSION = 1 as const;
@@ -9,6 +10,7 @@ export const PATHS = {
   meta: ".private-notes",
   manifest: ".private-notes/manifest.json",
   index: ".private-notes/index.json",
+  attachmentRefs: ".private-notes/attachment-refs.json",
   notes: "notes",
   attachments: "attachments",
 } as const;

@@ -2,7 +2,7 @@ import { getFile } from "../fs/handle";
 
 /**
  * Per-vault cache of attachment blob URLs. Browsers cannot load a relative
- * path like `attachments/<noteId>/<hash>.png` on their own — we read the file
+ * path like `attachments/<hash>.png` on their own — we read the file
  * through the File System Access handle, wrap it in a blob URL, and remember
  * the URL so subsequent renders are free.
  *

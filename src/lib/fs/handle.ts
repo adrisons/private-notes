@@ -84,6 +84,23 @@ export async function fileExists(
   }
 }
 
+export async function removeFile(
+  root: FileSystemDirectoryHandle,
+  path: string,
+): Promise<void> {
+  const segments = splitPath(path);
+  if (segments.length === 0) {
+    throw new Error("Empty path");
+  }
+  const fileName = segments[segments.length - 1]!;
+  const parentSegments = segments.slice(0, -1);
+  let dir = root;
+  for (const segment of parentSegments) {
+    dir = await dir.getDirectoryHandle(segment);
+  }
+  await dir.removeEntry(fileName);
+}
+
 /**
  * Returns true when the directory contains no entries other than entries that
  * are safe to coexist with (currently: macOS `.DS_Store`).

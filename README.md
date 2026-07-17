@@ -26,11 +26,12 @@ The folder you choose is owned by the app. It is initialized on first use with t
   .private-notes/
     manifest.json         # vault signature + schema version
     index.json            # array of NoteRecord
+    attachment-refs.json  # note ids per attachment path (ADR-006)
   .semantic-index/        # sibling folder, sync-friendly
     manifest.json         # { schemaVersion, modelId, dimensions }
     notes/<noteId>.json   # all chunks for one note + their embeddings
   notes/YYYY/MM/<slug>-<id>.md
-  attachments/<noteId>/<sha1>.<ext>
+  attachments/<sha1>.<ext>
 ```
 
 Each note is a Markdown file with YAML frontmatter (`id`, `title`, `createdAt`, `updatedAt`).
