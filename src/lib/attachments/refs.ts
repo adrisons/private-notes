@@ -1,5 +1,12 @@
 import { readText, writeText, fileExists } from "../fs/handle";
 import { PATHS } from "../fs/types";
+import {
+  VaultDataError,
+  isNumber,
+  isObject,
+  isStringArray,
+  parseJson,
+} from "../validate";
 import { extractAttachmentPaths } from "./paths";
 
 export const ATTACHMENT_REFS_VERSION = 1 as const;
@@ -13,6 +20,28 @@ export function buildEmptyAttachmentRefs(): AttachmentRefsIndex {
   return { version: ATTACHMENT_REFS_VERSION, refs: {} };
 }
 
+/** Validate parsed `attachment-refs.json`; throws on structural problems. */
+export function parseAttachmentRefs(
+  raw: unknown,
+  file: string,
+): AttachmentRefsIndex {
+  if (!isObject(raw)) {
+    throw new VaultDataError("refs index is not a JSON object", file);
+  }
+  if (!isNumber(raw.version)) {
+    throw new VaultDataError("refs index is missing a numeric version", file);
+  }
+  if (!isObject(raw.refs)) {
+    throw new VaultDataError("refs.refs is not an object", file);
+  }
+  for (const [path, noteIds] of Object.entries(raw.refs)) {
+    if (!isStringArray(noteIds)) {
+      throw new VaultDataError(`refs.refs["${path}"] is not a string array`, file);
+    }
+  }
+  return raw as unknown as AttachmentRefsIndex;
+}
+
 export async function readAttachmentRefs(
   root: FileSystemDirectoryHandle,
 ): Promise<AttachmentRefsIndex> {
@@ -20,7 +49,10 @@ export async function readAttachmentRefs(
     return buildEmptyAttachmentRefs();
   }
   const text = await readText(root, PATHS.attachmentRefs);
-  return JSON.parse(text) as AttachmentRefsIndex;
+  return parseAttachmentRefs(
+    parseJson(text, PATHS.attachmentRefs),
+    PATHS.attachmentRefs,
+  );
 }
 
 export async function writeAttachmentRefs(

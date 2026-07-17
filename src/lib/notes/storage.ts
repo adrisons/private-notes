@@ -1,6 +1,8 @@
 import { readText, writeText, fileExists } from "../fs/handle";
 import { PATHS, type NoteIndex, type NoteRecord } from "../fs/types";
 import { buildEmptyIndex } from "../fs/manifest";
+import { parseNoteIndex } from "../fs/validate";
+import { parseJson } from "../validate";
 import { deleteOrphanAttachments } from "../attachments/gc";
 import { extractAttachmentPaths } from "../attachments/paths";
 import {
@@ -25,7 +27,7 @@ const idDefault = (): string => ulid();
 async function readIndex(root: FileSystemDirectoryHandle): Promise<NoteIndex> {
   if (!(await fileExists(root, PATHS.index))) return buildEmptyIndex();
   const text = await readText(root, PATHS.index);
-  return JSON.parse(text) as NoteIndex;
+  return parseNoteIndex(parseJson(text, PATHS.index), PATHS.index);
 }
 
 async function writeIndex(

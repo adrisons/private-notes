@@ -6,9 +6,11 @@ import {
   addRef,
   addRefsForBody,
   dropNoteRefs,
+  parseAttachmentRefs,
   readAttachmentRefs,
   syncRefsForBodyChange,
 } from "../refs";
+import { VaultDataError } from "../../validate";
 import { deleteOrphanAttachments } from "../gc";
 import { storeAttachment } from "../storage";
 
@@ -23,6 +25,31 @@ function fakeFile(bytes: number[]) {
     },
   };
 }
+
+describe("parseAttachmentRefs", () => {
+  it("accepts a well-formed refs index", () => {
+    const index = parseAttachmentRefs(
+      { version: 1, refs: { "attachments/a.png": ["note-a"] } },
+      "attachment-refs.json",
+    );
+    expect(index.refs["attachments/a.png"]).toEqual(["note-a"]);
+  });
+
+  it("throws VaultDataError on a non-object", () => {
+    expect(() => parseAttachmentRefs(null, "attachment-refs.json")).toThrow(
+      VaultDataError,
+    );
+  });
+
+  it("throws when a ref value is not a string array", () => {
+    expect(() =>
+      parseAttachmentRefs(
+        { version: 1, refs: { "attachments/a.png": "note-a" } },
+        "attachment-refs.json",
+      ),
+    ).toThrow(VaultDataError);
+  });
+});
 
 describe("attachment refs", () => {
   it("addRef registers a note for a path", async () => {

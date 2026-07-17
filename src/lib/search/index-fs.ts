@@ -10,6 +10,7 @@ import {
   type NoteEmbeddings,
   type SemanticManifest,
 } from "./types";
+import { parseNoteEmbeddings, parseSemanticManifest } from "./validate";
 
 /** Read the semantic manifest if present. */
 export async function readSemanticManifest(
@@ -17,7 +18,12 @@ export async function readSemanticManifest(
 ): Promise<SemanticManifest | null> {
   if (!(await fileExists(root, SEMANTIC_PATHS.manifest))) return null;
   const text = await readText(root, SEMANTIC_PATHS.manifest);
-  return JSON.parse(text) as SemanticManifest;
+  try {
+    return parseSemanticManifest(JSON.parse(text));
+  } catch {
+    // Unreadable manifest is treated as absent; the index rebuilds.
+    return null;
+  }
 }
 
 /** Write or replace the semantic manifest. */
@@ -43,7 +49,12 @@ export async function readNoteEmbeddings(
 ): Promise<NoteEmbeddings | null> {
   if (!(await fileExists(root, notePath(noteId)))) return null;
   const raw = await readText(root, notePath(noteId));
-  return JSON.parse(raw) as NoteEmbeddings;
+  try {
+    return parseNoteEmbeddings(JSON.parse(raw));
+  } catch {
+    // Corrupt embeddings file — treat as missing so it gets re-embedded.
+    return null;
+  }
 }
 
 export async function writeNoteEmbeddings(
@@ -79,7 +90,13 @@ export async function* iterateNoteEmbeddings(
   for await (const [name, handle] of dir.entries()) {
     if (handle.kind !== "file" || !name.endsWith(".json")) continue;
     const file = await (handle as FileSystemFileHandle).getFile();
-    yield JSON.parse(await file.text()) as NoteEmbeddings;
+    let parsed: NoteEmbeddings | null = null;
+    try {
+      parsed = parseNoteEmbeddings(JSON.parse(await file.text()));
+    } catch {
+      // Skip a corrupt file; a reindex regenerates it.
+    }
+    if (parsed) yield parsed;
   }
 }
 

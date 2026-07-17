@@ -24,6 +24,7 @@
     "@tiptap/react": "^2.12.0",
     "@tiptap/starter-kit": "^2.12.0",
     "clsx": "^2.1.1",
+    "dompurify": "^3.4.12",
     "marked": "^15.0.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

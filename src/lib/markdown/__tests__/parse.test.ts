@@ -46,4 +46,43 @@ describe("markdownToHtml", () => {
     const html = markdownToHtml("above\n\n---\n\nbelow");
     expect(html).toContain("<hr");
   });
+
+  describe("sanitization", () => {
+    it("strips inline <script> from a malicious note", () => {
+      const html = markdownToHtml("hello <script>alert(1)</script> world");
+      expect(html).not.toContain("<script");
+      expect(html).not.toContain("alert(1)");
+      expect(html).toContain("hello");
+    });
+
+    it("strips event-handler attributes", () => {
+      const html = markdownToHtml('<u onmouseover="steal()">x</u>');
+      expect(html).toContain("<u>x</u>");
+      expect(html).not.toContain("onmouseover");
+    });
+
+    it("drops javascript: URLs on images", () => {
+      const html = markdownToHtml("![x](javascript:alert(1))");
+      expect(html).not.toContain("javascript:");
+    });
+
+    it("removes iframes and other non-allowlisted tags", () => {
+      const html = markdownToHtml(
+        'text <iframe src="https://evil.example"></iframe>',
+      );
+      expect(html).not.toContain("<iframe");
+    });
+
+    it("keeps allowlisted formatting and code language hints", () => {
+      const html = markdownToHtml("**bold** and `code`\n\n```js\nx\n```");
+      expect(html).toContain("<strong>bold</strong>");
+      expect(html).toContain("<code");
+      expect(html).toContain("language-js");
+    });
+
+    it("preserves relative attachment image paths", () => {
+      const html = markdownToHtml("![cat](attachments/abc.png)");
+      expect(html).toContain('src="attachments/abc.png"');
+    });
+  });
 });
