@@ -2,8 +2,8 @@ import { useState } from "react";
 import {
   formatIndexStatusLabel,
   isIndexStatusInteractive,
-} from "../lib/search/index-progress";
-import type { ReindexProgress } from "../application/view-models";
+  type ReindexProgress,
+} from "../application/view-models";
 import { ActionDialog } from "../ui/ActionDialog";
 
 interface IndexStatusProps {

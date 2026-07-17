@@ -1,4 +1,4 @@
-import { loadSearchApi } from "../../lib/search/runtime";
+import { loadSearchApi } from "./runtime";
 import type {
   SemanticSearch,
   SemanticSearchFactory,

@@ -1,6 +1,6 @@
-import * as permissions from "../../lib/fs/permissions";
-import * as vault from "../../lib/fs/vault";
-import * as reconcile from "../../lib/notes/reconcile";
+import * as permissions from "./permissions";
+import * as vault from "./vault";
+import * as reconcile from "../notes/reconcile";
 import type { VaultGateway } from "../../application/ports/vault-gateway";
 
 export const fsVaultGateway: VaultGateway = {

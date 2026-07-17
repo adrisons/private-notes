@@ -1,9 +1,9 @@
 import { expect, vi } from "vitest";
 import { act, render, waitFor, type RenderResult } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { initializeVault } from "../lib/fs/vault";
-import { clearVaultHandle } from "../lib/fs/vault-handle-store";
-import { createNote } from "../lib/notes/storage";
+import { initializeVault } from "../infrastructure/fs/vault";
+import { clearVaultHandle } from "../infrastructure/fs/vault-handle-store";
+import { createNote } from "../infrastructure/notes/storage";
 import { makeFakeRootWithPermissions } from "./fakeFs";
 
 /** Autosave debounce in App.tsx (ADR-007). */

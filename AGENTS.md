@@ -51,9 +51,9 @@ believe a swap is justified, write an ADR before touching `package.json`.
 | Fonts                  | `@fontsource-variable/geist` + `geist-mono`                                | No Google Fonts CDN at runtime.                                            |
 | Rich text editor       | `@tiptap/`* (ProseMirror)                                                  | No CodeMirror, Lexical, Slate, Quill.                                      |
 | Markdown parsing       | `marked`                                                                   | Only for MD → HTML. No `remark`/`unified`.                                 |
-| Markdown serialization | hand-written in `src/lib/markdown/`                                        | Walks ProseMirror JSON. Do not introduce `turndown`.                       |
+| Markdown serialization | hand-written in `src/infrastructure/markdown/`                               | Walks ProseMirror JSON. Do not introduce `turndown`.                       |
 | Embeddings             | `@huggingface/transformers` in a Web Worker                                | No remote inference, no alternative ML libs.                               |
-| Persistence            | File System Access API + IndexedDB (handle only)                           | Helpers in `src/lib/fs/`.                                                  |
+| Persistence            | File System Access API + IndexedDB (handle only)                           | Helpers in `src/infrastructure/fs/`.                                       |
 | Testing                | `vitest` + `@testing-library/*` + `jsdom` + `fake-indexeddb`               | No Jest, Mocha, Cypress, Playwright.                                       |
 | Linting                | `eslint` 9 flat config + `typescript-eslint` + `eslint-plugin-react-hooks` | No Prettier — formatting is governed by `.editorconfig` + ESLint defaults. |
 | Package manager        | `pnpm` (pinned via `packageManager`, enable with `corepack enable`)        | Do not commit `package-lock.json` or `yarn.lock`.                          |
@@ -144,21 +144,20 @@ variables, never `window.matchMedia` directly inside components.
 
 ```
 src/domain/**           pure domain model, no React, no browser I/O
-src/application/**      ports, VaultSession, view-models, hooks (React OK in hooks/)
-        └── hooks import composition/infrastructure only via activate-vault defaults
-src/infrastructure/**   adapters implementing ports; delegates to src/lib/ during migration
-src/lib/**                shared utilities + legacy I/O (no JSX, no React imports)
-        └── may import from src/lib/** only (within lib)
-src/ui/**                 primitives, may import from src/lib/cn
-src/screens/**            compositions; import ui/, application/view-models, lib/cn, lib/platform
-src/editor/**             TipTap-specific UI + extensions
-src/workers/**            runs off the main thread; no React, no DOM
-src/App.tsx               thin composition root: hooks + screens (see ADR-009)
+src/application/**      ports, use-cases, VaultSession, view-models, errors, hooks
+        └── hooks reach infrastructure only via application/composition/
+src/infrastructure/**   all vault I/O (FSA, notes, attachments, search, markdown)
+src/lib/**              shared kernel only (cn, theme, platform, compatibility, validate, useDebouncedCallback)
+src/ui/**               primitives, may import from src/lib/cn
+src/screens/**          compositions; import ui/, application/view-models, lib/cn, lib/platform
+src/editor/**           TipTap-specific UI + extensions (markdown via infrastructure/markdown)
+src/workers/**          runs off the main thread; no React, no DOM
+src/App.tsx             thin composition root: hooks + screens (see ADR-009)
 ```
 
 `domain/` and `lib/*` modules must remain framework-agnostic and unit-testable
 without a DOM whenever possible. Screens must not import `src/infrastructure/`
-or persistence types from `src/lib/fs/types`.
+or persistence types. ESLint `no-restricted-imports` enforces this (see ADR-009).
 
 ### 5.2 Folder layout on disk
 

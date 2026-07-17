@@ -1,6 +1,6 @@
-import type { NoteRecord } from "../../lib/fs/types";
-import type { Embedder } from "../../lib/search/embedder";
-import type { SearchHit } from "../../lib/search/search";
+import type { NoteRecord } from "./note-record";
+import type { Embedder } from "./embedder";
+import type { SearchHit } from "./search-hit";
 
 export interface SemanticSearchOptions {
   topK?: number;
@@ -29,3 +29,5 @@ export interface SemanticSearch {
 export interface SemanticSearchFactory {
   create(root: FileSystemDirectoryHandle): SemanticSearch;
 }
+
+export type { Embedder, NoteRecord, SearchHit };

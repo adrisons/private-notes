@@ -4,7 +4,7 @@ import { noteId } from "../../../domain";
 import { FsAttachmentStore } from "../../../infrastructure/attachments/fs-attachment-store";
 import { FsNoteRepository } from "../../../infrastructure/notes/fs-note-repository";
 import { VaultSession } from "../../vault-session";
-import { createNote } from "../../../lib/notes/storage";
+import { createNote } from "../../../infrastructure/notes/storage";
 import { fakeFile, setupTestVault } from "../../../test/vaultFixtures";
 import { useAttachments } from "../useAttachments";
 

@@ -1,5 +1,5 @@
 import type { Note, NoteSummary } from "../domain";
-import type { SearchHit } from "../lib/search/search";
+import type { SearchHit } from "./ports/search-hit";
 
 /** Sidebar / list row — no persistence fields. */
 export interface NoteListItem {
@@ -26,6 +26,34 @@ export interface SearchResultItem {
 export interface ReindexProgress {
   done: number;
   total: number;
+}
+
+/** Label shown while notes are being embedded for semantic search. */
+export function formatIndexingLabel(progress: ReindexProgress | null): string {
+  if (!progress || progress.total <= 0) return "Indexing…";
+  const pct = Math.min(
+    100,
+    Math.round((progress.done / progress.total) * 100),
+  );
+  return `Indexing ${pct}%`;
+}
+
+/** Sidebar status line under the search trigger. */
+export function formatIndexStatusLabel(
+  ready: boolean,
+  reindexing: boolean,
+  progress: ReindexProgress | null,
+): string {
+  if (!ready) return "Loading model…";
+  if (reindexing) return formatIndexingLabel(progress);
+  return "All indexed";
+}
+
+export function isIndexStatusInteractive(
+  ready: boolean,
+  reindexing: boolean,
+): boolean {
+  return ready && !reindexing;
 }
 
 export function toNoteListItem(summary: NoteSummary): NoteListItem {

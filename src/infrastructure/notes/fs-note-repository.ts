@@ -5,12 +5,12 @@ import {
   listNotes,
   readNote,
   updateNote,
-} from "../../lib/notes/storage";
+} from "./storage";
 import {
   noteFromRecord,
   summaryFromRecord,
-  type NoteId,
-} from "../../domain";
+} from "./note-mappers";
+import { type NoteId } from "../../domain";
 import type {
   CreateNoteInput,
   NoteRepository,

@@ -1,6 +1,6 @@
-import { AttachmentURLCache } from "../../lib/attachments/cache";
-import { addRef } from "../../lib/attachments/refs";
-import { storeAttachment } from "../../lib/attachments/storage";
+import { AttachmentURLCache } from "./cache";
+import { addRef } from "./refs";
+import { storeAttachment } from "./storage";
 import type { AttachmentStore } from "../../application/ports/attachment-store";
 import type { NoteId } from "../../domain";
 

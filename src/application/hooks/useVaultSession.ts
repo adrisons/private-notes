@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCompatibility } from "../../lib/compatibility";
-import { activateVaultSession, defaultInfrastructure } from "../activate-vault";
+import { defaultInfrastructure } from "../composition";
+import { openVault } from "../use-cases/open-vault";
+import { userFacingMessage } from "../errors";
 import type { VaultSession, VaultStartup } from "../vault-session";
 import type { OpenNoteState } from "../view-models";
 import { toNoteListItems, type NoteListItem } from "../view-models";
@@ -55,7 +57,7 @@ export function useVaultSession(
   const activateFromHandle = useCallback(
     async (handle: FileSystemDirectoryHandle) => {
       sessionRef.current?.dispose();
-      const result = await activateVaultSession(handle);
+      const result = await openVault(handle);
       applyStartup(setSession, setSummaries, setCurrent, result.session, result.startup);
     },
     [],
@@ -74,7 +76,7 @@ export function useVaultSession(
         if (!(await defaultInfrastructure.vaultGateway.hasPermission(handle))) {
           return;
         }
-        const result = await activateVaultSession(handle);
+        const result = await openVault(handle);
         if (cancelled) {
           result.session.dispose();
           return;
@@ -99,7 +101,7 @@ export function useVaultSession(
       flushBeforeSwitch?.();
       await activateFromHandle(handle);
     } catch (err) {
-      setError((err as Error).message);
+      setError(userFacingMessage(err));
     }
   }, [activateFromHandle, flushBeforeSwitch]);
 

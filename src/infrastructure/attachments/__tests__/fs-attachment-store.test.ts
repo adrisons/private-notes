@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fileExists } from "../../../lib/fs/handle";
+import { fileExists } from "../../../infrastructure/fs/handle";
 import { fakeFile, setupTestVault } from "../../../test/vaultFixtures";
 import { FsAttachmentStore } from "../fs-attachment-store";
 

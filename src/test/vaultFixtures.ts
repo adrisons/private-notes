@@ -1,4 +1,4 @@
-import { initializeVault } from "../lib/fs/vault";
+import { initializeVault } from "../infrastructure/fs/vault";
 import { makeFakeRootWithPermissions } from "./fakeFs";
 
 export interface TestVaultIo {

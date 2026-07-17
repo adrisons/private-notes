@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
-import { createNote, updateNote } from "../../lib/notes/storage";
-import { activateVaultSession, defaultInfrastructure } from "../activate-vault";
-import { WELCOME_NOTE_TITLE } from "../../lib/notes/welcome-note";
+import { createNote, updateNote } from "../../infrastructure/notes/storage";
+import { openVault, defaultInfrastructure } from "../use-cases/open-vault";
+import { WELCOME_NOTE_TITLE } from "../../domain";
 import { FsNoteRepository } from "../../infrastructure/notes/fs-note-repository";
 import { FsAttachmentStore } from "../../infrastructure/attachments/fs-attachment-store";
 import { VaultSession } from "../vault-session";
@@ -16,10 +16,10 @@ const testVaultGateway: VaultGateway = {
   reconcile: vi.fn().mockResolvedValue(undefined),
 };
 
-describe("activateVaultSession", () => {
+describe("openVault", () => {
   it("seeds the welcome note on an empty vault", async () => {
     const io = await setupTestVault();
-    const { session, startup } = await activateVaultSession(io.root, {
+    const { session, startup } = await openVault(io.root, {
       infra: {
         ...defaultInfrastructure,
         vaultGateway: testVaultGateway,

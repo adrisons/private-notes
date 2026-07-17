@@ -1,11 +1,10 @@
 import type { Note, NoteId } from "../domain";
-import { noteToSummary, pickMostRecent } from "../domain";
 import type { NoteRepository, CreateNoteInput } from "./ports/note-repository";
 import type { AttachmentStore } from "./ports/attachment-store";
 import type { OpenNoteState } from "./view-models";
 import { toOpenNoteState } from "./view-models";
-import { WELCOME_NOTE_BODY, WELCOME_NOTE_TITLE } from "../lib/notes/welcome-note";
 import type { NoteSummary } from "../domain";
+import { resolveVaultStartup } from "./use-cases/resolve-startup";
 
 export interface VaultStartup {
   summaries: NoteSummary[];
@@ -42,32 +41,8 @@ export class VaultSession {
     return this.notes.listRecords();
   }
 
-  /** Seed welcome note or open the most recently edited note. */
-  async resolveStartup(): Promise<VaultStartup> {
-    let summaries = await this.notes.list();
-
-    if (summaries.length === 0) {
-      const note = await this.notes.create({
-        title: WELCOME_NOTE_TITLE,
-        body: WELCOME_NOTE_BODY,
-      });
-      summaries = [noteToSummary(note)];
-      return {
-        summaries,
-        current: toOpenNoteState(note, note.updatedAt),
-      };
-    }
-
-    const target = pickMostRecent(summaries);
-    if (!target) return { summaries, current: null };
-
-    const note = await this.notes.read(target.id);
-    if (!note) return { summaries, current: null };
-
-    return {
-      summaries,
-      current: toOpenNoteState(note, note.updatedAt),
-    };
+  resolveStartup(): Promise<VaultStartup> {
+    return resolveVaultStartup(this);
   }
 
   async openNote(id: NoteId): Promise<OpenNoteState | null> {

@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "fake-indexeddb/auto";
 import userEvent from "@testing-library/user-event";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
-import { listNotes, readNote } from "./lib/notes/storage";
-import { persistVaultHandle } from "./lib/fs/vault-handle-store";
-import * as vaultHandleStore from "./lib/fs/vault-handle-store";
-import { initializeVault } from "./lib/fs/vault";
+import { listNotes, readNote } from "./infrastructure/notes/storage";
+import { persistVaultHandle } from "./infrastructure/fs/vault-handle-store";
+import * as vaultHandleStore from "./infrastructure/fs/vault-handle-store";
+import { initializeVault } from "./infrastructure/fs/vault";
 import { makeFakeRoot } from "./test/fakeFs";
 import {
   advanceAutosave,
@@ -20,13 +20,13 @@ vi.mock("./lib/compatibility", () => ({
   getCompatibility: () => ({ supported: true, reasons: [], webgpu: false }),
 }));
 
-vi.mock("./lib/fs/permissions", () => ({
+vi.mock("./infrastructure/fs/permissions", () => ({
   ensureReadWritePermission: vi.fn().mockResolvedValue(undefined),
   hasReadWritePermission: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock("./lib/search/transformers-embedder", async () => {
-  const { FakeEmbedder } = await import("./lib/search/embedder");
+vi.mock("./infrastructure/search/transformers-embedder", async () => {
+  const { FakeEmbedder } = await import("./infrastructure/search/embedder");
   class MockTransformersEmbedder extends FakeEmbedder {
     async ready(): Promise<void> {}
   }

@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { makeFakeRoot } from "../../../test/fakeFs";
-import { initializeVault } from "../../../lib/fs/vault";
-import { createNote, listNotes } from "../../../lib/notes/storage";
-import { FakeEmbedder } from "../../../lib/search/embedder";
+import { initializeVault } from "../../../infrastructure/fs/vault";
+import { createNote, listNotes } from "../../../infrastructure/notes/storage";
+import { FakeEmbedder } from "../../../infrastructure/search/embedder";
 import { fsSemanticSearchFactory } from "../fs-semantic-search";
 
 const loadSearchApi = vi.hoisted(() => vi.fn());
 
-vi.mock("../../../lib/search/runtime", () => ({
+vi.mock("../runtime", () => ({
   loadSearchApi,
 }));
 

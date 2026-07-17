@@ -5,7 +5,7 @@ import type { VaultSession } from "../../vault-session";
 import { useVaultSession } from "../useVaultSession";
 
 const mocks = vi.hoisted(() => ({
-  activateVaultSession: vi.fn(),
+  openVault: vi.fn(),
   handleLoad: vi.fn(),
   handleClear: vi.fn(),
   hasPermission: vi.fn(),
@@ -16,8 +16,7 @@ vi.mock("../../../lib/compatibility", () => ({
   getCompatibility: () => ({ supported: true, reasons: [], webgpu: false }),
 }));
 
-vi.mock("../../activate-vault", () => ({
-  activateVaultSession: mocks.activateVaultSession,
+vi.mock("../../composition", () => ({
   defaultInfrastructure: {
     handleStore: {
       load: mocks.handleLoad,
@@ -31,6 +30,10 @@ vi.mock("../../activate-vault", () => ({
       pick: mocks.pick,
     },
   },
+}));
+
+vi.mock("../../use-cases/open-vault", () => ({
+  openVault: mocks.openVault,
 }));
 
 function fakeSession(): VaultSession {
@@ -57,14 +60,14 @@ describe("useVaultSession", () => {
       expect(result.current.booting).toBe(false);
     });
     expect(result.current.session).toBeNull();
-    expect(mocks.activateVaultSession).not.toHaveBeenCalled();
+    expect(mocks.openVault).not.toHaveBeenCalled();
   });
 
   it("activates the vault when a stored handle has permission", async () => {
     const handle = {} as FileSystemDirectoryHandle;
     const session = fakeSession();
     mocks.handleLoad.mockResolvedValue(handle);
-    mocks.activateVaultSession.mockResolvedValue({
+    mocks.openVault.mockResolvedValue({
       session,
       startup: {
         summaries: [{ id: noteId("n1"), title: "Hello", updatedAt: "2026-05-17T10:00:00.000Z" }],
@@ -80,7 +83,7 @@ describe("useVaultSession", () => {
     });
     expect(result.current.noteItems).toHaveLength(1);
     expect(result.current.current?.title).toBe("Hello");
-    expect(mocks.activateVaultSession).toHaveBeenCalledWith(handle);
+    expect(mocks.openVault).toHaveBeenCalledWith(handle);
   });
 
   it("calls flushBeforeSwitch before activating a picked folder", async () => {
@@ -88,7 +91,7 @@ describe("useVaultSession", () => {
     const session = fakeSession();
     const flush = vi.fn();
     mocks.pick.mockResolvedValue(handle);
-    mocks.activateVaultSession.mockResolvedValue({
+    mocks.openVault.mockResolvedValue({
       session,
       startup: { summaries: [], current: null },
     });
@@ -104,7 +107,7 @@ describe("useVaultSession", () => {
     });
 
     expect(flush).toHaveBeenCalledTimes(1);
-    expect(mocks.activateVaultSession).toHaveBeenCalledWith(handle);
+    expect(mocks.openVault).toHaveBeenCalledWith(handle);
   });
 
   it("surfaces picker errors", async () => {
@@ -124,7 +127,7 @@ describe("useVaultSession", () => {
   it("refreshSummaries reloads note items from the active session", async () => {
     const session = fakeSession();
     mocks.handleLoad.mockResolvedValue({} as FileSystemDirectoryHandle);
-    mocks.activateVaultSession.mockResolvedValue({
+    mocks.openVault.mockResolvedValue({
       session,
       startup: { summaries: [], current: null },
     });

@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Embedder } from "../../lib/search/embedder";
-import type { NoteRecord } from "../../lib/fs/types";
-import { createSemanticSearch } from "../composition";
+import type { NoteRecord } from "../ports/note-record";
+import type { Embedder } from "../ports/embedder";
+import { createSemanticSearch, loadDefaultEmbedder } from "../composition";
 import type { SemanticSearch } from "../ports/semantic-search";
 import type { VaultSession } from "../vault-session";
 import type { ReindexProgress, SearchResultItem } from "../view-models";
-import { toSearchResultItems } from "../view-models";
+import { userFacingMessage } from "../errors";
+import {
+  runFullReindex,
+  scheduleReindex as scheduleReindexUseCase,
+} from "../use-cases/run-full-reindex";
+import { searchNotes } from "../use-cases/search-notes";
 
 export interface UseSemanticIndexOptions {
   session: VaultSession | null;
@@ -45,16 +50,11 @@ export function useSemanticIndex({
     void (async () => {
       try {
         if (!embedderRef.current) {
-          const { TransformersEmbedder, DEFAULT_MODEL_ID } = await import(
-            "../../lib/search/transformers-embedder"
-          );
-          const emb = new TransformersEmbedder(DEFAULT_MODEL_ID);
-          embedderRef.current = emb;
-          await emb.ready();
+          embedderRef.current = await loadDefaultEmbedder();
         }
         if (!cancelled) setEmbedderReady(true);
       } catch (err) {
-        if (!cancelled) onError((err as Error).message);
+        if (!cancelled) onError(userFacingMessage(err));
       }
     })();
     return () => {
@@ -64,12 +64,20 @@ export function useSemanticIndex({
 
   const scheduleReindex = useCallback(
     (records: NoteRecord[]) => {
-      if (!session || !embedderRef.current || !searchRef.current || !embedderReady) {
+      if (
+        !session ||
+        !embedderRef.current ||
+        !searchRef.current ||
+        !embedderReady
+      ) {
         return;
       }
-      void searchRef.current
-        .reindex(records, embedderRef.current)
-        .catch(() => {});
+      scheduleReindexUseCase(
+        session,
+        searchRef.current,
+        embedderRef.current,
+        records,
+      );
     },
     [session, embedderReady],
   );
@@ -81,13 +89,12 @@ export function useSemanticIndex({
     setReindexing(true);
     setReindexProgress({ done: 0, total: 0 });
     try {
-      const live = await session.listNoteRecords();
-      await searchRef.current.pruneOrphans(live.map((n) => n.id));
-      await searchRef.current.reindex(live, embedderRef.current, {
-        onProgress: setReindexProgress,
-      });
-    } catch {
-      // Non-fatal — the next vault open will retry.
+      await runFullReindex(
+        session,
+        searchRef.current,
+        embedderRef.current,
+        { onProgress: setReindexProgress },
+      );
     } finally {
       setReindexing(false);
       setReindexProgress(null);
@@ -102,12 +109,7 @@ export function useSemanticIndex({
   const onSearch = useCallback(
     async (query: string): Promise<SearchResultItem[]> => {
       if (!session || !embedderRef.current || !searchRef.current) return [];
-      const hits = await searchRef.current.searchSemantic(
-        query,
-        embedderRef.current,
-        { topK: 8, minScore: 0.15 },
-      );
-      return toSearchResultItems(hits);
+      return searchNotes(searchRef.current, embedderRef.current, query);
     },
     [session],
   );

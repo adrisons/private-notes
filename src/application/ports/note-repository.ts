@@ -1,6 +1,5 @@
 import type { Note, NoteId, NoteSummary } from "../../domain";
-
-import type { NoteRecord } from "../../lib/fs/types";
+import type { NoteRecord } from "./note-record";
 
 export interface CreateNoteInput {
   title: string;

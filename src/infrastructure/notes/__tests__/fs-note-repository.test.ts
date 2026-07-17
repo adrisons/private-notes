@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { addRef } from "../../../lib/attachments/refs";
-import { storeAttachment } from "../../../lib/attachments/storage";
-import { createNote, readNote } from "../../../lib/notes/storage";
+import { addRef } from "../../../infrastructure/attachments/refs";
+import { storeAttachment } from "../../../infrastructure/attachments/storage";
+import { createNote, readNote } from "../../../infrastructure/notes/storage";
 import { noteId } from "../../../domain";
 import { fakeFile, setupTestVault } from "../../../test/vaultFixtures";
 import { FsNoteRepository } from "../fs-note-repository";

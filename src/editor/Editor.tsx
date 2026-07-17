@@ -4,9 +4,9 @@ import Underline from "@tiptap/extension-underline";
 import { AttachmentImage } from "./extensions/AttachmentImage";
 import { FencedCodeBlock } from "./extensions/FencedCodeBlock";
 import { useEffect, useMemo } from "react";
-import { markdownToHtml } from "../lib/markdown/parse";
-import { serializeDoc } from "../lib/markdown/serialize";
-import type { PMDoc } from "../lib/markdown/types";
+import { markdownToHtml } from "../infrastructure/markdown/parse";
+import { serializeDoc } from "../infrastructure/markdown/serialize";
+import type { PMDoc } from "../infrastructure/markdown/types";
 import { EditorToolbar } from "./EditorToolbar";
 
 interface EditorProps {

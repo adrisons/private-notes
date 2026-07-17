@@ -9,18 +9,15 @@ const mockSearch = vi.hoisted(() => ({
   pruneOrphans: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../../composition", () => ({
-  createSemanticSearch: vi.fn(() => mockSearch),
+const fakeEmbedder = vi.hoisted(() => ({
+  id: "fake",
+  dimensions: 32,
+  embed: vi.fn(),
 }));
 
-vi.mock("../../../lib/search/transformers-embedder", () => ({
-  TransformersEmbedder: class {
-    id = "fake";
-    dimensions = 32;
-    ready = vi.fn().mockResolvedValue(undefined);
-    embed = vi.fn();
-  },
-  DEFAULT_MODEL_ID: "fake-hash-32",
+vi.mock("../../composition", () => ({
+  createSemanticSearch: vi.fn(() => mockSearch),
+  loadDefaultEmbedder: vi.fn(async () => fakeEmbedder),
 }));
 
 describe("useSemanticIndex", () => {
@@ -87,7 +84,7 @@ describe("useSemanticIndex", () => {
 
     expect(mockSearch.searchSemantic).toHaveBeenCalledWith(
       "hello",
-      expect.objectContaining({ id: "fake" }),
+      fakeEmbedder,
       { topK: 8, minScore: 0.15 },
     );
     expect(hits).toEqual([{ noteId: "n1", score: 0.9 }]);
@@ -115,7 +112,7 @@ describe("useSemanticIndex", () => {
     await waitFor(() => {
       expect(mockSearch.reindex).toHaveBeenCalledWith(
         [record],
-        expect.objectContaining({ id: "fake" }),
+        fakeEmbedder,
       );
     });
   });
