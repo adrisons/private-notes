@@ -162,8 +162,11 @@ Heavy pieces load after vault open to keep the initial bundle small:
 
 | Component | Test double |
 |-----------|-------------|
-| File system | `src/test/fakeFs.ts` |
+| File system | `src/test/fakeFs.ts` (`makeFakeRoot`, `makeFakeRootWithPermissions`) |
 | Embedder | `FakeEmbedder` in `src/lib/search/embedder.ts` |
+| App integration | `src/test/appHarness.tsx` (`renderApp`, `seedVault`, `waitForSearchReady`) |
+
+Full strategy: [testing.md](./testing.md).
 
 ## Related documents
 

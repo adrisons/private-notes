@@ -11,6 +11,7 @@ Architecture decisions and system design for **private-notes**. User-facing setu
 
 | Doc | Read when you want to… |
 |-----|------------------------|
+| [testing.md](./testing.md) | Test layout, doubles, coverage commands, integration harness |
 | [semantic-search-primer.md](./semantic-search-primer.md) | Understand embeddings, cosine similarity, worker vs main thread, pooling |
 
 ADRs stay lean (decisions only); the primer covers the ML mechanics without
@@ -39,3 +40,4 @@ duplicating them inside ADR-003/004.
 | Editor / markdown features | 005, 002 |
 | Images in notes | 006, 005 |
 | Save / sync / data loss | 007, 002, 004 |
+| Tests / coverage | [testing.md](./testing.md) |

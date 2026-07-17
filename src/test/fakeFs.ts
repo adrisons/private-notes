@@ -155,3 +155,12 @@ export class FakeFileSystemDirectoryHandle {
 export function makeFakeRoot(): FileSystemDirectoryHandle {
   return new FakeFileSystemDirectoryHandle() as unknown as FileSystemDirectoryHandle;
 }
+
+/** Root with readwrite permission stubs for vault activation and boot restore. */
+export function makeFakeRootWithPermissions(): FileSystemDirectoryHandle {
+  const root = makeFakeRoot();
+  return Object.assign(root, {
+    queryPermission: async () => "granted" as PermissionState,
+    requestPermission: async () => "granted" as PermissionState,
+  });
+}

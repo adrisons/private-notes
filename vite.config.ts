@@ -33,6 +33,12 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
     css: true,
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html"],
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.d.ts", "src/test/**", "src/workers/**"],
+    },
     // Node 22+ stubs global localStorage and shadows jsdom; disable it.
     poolOptions: {
       forks: { execArgv: ["--no-webstorage"] },

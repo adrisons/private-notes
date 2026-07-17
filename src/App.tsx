@@ -440,7 +440,7 @@ export function App() {
           <NoteHeader
             title={current.title}
             onTitleChange={onTitleChange}
-            onDelete={requestDelete}
+            onDelete={() => requestDelete()}
             onInsertImage={() => {
               /* the editor toolbar's hidden input handles file selection */
             }}
