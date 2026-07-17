@@ -101,6 +101,41 @@ export async function removeFile(
   await dir.removeEntry(fileName);
 }
 
+async function walkFiles(
+  dir: FileSystemDirectoryHandle,
+  prefix: string,
+  out: string[],
+): Promise<void> {
+  for await (const [name, handle] of dir.entries()) {
+    const childPath = `${prefix}/${name}`;
+    if (handle.kind === "directory") {
+      await walkFiles(handle as FileSystemDirectoryHandle, childPath, out);
+    } else {
+      out.push(childPath);
+    }
+  }
+}
+
+/**
+ * Recursively list every file under `path` (POSIX-relative paths, no trailing
+ * slash). Returns an empty array when the directory does not exist. Directory
+ * order is filesystem-defined; callers that need determinism should sort.
+ */
+export async function listFilesRecursive(
+  root: FileSystemDirectoryHandle,
+  path: string,
+): Promise<string[]> {
+  let dir: FileSystemDirectoryHandle;
+  try {
+    dir = await getDirectory(root, path);
+  } catch {
+    return [];
+  }
+  const out: string[] = [];
+  await walkFiles(dir, path, out);
+  return out;
+}
+
 /**
  * Returns true when the directory contains no entries other than entries that
  * are safe to coexist with (currently: macOS `.DS_Store`).

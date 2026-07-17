@@ -32,6 +32,7 @@ import {
   updateNote,
 } from "./lib/notes/storage";
 import { resolveVaultStartup } from "./lib/notes/startup";
+import { reconcileVault } from "./lib/notes/reconcile";
 import { storeAttachment } from "./lib/attachments/storage";
 import { addRef } from "./lib/attachments/refs";
 import { AttachmentURLCache } from "./lib/attachments/cache";
@@ -79,6 +80,9 @@ export function App() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [booting, setBooting] = useState(true);
+  // Latest open-note id, readable from callbacks without a render dependency.
+  const currentIdRef = useRef<string | null>(null);
+  currentIdRef.current = current?.record.id ?? null;
 
   const refreshList = useCallback(async (root: FileSystemDirectoryHandle) => {
     setNotes(await listNotes({ root }));
@@ -88,6 +92,9 @@ export function App() {
     async (handle: FileSystemDirectoryHandle) => {
       await ensureReadWritePermission(handle);
       await openOrInitialize(handle);
+      // Recover from any crash between the note-file and index writes: rebuild
+      // the index from what's actually on disk before we read it.
+      await reconcileVault(handle);
       await persistVaultHandle(handle);
       imageCacheRef.current?.dispose();
       imageCacheRef.current = new AttachmentURLCache(handle);
@@ -128,6 +135,8 @@ export function App() {
       setError(null);
       const handle = await pickFolder();
       if (!handle) return;
+      // Persist the pending edit into the current vault before switching away.
+      debouncedPersistRef.current.flush();
       await activateVault(handle);
     } catch (err) {
       setError((err as Error).message);
@@ -209,6 +218,9 @@ export function App() {
   const openHit = useCallback(
     async (hit: SearchHit) => {
       if (!vault) return;
+      if (currentIdRef.current === hit.noteId) return;
+      // Save the note we're leaving before loading the target one.
+      debouncedPersistRef.current.flush();
       const result = await readNote({ root: vault.root }, hit.noteId);
       if (!result) return;
       setCurrent({
@@ -224,6 +236,9 @@ export function App() {
   const handleSelect = useCallback(
     async (id: string) => {
       if (!vault) return;
+      if (currentIdRef.current === id) return;
+      // Save the note we're leaving before loading the target one.
+      debouncedPersistRef.current.flush();
       const result = await readNote({ root: vault.root }, id);
       if (!result) return;
       setCurrent({
@@ -328,6 +343,27 @@ export function App() {
   );
 
   const debouncedPersist = useDebouncedCallback(persist, 500);
+  // Stable handle so callbacks declared earlier (note/vault switch) can flush
+  // the pending save without taking `debouncedPersist` as a dependency — the
+  // const is declared after them, so it can't appear in their dep arrays.
+  const debouncedPersistRef = useRef(debouncedPersist);
+  debouncedPersistRef.current = debouncedPersist;
+
+  // Flush the tail of the debounce when the tab is being hidden/closed or the
+  // page is navigating away. `visibilitychange → hidden` is the reliable signal
+  // across browsers (mobile especially); `pagehide` covers bfcache/reload.
+  useEffect(() => {
+    const flush = () => debouncedPersistRef.current.flush();
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, []);
 
   const onTitleChange = (title: string) => {
     if (!current) return;

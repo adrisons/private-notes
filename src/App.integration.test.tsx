@@ -316,7 +316,7 @@ describe("App integration", () => {
       await waitFor(() => expect(screen.getByText("Notes")).toBeInTheDocument());
 
       await result.user.click(screen.getByRole("button", { name: /^new$/i }));
-      const titleInput = screen.getByDisplayValue("Untitled");
+      const titleInput = await screen.findByDisplayValue("Untitled");
       await result.user.clear(titleInput);
       await result.user.type(titleInput, "Unique Zebra Title");
       await advanceAutosave();

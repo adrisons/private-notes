@@ -2,6 +2,7 @@ import { readText, writeText, fileExists } from "../fs/handle";
 import { PATHS, type NoteIndex, type NoteRecord } from "../fs/types";
 import { buildEmptyIndex } from "../fs/manifest";
 import { parseNoteIndex } from "../fs/validate";
+import { withIndexLock } from "../fs/locks";
 import { parseJson } from "../validate";
 import { deleteOrphanAttachments } from "../attachments/gc";
 import { extractAttachmentPaths } from "../attachments/paths";
@@ -37,6 +38,24 @@ async function writeIndex(
   await writeText(root, PATHS.index, JSON.stringify(index, null, 2));
 }
 
+/**
+ * Read-modify-write the index atomically with respect to other tabs. The index
+ * is re-read *inside* the lock so a concurrent tab's change made after our
+ * caller's own reads is not clobbered — only the fields our `mutator` touches
+ * are overwritten. See src/lib/fs/locks.ts.
+ */
+async function mutateIndex(
+  root: FileSystemDirectoryHandle,
+  mutator: (index: NoteIndex) => void,
+): Promise<NoteIndex> {
+  return withIndexLock(async () => {
+    const index = await readIndex(root);
+    mutator(index);
+    await writeIndex(root, index);
+    return index;
+  });
+}
+
 export interface CreateInput {
   title: string;
   body: string;
@@ -67,9 +86,9 @@ export async function createNote(
     input.body,
   );
   await writeText(io.root, path, text);
-  const index = await readIndex(io.root);
-  index.notes = [...index.notes, record];
-  await writeIndex(io.root, index);
+  await mutateIndex(io.root, (index) => {
+    index.notes = [...index.notes, record];
+  });
   return record;
 }
 
@@ -129,8 +148,10 @@ export async function updateNote(
     );
     await deleteOrphanAttachments(io.root, gcAttachments);
   }
-  index.notes[idx] = updated;
-  await writeIndex(io.root, index);
+  await mutateIndex(io.root, (fresh) => {
+    const i = fresh.notes.findIndex((n) => n.id === id);
+    if (i >= 0) fresh.notes[i] = updated;
+  });
   return { ...updated, gcAttachments };
 }
 
@@ -165,8 +186,9 @@ export async function deleteNote(
   }
 
   // Remove the index entry first so a half-deleted note is invisible.
-  index.notes = index.notes.filter((n) => n.id !== id);
-  await writeIndex(io.root, index);
+  await mutateIndex(io.root, (fresh) => {
+    fresh.notes = fresh.notes.filter((n) => n.id !== id);
+  });
   // Best-effort file removal — the parent directory layout uses notes/YYYY/MM.
   const segments = record.path.split("/");
   const fileName = segments.pop()!;
