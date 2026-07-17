@@ -26,6 +26,7 @@ import {
 import {
   createNote,
   deleteNote,
+  duplicateNote,
   listNotes,
   readNote,
   updateNote,
@@ -74,7 +75,7 @@ export function App() {
     done: number;
     total: number;
   } | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [booting, setBooting] = useState(true);
 
@@ -244,14 +245,20 @@ export function App() {
     setCurrent({ record: rec, title: rec.title, body: "", savedAt: rec.updatedAt });
   }, [vault, refreshList]);
 
-  const requestDelete = useCallback(() => setConfirmDelete(true), []);
+  const requestDelete = useCallback(
+    (id?: string) => {
+      const targetId = id ?? current?.record.id;
+      if (targetId) setPendingDeleteId(targetId);
+    },
+    [current],
+  );
 
   const handleDelete = useCallback(async () => {
-    if (!vault || !current) return;
-    const deletedId = current.record.id;
+    if (!vault || !pendingDeleteId) return;
+    const deletedId = pendingDeleteId;
     await deleteNote({ root: vault.root }, deletedId);
-    setCurrent(null);
-    setConfirmDelete(false);
+    if (current?.record.id === deletedId) setCurrent(null);
+    setPendingDeleteId(null);
     await refreshList(vault.root);
     // Drop the embeddings file too. Cheap and avoids stale hits.
     if (embedderRef.current && searchApiRef.current) {
@@ -261,7 +268,30 @@ export function App() {
         live.map((n) => n.id),
       );
     }
-  }, [vault, current, refreshList]);
+  }, [vault, pendingDeleteId, current, refreshList]);
+
+  const handleDuplicate = useCallback(
+    async (id: string) => {
+      if (!vault) return;
+      const rec = await duplicateNote({ root: vault.root }, id);
+      if (!rec) return;
+      await refreshList(vault.root);
+      const result = await readNote({ root: vault.root }, rec.id);
+      if (!result) return;
+      setCurrent({
+        record: result.record,
+        title: result.parsed.frontmatter.title,
+        body: result.parsed.body,
+        savedAt: result.record.updatedAt,
+      });
+      if (embedderRef.current && embedderReady && searchApiRef.current) {
+        void searchApiRef.current
+          .reindex(vault.root, [rec], embedderRef.current)
+          .catch(() => {});
+      }
+    },
+    [vault, refreshList, embedderReady],
+  );
 
   const persist = useCallback(
     async (id: string, title: string, body: string) => {
@@ -385,6 +415,8 @@ export function App() {
             selectedId={current?.record.id ?? null}
             onSelect={handleSelect}
             onCreate={handleCreate}
+            onDelete={requestDelete}
+            onDuplicate={handleDuplicate}
           />
         </div>
       }
@@ -422,17 +454,17 @@ export function App() {
         <EmptyState onCreate={handleCreate} />
       )}
       <ConfirmDialog
-        open={confirmDelete}
+        open={pendingDeleteId !== null}
         title="Delete this note?"
         description={
-          current
-            ? `“${current.title || "Untitled"}” will be removed permanently from this device.`
+          pendingDeleteId
+            ? `“${notes.find((n) => n.id === pendingDeleteId)?.title || "Untitled"}” will be removed permanently from this device.`
             : undefined
         }
         confirmLabel="Delete"
         destructive
         onConfirm={handleDelete}
-        onCancel={() => setConfirmDelete(false)}
+        onCancel={() => setPendingDeleteId(null)}
       />
       <CommandPalette
         open={paletteOpen}

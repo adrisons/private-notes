@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "../ui/Button";
+import { ContextMenu } from "../ui/ContextMenu";
 import { cn } from "../lib/cn";
 import type { NoteRecord } from "../lib/fs/types";
 
@@ -8,6 +9,14 @@ interface NotesListProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onCreate: () => void;
+  onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
+}
+
+interface OpenMenu {
+  x: number;
+  y: number;
+  noteId: string;
 }
 
 function formatRelative(iso: string): string {
@@ -29,12 +38,20 @@ export function NotesList({
   selectedId,
   onSelect,
   onCreate,
+  onDelete,
+  onDuplicate,
 }: NotesListProps) {
+  const [menu, setMenu] = useState<OpenMenu | null>(null);
+
   const sortedNotes = useMemo(
     () =>
       [...notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
     [notes],
   );
+
+  const menuNote = menu
+    ? sortedNotes.find((n) => n.id === menu.noteId)
+    : undefined;
 
   return (
     <div className="flex h-full flex-col">
@@ -57,6 +74,10 @@ export function NotesList({
               <button
                 type="button"
                 onClick={() => onSelect(n.id)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setMenu({ x: e.clientX, y: e.clientY, noteId: n.id });
+                }}
                 className={cn(
                   "w-full cursor-pointer rounded-md border px-3 py-2.5 text-left transition-colors",
                   "border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-background)]",
@@ -75,6 +96,24 @@ export function NotesList({
           ))
         )}
       </ul>
+      {menu && menuNote ? (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          items={[
+            {
+              label: "Duplicate note",
+              onSelect: () => onDuplicate(menu.noteId),
+            },
+            {
+              label: "Delete note",
+              destructive: true,
+              onSelect: () => onDelete(menu.noteId),
+            },
+          ]}
+        />
+      ) : null}
     </div>
   );
 }

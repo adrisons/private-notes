@@ -115,6 +115,17 @@ export async function updateNote(
   return updated;
 }
 
+export async function duplicateNote(
+  io: NoteIO,
+  id: string,
+): Promise<NoteRecord | null> {
+  const source = await readNote(io, id);
+  if (!source) return null;
+  const title = source.parsed.frontmatter.title;
+  const copyTitle = title.trim() ? `${title} (copy)` : "Untitled (copy)";
+  return createNote(io, { title: copyTitle, body: source.parsed.body });
+}
+
 export async function deleteNote(io: NoteIO, id: string): Promise<void> {
   const index = await readIndex(io.root);
   const record = index.notes.find((n) => n.id === id);

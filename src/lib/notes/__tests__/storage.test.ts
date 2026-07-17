@@ -4,6 +4,7 @@ import { initializeVault } from "../../fs/vault";
 import {
   createNote,
   deleteNote,
+  duplicateNote,
   listNotes,
   readNote,
   updateNote,
@@ -54,6 +55,19 @@ describe("notes storage", () => {
     expect(updated.updatedAt).toBe("2026-05-18T10:00:00.000Z");
     const read = await readNote(later, rec.id);
     expect(read?.parsed.body).toBe("new");
+  });
+
+  it("duplicates a note with a copy suffix on the title", async () => {
+    const io = await setup();
+    const rec = await createNote(io, { title: "Original", body: "Content" });
+    const copy = await duplicateNote(io, rec.id);
+    expect(copy).not.toBeNull();
+    expect(copy!.id).not.toBe(rec.id);
+    expect(copy!.title).toBe("Original (copy)");
+
+    const read = await readNote(io, copy!.id);
+    expect(read?.parsed.body).toBe("Content");
+    expect(await listNotes(io)).toHaveLength(2);
   });
 
   it("deletes a note and removes it from the index", async () => {
