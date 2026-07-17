@@ -41,6 +41,7 @@ async function ensurePipeline(
   if (!extractor) {
     extractor = (await pipeline("feature-extraction", modelId, {
       device,
+      dtype: "q8",
     })) as unknown as FeatureExtractor;
   }
   return extractor;
