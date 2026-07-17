@@ -30,6 +30,7 @@ import {
   readNote,
   updateNote,
 } from "./lib/notes/storage";
+import { resolveVaultStartup } from "./lib/notes/startup";
 import { storeAttachment } from "./lib/attachments/storage";
 import { AttachmentURLCache } from "./lib/attachments/cache";
 import type { NoteRecord } from "./lib/fs/types";
@@ -86,12 +87,14 @@ export function App() {
       await ensureReadWritePermission(handle);
       await openOrInitialize(handle);
       await persistVaultHandle(handle);
-      setVault({ root: handle });
       imageCacheRef.current?.dispose();
       imageCacheRef.current = new AttachmentURLCache(handle);
-      await refreshList(handle);
+      const startup = await resolveVaultStartup({ root: handle });
+      setVault({ root: handle });
+      setNotes(startup.notes);
+      setCurrent(startup.current);
     },
-    [refreshList],
+    [],
   );
 
   // Re-open the last vault after a dev HMR reload or a normal page refresh.
