@@ -7,6 +7,15 @@ Architecture decisions and system design for **private-notes**. User-facing setu
 1. **[architecture.md](./architecture.md)** — system map, flows, module index (~10 min).
 2. Pick ADRs for the area you are changing (see table below).
 
+## Optional deep dives
+
+| Doc | Read when you want to… |
+|-----|------------------------|
+| [semantic-search-primer.md](./semantic-search-primer.md) | Understand embeddings, cosine similarity, worker vs main thread, pooling |
+
+ADRs stay lean (decisions only); the primer covers the ML mechanics without
+duplicating them inside ADR-003/004.
+
 ## Architecture Decision Records (ADR)
 
 | ADR | Topic | Read when you change… |

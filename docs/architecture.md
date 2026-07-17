@@ -118,6 +118,7 @@ flowchart LR
 
 - **Indexing:** chunk body → embed batches → write `.semantic-index/notes/<id>.json`.
 - **Invalidation:** `contentHash`, schema version, model id/dimensions ([ADR-004](./adr/004-semantic-index-persistence.md)).
+- **Embed layers:** `indexer` / `search` call the `Embedder` interface; `TransformersEmbedder` forwards inference to the worker; chunking, disk I/O, and scoring stay on the main thread. See [semantic-search-primer.md](./semantic-search-primer.md).
 
 ## Flow: full reindex
 
@@ -153,4 +154,5 @@ Heavy pieces load after vault open to keep the initial bundle small:
 ## Related documents
 
 - [ADR index](./README.md)
+- [Semantic search primer](./semantic-search-primer.md) — embeddings, cosine similarity, worker vs main thread
 - [User README](../README.md)
