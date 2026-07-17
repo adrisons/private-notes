@@ -22,23 +22,15 @@ function renderPalette(
     searchReady: boolean;
     onSearch: (query: string) => Promise<SearchResultItem[]>;
     onOpenNote: (id: string) => void;
-    onOpenHit: (hit: SearchResultItem) => void;
     onCreate: () => void;
   }> = {},
 ) {
   const onSearch =
     overrides.onSearch ??
     vi.fn(async (): Promise<SearchResultItem[]> => [
-      {
-        noteId: "n1",
-        filePath: "notes/2026/01/n1.md",
-        chunkIdx: 0,
-        score: 0.91,
-        snippet: "tomato sauce and pasta",
-      },
+      { noteId: "n1", score: 0.91 },
     ]);
   const onOpenNote = overrides.onOpenNote ?? vi.fn();
-  const onOpenHit = overrides.onOpenHit ?? vi.fn();
   const onCreate = overrides.onCreate ?? vi.fn();
 
   render(
@@ -49,12 +41,11 @@ function renderPalette(
       searchReady={overrides.searchReady ?? true}
       onSearch={onSearch}
       onOpenNote={onOpenNote}
-      onOpenHit={onOpenHit}
       onCreate={onCreate}
     />,
   );
 
-  return { onSearch, onOpenNote, onOpenHit, onCreate };
+  return { onSearch, onOpenNote, onCreate };
 }
 
 describe("CommandPalette", () => {
@@ -84,14 +75,26 @@ describe("CommandPalette", () => {
     const user = userEvent.setup({
       advanceTimers: vi.advanceTimersByTimeAsync,
     });
+    const onSearch = vi.fn(async () => [{ noteId: "n1", score: 0.88 }]);
+    renderPalette({ onSearch });
+    const input = screen.getByLabelText("Search notes");
+    await act(async () => {
+      await user.type(input, "welcome");
+      await vi.advanceTimersByTimeAsync(200);
+    });
+    await waitFor(() => {
+      expect(onSearch).toHaveBeenCalledWith("welcome");
+      expect(screen.getByText("Cooking pasta")).toBeInTheDocument();
+    });
+  });
+
+  it("dedupes multiple semantic hits from the same note", async () => {
+    const user = userEvent.setup({
+      advanceTimers: vi.advanceTimersByTimeAsync,
+    });
     const onSearch = vi.fn(async () => [
-      {
-        noteId: "n1",
-        filePath: "notes/2026/01/n1.md",
-        chunkIdx: 0,
-        score: 0.88,
-        snippet: "tomato sauce and pasta",
-      },
+      { noteId: "n1", score: 0.91 },
+      { noteId: "n1", score: 0.82 },
     ]);
     renderPalette({ onSearch });
     const input = screen.getByLabelText("Search notes");
@@ -100,8 +103,7 @@ describe("CommandPalette", () => {
       await vi.advanceTimersByTimeAsync(200);
     });
     await waitFor(() => {
-      expect(onSearch).toHaveBeenCalledWith("pasta");
-      expect(screen.getByText("tomato sauce and pasta")).toBeInTheDocument();
+      expect(screen.getAllByText("Cooking pasta")).toHaveLength(1);
     });
   });
 });

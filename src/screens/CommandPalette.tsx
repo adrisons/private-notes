@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog } from "../ui/Dialog";
-import type { NoteListItem, SearchResultItem } from "../application/view-models";
+import {
+  dedupeSearchResultsByNote,
+  type NoteListItem,
+  type SearchResultItem,
+} from "../application/view-models";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -9,19 +13,18 @@ interface CommandPaletteProps {
   searchReady: boolean;
   onSearch: (query: string) => Promise<SearchResultItem[]>;
   onOpenNote: (id: string) => void;
-  onOpenHit: (hit: SearchResultItem) => void;
   onCreate: () => void;
 }
 
 type Item =
   | { kind: "create" }
   | { kind: "note"; record: NoteListItem }
-  | { kind: "hit"; hit: SearchResultItem };
+  | { kind: "hit"; noteId: string };
 
 function keyFor(item: Item): string {
   if (item.kind === "create") return "create";
   if (item.kind === "note") return `n:${item.record.id}`;
-  return `h:${item.hit.noteId}:${item.hit.chunkIdx}`;
+  return `h:${item.noteId}`;
 }
 
 export function CommandPalette({
@@ -31,7 +34,6 @@ export function CommandPalette({
   searchReady,
   onSearch,
   onOpenNote,
-  onOpenHit,
   onCreate,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
@@ -65,6 +67,11 @@ export function CommandPalette({
     };
   }, [open, query, searchReady, onSearch]);
 
+  const noteTitleById = useMemo(
+    () => new Map(notes.map((note) => [note.id, note.title])),
+    [notes],
+  );
+
   // Build the unified list. When the query is empty: a "create" entry and
   // recent notes. When non-empty: semantic hits first, then notes whose title
   // matches as a quick lexical fallback.
@@ -79,11 +86,20 @@ export function CommandPalette({
         ...sorted.slice(0, 8).map((n) => ({ kind: "note" as const, record: n })),
       ];
     }
+    const semantic = dedupeSearchResultsByNote(hits);
+    const hitNoteIds = new Set(semantic.map((hit) => hit.noteId));
     const lexical = sorted
-      .filter((n) => n.title.toLowerCase().includes(trimmed))
+      .filter(
+        (note) =>
+          note.title.toLowerCase().includes(trimmed) &&
+          !hitNoteIds.has(note.id),
+      )
       .slice(0, 5);
     return [
-      ...hits.map((h) => ({ kind: "hit" as const, hit: h })),
+      ...semantic.map((hit) => ({
+        kind: "hit" as const,
+        noteId: hit.noteId,
+      })),
       ...lexical.map((n) => ({ kind: "note" as const, record: n })),
     ];
   }, [query, hits, notes]);
@@ -96,7 +112,7 @@ export function CommandPalette({
   const choose = (item: Item) => {
     if (item.kind === "create") onCreate();
     else if (item.kind === "note") onOpenNote(item.record.id);
-    else onOpenHit(item.hit);
+    else onOpenNote(item.noteId);
     onClose();
   };
 
@@ -155,21 +171,11 @@ export function CommandPalette({
                   </li>
                 );
               }
-              if (item.kind === "note") {
-                return (
-                  <li key={keyFor(item)}>
-                    <button
-                      type="button"
-                      onMouseEnter={() => setActive(i)}
-                      onClick={() => choose(item)}
-                      className={cls}
-                    >
-                      <span aria-hidden>◷</span>
-                      <span className="truncate">{item.record.title || "Untitled"}</span>
-                    </button>
-                  </li>
-                );
-              }
+              const title =
+                item.kind === "note"
+                  ? item.record.title || "Untitled"
+                  : noteTitleById.get(item.noteId) || "Untitled";
+              const icon = item.kind === "note" ? "◷" : "↦";
               return (
                 <li key={keyFor(item)}>
                   <button
@@ -178,21 +184,8 @@ export function CommandPalette({
                     onClick={() => choose(item)}
                     className={cls}
                   >
-                    <span aria-hidden>↦</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">
-                        {item.hit.filePath
-                          .split("/")
-                          .pop()
-                          ?.replace(/\.md$/, "")}
-                      </span>
-                      <span className="mt-0.5 line-clamp-2 block text-xs text-[var(--color-muted-foreground)]">
-                        {item.hit.snippet}
-                      </span>
-                    </span>
-                    <span className="text-xs text-[var(--color-muted-foreground)]">
-                      {item.hit.score.toFixed(2)}
-                    </span>
+                    <span aria-hidden>{icon}</span>
+                    <span className="truncate">{title}</span>
                   </button>
                 </li>
               );

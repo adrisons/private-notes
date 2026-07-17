@@ -3,7 +3,7 @@ import { useDebouncedCallback } from "../../lib/useDebouncedCallback";
 import { noteToRecord, type NoteId } from "../../domain";
 import type { NoteRecord } from "../../lib/fs/types";
 import type { VaultSession } from "../vault-session";
-import type { OpenNoteState, SearchResultItem } from "../view-models";
+import type { OpenNoteState } from "../view-models";
 
 const AUTOSAVE_MS = 500;
 
@@ -21,7 +21,6 @@ export interface UseCurrentNoteResult {
   onTitleChange: (title: string) => void;
   onBodyChange: (body: string) => void;
   openNoteById: (id: string) => Promise<void>;
-  openSearchHit: (hit: SearchResultItem) => Promise<void>;
   createNote: () => Promise<void>;
   duplicateNote: (id: string) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
@@ -141,7 +140,6 @@ export function useCurrentNote({
     onTitleChange,
     onBodyChange,
     openNoteById: switchToNote,
-    openSearchHit: async (hit) => switchToNote(hit.noteId),
     createNote,
     duplicateNote,
     deleteNote,

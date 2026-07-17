@@ -16,13 +16,10 @@ export interface OpenNoteState {
   savedAt: string | null;
 }
 
-/** Command palette semantic hit — decoupled from indexer internals. */
+/** Command palette semantic hit — one row per note. */
 export interface SearchResultItem {
   noteId: string;
-  filePath: string;
-  chunkIdx: number;
   score: number;
-  snippet: string;
 }
 
 /** Reindex progress surfaced in the sidebar. */
@@ -55,13 +52,22 @@ export function toOpenNoteState(note: Note, savedAt: string | null): OpenNoteSta
 export function toSearchResultItem(hit: SearchHit): SearchResultItem {
   return {
     noteId: hit.noteId,
-    filePath: hit.filePath,
-    chunkIdx: hit.chunkIdx,
     score: hit.score,
-    snippet: hit.snippet,
   };
 }
 
 export function toSearchResultItems(hits: SearchHit[]): SearchResultItem[] {
   return hits.map(toSearchResultItem);
+}
+
+/** Keep the best-scoring hit per note while preserving global search order. */
+export function dedupeSearchResultsByNote(
+  hits: SearchResultItem[],
+): SearchResultItem[] {
+  const seen = new Set<string>();
+  return hits.filter((hit) => {
+    if (seen.has(hit.noteId)) return false;
+    seen.add(hit.noteId);
+    return true;
+  });
 }

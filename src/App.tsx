@@ -190,7 +190,6 @@ export function App() {
         searchReady={search.embedderReady}
         onSearch={search.onSearch}
         onOpenNote={note.openNoteById}
-        onOpenHit={note.openSearchHit}
         onCreate={note.createNote}
       />
     </AppShell>

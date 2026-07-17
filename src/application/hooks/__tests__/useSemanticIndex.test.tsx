@@ -90,15 +90,7 @@ describe("useSemanticIndex", () => {
       expect.objectContaining({ id: "fake" }),
       { topK: 8, minScore: 0.15 },
     );
-    expect(hits).toEqual([
-      {
-        noteId: "n1",
-        filePath: "notes/2026/05/n1.md",
-        chunkIdx: 0,
-        score: 0.9,
-        snippet: "hello world",
-      },
-    ]);
+    expect(hits).toEqual([{ noteId: "n1", score: 0.9 }]);
   });
 
   it("scheduleReindex forwards note records when the embedder is ready", async () => {
