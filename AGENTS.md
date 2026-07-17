@@ -143,17 +143,22 @@ variables, never `window.matchMedia` directly inside components.
 ### 5.1 Layer boundaries (do not cross)
 
 ```
-src/lib/**       pure logic, no JSX, no React imports
-        └── may import from `src/lib/`** only
-src/ui/**        primitives, may import from `src/lib/cn`
-src/screens/**   compositions, may import `ui/`** and `lib/**`
-src/editor/**    TipTap-specific UI + extensions
-src/workers/**   runs off the main thread; no React, no DOM
-src/App.tsx      the only place that wires vault, search, editor, screens
+src/domain/**           pure domain model, no React, no browser I/O
+src/application/**      ports, VaultSession, view-models, hooks (React OK in hooks/)
+        └── hooks import composition/infrastructure only via activate-vault defaults
+src/infrastructure/**   adapters implementing ports; delegates to src/lib/ during migration
+src/lib/**                shared utilities + legacy I/O (no JSX, no React imports)
+        └── may import from src/lib/** only (within lib)
+src/ui/**                 primitives, may import from src/lib/cn
+src/screens/**            compositions; import ui/, application/view-models, lib/cn, lib/platform
+src/editor/**             TipTap-specific UI + extensions
+src/workers/**            runs off the main thread; no React, no DOM
+src/App.tsx               thin composition root: hooks + screens (see ADR-009)
 ```
 
-`lib/*` modules must remain framework-agnostic and unit-testable without a
-DOM whenever possible.
+`domain/` and `lib/*` modules must remain framework-agnostic and unit-testable
+without a DOM whenever possible. Screens must not import `src/infrastructure/`
+or persistence types from `src/lib/fs/types`.
 
 ### 5.2 Folder layout on disk
 

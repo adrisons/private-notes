@@ -2,14 +2,14 @@ import { useState } from "react";
 import {
   formatIndexStatusLabel,
   isIndexStatusInteractive,
-  type IndexProgress,
 } from "../lib/search/index-progress";
+import type { ReindexProgress } from "../application/view-models";
 import { ActionDialog } from "../ui/ActionDialog";
 
 interface IndexStatusProps {
   ready: boolean;
   reindexing: boolean;
-  progress: IndexProgress | null;
+  progress: ReindexProgress | null;
   onReindex: () => void;
 }
 

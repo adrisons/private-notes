@@ -1,23 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog } from "../ui/Dialog";
-import type { NoteRecord } from "../lib/fs/types";
-import type { SearchHit } from "../lib/search/search";
+import type { NoteListItem, SearchResultItem } from "../application/view-models";
 
 interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
-  notes: NoteRecord[];
+  notes: NoteListItem[];
   searchReady: boolean;
-  onSearch: (query: string) => Promise<SearchHit[]>;
+  onSearch: (query: string) => Promise<SearchResultItem[]>;
   onOpenNote: (id: string) => void;
-  onOpenHit: (hit: SearchHit) => void;
+  onOpenHit: (hit: SearchResultItem) => void;
   onCreate: () => void;
 }
 
 type Item =
   | { kind: "create" }
-  | { kind: "note"; record: NoteRecord }
-  | { kind: "hit"; hit: SearchHit };
+  | { kind: "note"; record: NoteListItem }
+  | { kind: "hit"; hit: SearchResultItem };
 
 function keyFor(item: Item): string {
   if (item.kind === "create") return "create";
@@ -36,7 +35,7 @@ export function CommandPalette({
   onCreate,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
-  const [hits, setHits] = useState<SearchHit[]>([]);
+  const [hits, setHits] = useState<SearchResultItem[]>([]);
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

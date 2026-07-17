@@ -2,21 +2,17 @@ import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NotesList } from "../NotesList";
-import type { NoteRecord } from "../../lib/fs/types";
+import type { NoteListItem } from "../../application/view-models";
 
-const notes: NoteRecord[] = [
+const notes: NoteListItem[] = [
   {
     id: "a",
     title: "Alpha note",
-    path: "notes/2026/01/a.md",
-    createdAt: "2026-05-17T12:00:00Z",
     updatedAt: "2026-05-17T12:00:00Z",
   },
   {
     id: "b",
     title: "Beta note",
-    path: "notes/2026/01/b.md",
-    createdAt: "2026-05-16T12:00:00Z",
     updatedAt: "2026-05-16T12:00:00Z",
   },
 ];

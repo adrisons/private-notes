@@ -51,14 +51,17 @@ Details: [ADR-002](./adr/002-note-storage-format.md), [ADR-004](./adr/004-semant
 
 | Concern | Source | ADR |
 |---------|--------|-----|
-| Boot, vault open, picker | `src/lib/fs/`, `src/App.tsx` | [001](./adr/001-local-first-vault.md) |
-| Note CRUD, frontmatter | `src/lib/notes/` | [002](./adr/002-note-storage-format.md) |
+| Domain model | `src/domain/` | [009](./adr/009-layered-application-architecture.md) |
+| Application ports, session, hooks | `src/application/` | [009](./adr/009-layered-application-architecture.md) |
+| Infrastructure adapters | `src/infrastructure/` (wraps `src/lib/` I/O) | [009](./adr/009-layered-application-architecture.md) |
+| Boot, vault open, picker (I/O) | `src/lib/fs/`, adapters in `src/infrastructure/fs/` | [001](./adr/001-local-first-vault.md) |
+| Note CRUD, frontmatter (I/O) | `src/lib/notes/`, `src/infrastructure/notes/` | [002](./adr/002-note-storage-format.md) |
 | Embedder, chunking, worker | `src/lib/search/`, `src/workers/` | [003](./adr/003-semantic-search-embeddings.md) |
-| Index I/O, search, reindex | `src/lib/search/` | [004](./adr/004-semantic-index-persistence.md) |
+| Index I/O, search, reindex | `src/lib/search/`, `src/infrastructure/search/` | [004](./adr/004-semantic-index-persistence.md) |
 | Editor UI | `src/editor/` | [005](./adr/005-markdown-editor.md) |
 | MD parse/serialize | `src/lib/markdown/` | [005](./adr/005-markdown-editor.md) |
-| Attachments + cache | `src/lib/attachments/` | [006](./adr/006-attachments-cache.md) |
-| Autosave, orchestration | `src/App.tsx` | [007](./adr/007-autosave-eventual-reindex.md) |
+| Attachments + cache | `src/lib/attachments/`, `src/infrastructure/attachments/` | [006](./adr/006-attachments-cache.md) |
+| Autosave, orchestration | `src/application/hooks/`, thin `src/App.tsx` | [007](./adr/007-autosave-eventual-reindex.md), [009](./adr/009-layered-application-architecture.md) |
 | Sidebar search, index status | `src/screens/SidebarSearch.tsx`, `IndexStatus.tsx`, `src/lib/search/index-progress.ts` | [007](./adr/007-autosave-eventual-reindex.md) |
 | Command palette search | `src/screens/CommandPalette.tsx` | [003](./adr/003-semantic-search-embeddings.md), [004](./adr/004-semantic-index-persistence.md) |
 | Browser gate | `src/lib/compatibility.ts` | [001](./adr/001-local-first-vault.md), [008](./adr/008-schema-compatibility.md) |

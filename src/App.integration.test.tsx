@@ -12,6 +12,7 @@ import {
   cleanupIntegrationTest,
   renderApp,
   resetVaultStore,
+  waitForVaultOpen,
   waitForSearchReady,
 } from "./test/appHarness";
 
@@ -75,9 +76,7 @@ describe("App integration", () => {
     await result.user.click(
       screen.getByRole("button", { name: /choose folder/i }),
     );
-    await waitFor(() => {
-      expect(screen.getByText("Notes")).toBeInTheDocument();
-    });
+    await waitForVaultOpen(result);
     return result;
   }
 
@@ -94,7 +93,7 @@ describe("App integration", () => {
       .spyOn(vaultHandleStore, "loadVaultHandle")
       .mockResolvedValue(pickerRoot);
     try {
-      await renderApp();
+      const result = await renderApp();
       await waitFor(() => {
         expect(
           screen.queryByRole("heading", {
@@ -102,7 +101,7 @@ describe("App integration", () => {
           }),
         ).not.toBeInTheDocument();
       });
-      expect(screen.getByText("Notes")).toBeInTheDocument();
+      await waitForVaultOpen(result);
     } finally {
       loadSpy.mockRestore();
     }
@@ -127,7 +126,7 @@ describe("App integration", () => {
     await result.user.click(
       screen.getByRole("button", { name: /choose folder/i }),
     );
-    await waitFor(() => expect(screen.getByText("Notes")).toBeInTheDocument());
+    await waitForVaultOpen(result);
 
     await result.user.click(screen.getByRole("button", { name: /^new$/i }));
     const titleInput = screen.getByDisplayValue("Untitled");
@@ -177,7 +176,7 @@ describe("App integration", () => {
     await result.user.click(
       screen.getByRole("button", { name: /choose folder/i }),
     );
-    await waitFor(() => expect(screen.getByText("Notes")).toBeInTheDocument());
+    await waitForVaultOpen(result);
 
     await result.user.click(screen.getByRole("button", { name: /^new$/i }));
     const titleInput = screen.getByDisplayValue("Untitled");
@@ -216,7 +215,7 @@ describe("App integration", () => {
     await result.user.click(
       screen.getByRole("button", { name: /choose folder/i }),
     );
-    await waitFor(() => expect(screen.getByText("Notes")).toBeInTheDocument());
+    await waitForVaultOpen(result);
 
     await result.user.click(screen.getByRole("button", { name: /^new$/i }));
     const titleInput = screen.getByDisplayValue("Untitled");
@@ -257,7 +256,7 @@ describe("App integration", () => {
     await result.user.click(
       screen.getByRole("button", { name: /choose folder/i }),
     );
-    await waitFor(() => expect(screen.getByText("Notes")).toBeInTheDocument());
+    await waitForVaultOpen(result);
 
     const titleInput = screen.getByDisplayValue("Welcome to private-notes");
     await result.user.clear(titleInput);
@@ -284,7 +283,7 @@ describe("App integration", () => {
     await result.user.click(
       screen.getByRole("button", { name: /choose folder/i }),
     );
-    await waitFor(() => expect(screen.getByText("Notes")).toBeInTheDocument());
+    await waitForVaultOpen(result);
 
     const body = screen.getByLabelText("note body");
     await result.user.clear(body);
@@ -313,7 +312,7 @@ describe("App integration", () => {
       await result.user.click(
         screen.getByRole("button", { name: /choose folder/i }),
       );
-      await waitFor(() => expect(screen.getByText("Notes")).toBeInTheDocument());
+      await waitForVaultOpen(result);
 
       await result.user.click(screen.getByRole("button", { name: /^new$/i }));
       const titleInput = await screen.findByDisplayValue("Untitled");
@@ -351,7 +350,7 @@ describe("App integration", () => {
       await result.user.click(
         screen.getByRole("button", { name: /choose folder/i }),
       );
-      await waitFor(() => expect(screen.getByText("Notes")).toBeInTheDocument());
+      await waitForVaultOpen(result);
       await waitFor(() =>
         expect(screen.getByLabelText("note body")).toBeInTheDocument(),
       );

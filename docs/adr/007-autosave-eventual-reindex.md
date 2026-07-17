@@ -60,5 +60,5 @@ sequenceDiagram
 
 ## References
 
-- Related: [ADR-004](./004-semantic-index-persistence.md)
-- Code: `src/App.tsx`, `src/lib/useDebouncedCallback.ts`, `src/lib/notes/storage.ts`, `src/lib/notes/reconcile.ts`, `src/lib/fs/locks.ts`, `src/lib/fs/handle.ts` (`listFilesRecursive`), `src/screens/NoteHeader.tsx`, `src/screens/SidebarSearch.tsx`, `src/screens/IndexStatus.tsx`, `src/ui/ActionDialog.tsx`, `src/lib/search/index-progress.ts`
+- Related: [ADR-004](./004-semantic-index-persistence.md), [ADR-009](./009-layered-application-architecture.md)
+- Code: `src/application/hooks/`, `src/application/vault-session.ts`, `src/lib/useDebouncedCallback.ts`, `src/lib/notes/storage.ts`, `src/lib/notes/reconcile.ts`, `src/lib/fs/locks.ts`, `src/lib/fs/handle.ts` (`listFilesRecursive`), `src/screens/NoteHeader.tsx`, `src/screens/SidebarSearch.tsx`, `src/screens/IndexStatus.tsx`, `src/ui/ActionDialog.tsx`, `src/lib/search/index-progress.ts`

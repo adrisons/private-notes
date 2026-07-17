@@ -15,8 +15,8 @@ import { parseNote, serializeNote, type ParsedNote } from "./frontmatter";
 import { buildNotePath } from "./path";
 import { ulid } from "./id";
 
-/** Strongly-typed clock + ID source for deterministic tests. */
-export interface NoteIO {
+/** Vault root plus optional test doubles for clock and id generation. */
+interface NoteStorageContext {
   root: FileSystemDirectoryHandle;
   now?: () => Date;
   newId?: () => string;
@@ -62,7 +62,7 @@ export interface CreateInput {
 }
 
 export async function createNote(
-  io: NoteIO,
+  io: NoteStorageContext,
   input: CreateInput,
 ): Promise<NoteRecord> {
   const now = (io.now ?? nowDefault)();
@@ -93,7 +93,7 @@ export async function createNote(
 }
 
 export async function readNote(
-  io: NoteIO,
+  io: NoteStorageContext,
   id: string,
 ): Promise<{ record: NoteRecord; parsed: ParsedNote } | null> {
   const index = await readIndex(io.root);
@@ -109,7 +109,7 @@ export interface UpdateInput {
 }
 
 export async function updateNote(
-  io: NoteIO,
+  io: NoteStorageContext,
   id: string,
   patch: UpdateInput,
 ): Promise<NoteRecord & { gcAttachments: string[] }> {
@@ -156,7 +156,7 @@ export async function updateNote(
 }
 
 export async function duplicateNote(
-  io: NoteIO,
+  io: NoteStorageContext,
   id: string,
 ): Promise<NoteRecord | null> {
   const source = await readNote(io, id);
@@ -172,7 +172,7 @@ export async function duplicateNote(
 }
 
 export async function deleteNote(
-  io: NoteIO,
+  io: NoteStorageContext,
   id: string,
 ): Promise<string[]> {
   const index = await readIndex(io.root);
@@ -203,7 +203,7 @@ export async function deleteNote(
   return gcAttachments;
 }
 
-export async function listNotes(io: NoteIO): Promise<NoteRecord[]> {
+export async function listNotes(io: NoteStorageContext): Promise<NoteRecord[]> {
   const index = await readIndex(io.root);
   return [...index.notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }

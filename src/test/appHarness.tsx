@@ -1,5 +1,5 @@
 import { expect, vi } from "vitest";
-import { render, waitFor, type RenderResult } from "@testing-library/react";
+import { act, render, waitFor, type RenderResult } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { initializeVault } from "../lib/fs/vault";
 import { clearVaultHandle } from "../lib/fs/vault-handle-store";
@@ -24,7 +24,9 @@ export async function cleanupIntegrationTest(): Promise<void> {
 
 /** Advance past the autosave debounce and flush pending timers. */
 export async function advanceAutosave(): Promise<void> {
-  await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS);
+  });
 }
 
 /** Initialize an empty vault on a fresh in-memory root. */
@@ -64,14 +66,31 @@ export async function renderApp(
   const user = options.advanceTimers
     ? userEvent.setup({ advanceTimers: options.advanceTimers })
     : userEvent.setup();
-  const result = render(<App />);
+  let result!: RenderResult;
+  await act(async () => {
+    result = render(<App />);
+  });
   await waitFor(
     () => {
       expect(result.queryByText("Loading…")).not.toBeInTheDocument();
+      const settled =
+        result.queryByRole("heading", {
+          name: /your notes, on your machine/i,
+        }) ?? result.queryByText("Notes");
+      expect(settled).toBeTruthy();
     },
     { timeout: 5000 },
   );
   return { ...result, user };
+}
+
+/** Wait until the vault shell and semantic search are ready. */
+export async function waitForVaultOpen(result: RenderResult): Promise<void> {
+  await waitFor(() => {
+    expect(result.getByText("Notes")).toBeInTheDocument();
+    expect(result.getByLabelText("note body")).toBeInTheDocument();
+  });
+  await waitForSearchReady(result);
 }
 
 /** Wait until semantic search reports ready in the sidebar. */

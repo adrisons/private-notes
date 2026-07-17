@@ -1,12 +1,12 @@
 import { formatModKeyShortcut } from "../lib/platform";
-import type { IndexProgress } from "../lib/search/index-progress";
+import type { ReindexProgress } from "../application/view-models";
 import { Kbd } from "../ui/Kbd";
 import { IndexStatus } from "./IndexStatus";
 
 interface SidebarSearchProps {
   ready: boolean;
   reindexing: boolean;
-  progress: IndexProgress | null;
+  progress: ReindexProgress | null;
   onOpenCommandPalette: () => void;
   onReindex: () => void;
 }

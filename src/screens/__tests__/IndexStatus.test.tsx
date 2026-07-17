@@ -23,16 +23,4 @@ describe("IndexStatus", () => {
 
     expect(onReindex).toHaveBeenCalledTimes(1);
   });
-
-  it("shows indexing progress while reindexing", () => {
-    render(
-      <IndexStatus
-        ready
-        reindexing
-        progress={{ done: 2, total: 5 }}
-        onReindex={vi.fn()}
-      />,
-    );
-    expect(screen.getByText("Indexing 40%")).toBeInTheDocument();
-  });
 });

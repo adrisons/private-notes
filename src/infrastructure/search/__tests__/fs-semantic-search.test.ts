@@ -1,0 +1,48 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { makeFakeRoot } from "../../../test/fakeFs";
+import { initializeVault } from "../../../lib/fs/vault";
+import { createNote, listNotes } from "../../../lib/notes/storage";
+import { FakeEmbedder } from "../../../lib/search/embedder";
+import { fsSemanticSearchFactory } from "../fs-semantic-search";
+
+const loadSearchApi = vi.hoisted(() => vi.fn());
+
+vi.mock("../../../lib/search/runtime", () => ({
+  loadSearchApi,
+}));
+
+describe("fsSemanticSearchFactory", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("delegates search and reindex to the lazy runtime API", async () => {
+    const root = makeFakeRoot();
+    await initializeVault(root);
+    await createNote({ root }, { title: "Cats", body: "Cats love pasta." });
+    const notes = await listNotes({ root });
+    const embedder = new FakeEmbedder();
+
+    const api = {
+      searchSemantic: vi.fn().mockResolvedValue([{ noteId: "n1", snippet: "pasta" }]),
+      reindex: vi.fn().mockResolvedValue({ embedded: 1, skipped: 0 }),
+      pruneOrphans: vi.fn().mockResolvedValue(0),
+    };
+    loadSearchApi.mockResolvedValue(api);
+
+    const search = fsSemanticSearchFactory.create(root);
+
+    await search.reindex(notes, embedder);
+    expect(api.reindex).toHaveBeenCalledWith(root, notes, embedder, undefined);
+
+    await search.searchSemantic("pasta", embedder, { topK: 3 });
+    expect(api.searchSemantic).toHaveBeenCalledWith(root, "pasta", embedder, {
+      topK: 3,
+    });
+
+    await search.pruneOrphans(["n1"]);
+    expect(api.pruneOrphans).toHaveBeenCalledWith(root, ["n1"]);
+
+    expect(loadSearchApi).toHaveBeenCalledTimes(1);
+  });
+});

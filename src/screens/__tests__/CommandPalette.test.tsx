@@ -1,23 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CommandPalette } from "../CommandPalette";
-import type { NoteRecord } from "../../lib/fs/types";
-import type { SearchHit } from "../../lib/search/search";
+import type { NoteListItem, SearchResultItem } from "../../application/view-models";
 
-const notes: NoteRecord[] = [
+const notes: NoteListItem[] = [
   {
     id: "n1",
     title: "Cooking pasta",
-    path: "notes/2026/01/n1.md",
-    createdAt: "2026-05-17T12:00:00Z",
     updatedAt: "2026-05-17T12:00:00Z",
   },
   {
     id: "n2",
     title: "Rocket science",
-    path: "notes/2026/01/n2.md",
-    createdAt: "2026-05-16T12:00:00Z",
     updatedAt: "2026-05-16T12:00:00Z",
   },
 ];
@@ -25,23 +20,21 @@ const notes: NoteRecord[] = [
 function renderPalette(
   overrides: Partial<{
     searchReady: boolean;
-    onSearch: (query: string) => Promise<SearchHit[]>;
+    onSearch: (query: string) => Promise<SearchResultItem[]>;
     onOpenNote: (id: string) => void;
-    onOpenHit: (hit: SearchHit) => void;
+    onOpenHit: (hit: SearchResultItem) => void;
     onCreate: () => void;
   }> = {},
 ) {
   const onSearch =
     overrides.onSearch ??
-    vi.fn(async (): Promise<SearchHit[]> => [
+    vi.fn(async (): Promise<SearchResultItem[]> => [
       {
         noteId: "n1",
         filePath: "notes/2026/01/n1.md",
         chunkIdx: 0,
         score: 0.91,
         snippet: "tomato sauce and pasta",
-        offset: 0,
-        length: 22,
       },
     ]);
   const onOpenNote = overrides.onOpenNote ?? vi.fn();
@@ -88,7 +81,9 @@ describe("CommandPalette", () => {
   });
 
   it("shows semantic hits after the debounced search", async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({
+      advanceTimers: vi.advanceTimersByTimeAsync,
+    });
     const onSearch = vi.fn(async () => [
       {
         noteId: "n1",
@@ -96,14 +91,14 @@ describe("CommandPalette", () => {
         chunkIdx: 0,
         score: 0.88,
         snippet: "tomato sauce and pasta",
-        offset: 0,
-        length: 22,
       },
     ]);
     renderPalette({ onSearch });
     const input = screen.getByLabelText("Search notes");
-    await user.type(input, "pasta");
-    await vi.advanceTimersByTimeAsync(200);
+    await act(async () => {
+      await user.type(input, "pasta");
+      await vi.advanceTimersByTimeAsync(200);
+    });
     await waitFor(() => {
       expect(onSearch).toHaveBeenCalledWith("pasta");
       expect(screen.getByText("tomato sauce and pasta")).toBeInTheDocument();

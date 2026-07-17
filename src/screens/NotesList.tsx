@@ -2,10 +2,10 @@ import { useMemo, useState } from "react";
 import { Button } from "../ui/Button";
 import { ContextMenu } from "../ui/ContextMenu";
 import { cn } from "../lib/cn";
-import type { NoteRecord } from "../lib/fs/types";
+import type { NoteListItem } from "../application/view-models";
 
 interface NotesListProps {
-  notes: NoteRecord[];
+  notes: NoteListItem[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onCreate: () => void;

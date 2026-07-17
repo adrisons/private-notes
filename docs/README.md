@@ -30,6 +30,7 @@ duplicating them inside ADR-003/004.
 | [006](./adr/006-attachments-cache.md) | Attachments & blob cache | `src/lib/attachments/*` |
 | [007](./adr/007-autosave-eventual-reindex.md) | Autosave & eventual reindex | `src/App.tsx`, debounced persist |
 | [008](./adr/008-schema-compatibility.md) | Schema & compatibility | `types.ts`, manifest validation, `compatibility.ts` |
+| [009](./adr/009-layered-application-architecture.md) | Layered DDD / ports & adapters | `src/domain/`, `src/application/`, `src/infrastructure/`, hooks in `App.tsx` |
 
 ## Suggested reading order by task
 
@@ -40,4 +41,5 @@ duplicating them inside ADR-003/004.
 | Editor / markdown features | 005, 002 |
 | Images in notes | 006, 005 |
 | Save / sync / data loss | 007, 002, 004 |
+| App structure / new features touching vault lifecycle | 009, 007, 001 |
 | Tests / coverage | [testing.md](./testing.md) |
