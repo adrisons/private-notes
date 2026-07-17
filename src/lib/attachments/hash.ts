@@ -1,8 +1,10 @@
 /**
- * SHA-1 hex digest using the Web Crypto API. SHA-1 is fine for content
- * fingerprinting (no security claim).
+ * SHA-256 hex digest using the Web Crypto API. Content-addressed paths rely
+ * on collision resistance; SHA-1 is deprecated for that use (ADR-006).
  */
-export async function sha1Hex(data: ArrayBuffer | Uint8Array): Promise<string> {
+export async function sha256Hex(
+  data: ArrayBuffer | Uint8Array,
+): Promise<string> {
   // Copy into a fresh ArrayBuffer so we always pass a non-shared buffer.
   const view =
     data instanceof Uint8Array
@@ -10,7 +12,7 @@ export async function sha1Hex(data: ArrayBuffer | Uint8Array): Promise<string> {
       : new Uint8Array(data);
   const copy = new ArrayBuffer(view.byteLength);
   new Uint8Array(copy).set(view);
-  const digest = await crypto.subtle.digest("SHA-1", copy);
+  const digest = await crypto.subtle.digest("SHA-256", copy);
   return [...new Uint8Array(digest)]
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");

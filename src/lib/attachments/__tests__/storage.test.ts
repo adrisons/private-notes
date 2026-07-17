@@ -23,14 +23,14 @@ function fakeFile(name: string, type: string, bytes: number[]): {
 }
 
 describe("storeAttachment", () => {
-  it("writes the file under attachments/<sha1>.<ext>", async () => {
+  it("writes the file under attachments/<sha256>.<ext>", async () => {
     const root = makeFakeRoot();
     await initializeVault(root);
     const result = await storeAttachment(
       root,
       fakeFile("cat.png", "image/png", [1, 2, 3]),
     );
-    expect(result.path).toMatch(/^attachments\/[0-9a-f]{40}\.png$/);
+    expect(result.path).toMatch(/^attachments\/[0-9a-f]{64}\.png$/);
     expect(await fileExists(root, result.path)).toBe(true);
   });
 
@@ -63,6 +63,6 @@ describe("storeAttachment", () => {
       count++;
     }
     expect(count).toBe(1);
-    expect(a.path).toMatch(/^attachments\/[0-9a-f]{40}\.png$/);
+    expect(a.path).toMatch(/^attachments\/[0-9a-f]{64}\.png$/);
   });
 });

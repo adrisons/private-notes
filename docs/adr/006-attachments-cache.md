@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-05-19
+- **Updated:** 2026-07-17
 
 ## Context
 
@@ -12,7 +13,7 @@
 
 ## Decision
 
-1. **Path layout:** `attachments/<sha1>.<ext>` where SHA-1 is computed over file bytes (`hash.ts`, `SubtleCrypto`). Global, flat — no per-note subfolders.
+1. **Path layout:** `attachments/<sha256>.<ext>` where SHA-256 is computed over file bytes (`hash.ts`, `SubtleCrypto`). Global, flat — no per-note subfolders. SHA-256 replaces an earlier SHA-1 sketch: content-addressed paths require collision resistance, and SHA-1 has practical collision attacks.
 2. **Content-addressed storage:** `storeAttachment` writes only if the file does not already exist (global dedup across notes).
 3. **Reference index:** `.private-notes/attachment-refs.json` maps each attachment path to the note ids that reference it. Updated on upload, body edit, duplicate, and delete. Markdown remains the source of truth; the index is a performance aid maintained by the app. Reconciliation from a full vault scan is **future work** (not required pre-production).
 4. **Garbage collection:** when a path's ref list becomes empty, delete the blob from `attachments/`.

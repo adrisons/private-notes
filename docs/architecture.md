@@ -35,7 +35,7 @@ flowchart TB
     manifest.json
     notes/<noteId>.json
   notes/YYYY/MM/          # Markdown + YAML frontmatter
-  attachments/<sha1>.<ext>   # content-addressed, globally deduplicated (ADR-006)
+  attachments/<sha256>.<ext>   # content-addressed, globally deduplicated (ADR-006)
 ```
 
 Details: [ADR-002](./adr/002-note-storage-format.md), [ADR-004](./adr/004-semantic-index-persistence.md).

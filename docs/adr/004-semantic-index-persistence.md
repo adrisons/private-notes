@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-05-19
+- **Updated:** 2026-07-17
 
 ## Context
 
@@ -17,7 +18,7 @@
 2. **One JSON file per note:** `.semantic-index/notes/<noteId>.json` — narrow sync conflicts (two devices editing different notes never write the same file).
 3. **Manifest** at `.semantic-index/manifest.json`: `{ schemaVersion, modelId, dimensions }`.
 
-Each per-note file stores `contentHash` (SHA-1 of body), chunk text + embeddings, and metadata. See [architecture.md](../architecture.md) for the flow; user-facing JSON example stays in the [README](../../README.md).
+Each per-note file stores `contentHash` (SHA-256 of body), chunk text + embeddings, and metadata. See [architecture.md](../architecture.md) for the flow; user-facing JSON example stays in the [README](../../README.md).
 
 ### Invalidation & reindex
 
@@ -84,4 +85,4 @@ flowchart TB
 - [Cosine similarity (Wikipedia)](https://en.wikipedia.org/wiki/Cosine_similarity)
 - [SubtleCrypto.digest (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest) — used for `contentHash`
 - Related: [ADR-003](./003-semantic-search-embeddings.md), [ADR-007](./007-autosave-eventual-reindex.md), [ADR-008](./008-schema-compatibility.md)
-- Code: `src/lib/search/indexer.ts`, `index-fs.ts`, `search.ts`, `src/lib/attachments/hash.ts` (`sha1Hex`)
+- Code: `src/lib/search/indexer.ts`, `index-fs.ts`, `search.ts`, `src/lib/attachments/hash.ts` (`sha256Hex`)

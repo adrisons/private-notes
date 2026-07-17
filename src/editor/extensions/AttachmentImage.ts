@@ -11,7 +11,7 @@ import { createElement as h, useEffect, useState } from "react";
  * which prevents the surrounding text from being reflowed around the image.
  *
  * Markdown representation is `![alt](src)` rendered as its own paragraph. The
- * stored `src` is a relative path (`attachments/<sha1>.<ext>`) that
+ * stored `src` is a relative path (`attachments/<sha256>.<ext>`) that
  * the browser cannot fetch on its own — the host app injects `resolveSrc` to
  * map the path to a usable `blob:` URL backed by the vault file handle.
  */

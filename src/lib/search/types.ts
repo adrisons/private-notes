@@ -35,7 +35,7 @@ export interface ChunkRecord {
 export interface NoteEmbeddings {
   noteId: string;
   filePath: string;
-  /** SHA-1 of the body the chunks were derived from. */
+  /** SHA-256 of the body the chunks were derived from. */
   contentHash: string;
   modelId: string;
   dimensions: number;

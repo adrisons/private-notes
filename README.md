@@ -31,7 +31,7 @@ The folder you choose is owned by the app. It is initialized on first use with t
     manifest.json         # { schemaVersion, modelId, dimensions }
     notes/<noteId>.json   # all chunks for one note + their embeddings
   notes/YYYY/MM/<slug>-<id>.md
-  attachments/<sha1>.<ext>
+  attachments/<sha256>.<ext>
 ```
 
 Each note is a Markdown file with YAML frontmatter (`id`, `title`, `createdAt`, `updatedAt`).
@@ -44,7 +44,7 @@ The semantic index is kept in a separate sibling folder so it can be shared acro
 {
   "noteId": "01HXXX…",
   "filePath": "notes/2026/05/example-01HXXX.md",
-  "contentHash": "sha1 of the note body",
+  "contentHash": "sha256 of the note body",
   "modelId": "Xenova/paraphrase-multilingual-MiniLM-L12-v2",
   "dimensions": 384,
   "schemaVersion": 1,

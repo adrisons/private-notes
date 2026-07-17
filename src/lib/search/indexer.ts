@@ -1,6 +1,6 @@
 import { readText } from "../fs/handle";
 import { parseNote } from "../notes/frontmatter";
-import { sha1Hex } from "../attachments/hash";
+import { sha256Hex } from "../attachments/hash";
 import {
   clearSemanticIndex,
   deleteNoteEmbeddings,
@@ -26,7 +26,7 @@ export interface IndexerOptions {
 }
 
 async function bodyHash(body: string): Promise<string> {
-  return sha1Hex(new TextEncoder().encode(body));
+  return sha256Hex(new TextEncoder().encode(body));
 }
 
 /**

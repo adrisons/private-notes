@@ -2,7 +2,7 @@
  * Browser compatibility checks. The app needs:
  * - File System Access API for local read/write on the user-picked folder
  * - Web Workers (module workers) for transformers.js inference
- * - SubtleCrypto.digest for SHA-1 content hashing
+ * - SubtleCrypto.digest for SHA-256 content hashing
  *
  * WebGPU is optional — the embedder falls back to WASM transparently.
  */

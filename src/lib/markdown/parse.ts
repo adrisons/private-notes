@@ -55,7 +55,7 @@ export function markdownToHtml(md: string): string {
   const safeHtml = DOMPurify.sanitize(rawHtml, {
     ALLOWED_TAGS: [...ALLOWED_TAGS],
     ALLOWED_ATTR: [...ALLOWED_ATTR],
-    // Relative attachment paths (`attachments/<sha1>.png`) and `blob:` URLs
+    // Relative attachment paths (`attachments/<sha256>.png`) and `blob:` URLs
     // resolved by the node view must pass; `javascript:`/`data:` are rejected
     // by DOMPurify's default URI policy.
     ALLOW_ARIA_ATTR: false,
