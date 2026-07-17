@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { serializeDoc } from "../serialize";
 import type { PMDoc, PMMark, PMParagraphNode } from "../types";
 
-function doc(...paragraphs: PMParagraphNode[]): PMDoc {
-  return { type: "doc", content: paragraphs };
+function doc(...blocks: NonNullable<PMDoc["content"]>): PMDoc {
+  return { type: "doc", content: blocks };
 }
 
 function p(
@@ -68,5 +68,41 @@ describe("serializeDoc", () => {
     expect(out).toBe(
       "before\n\n![kitten](attachments/x/abc.png)\n\nafter",
     );
+  });
+
+  it("serializes fenced code blocks", () => {
+    expect(
+      serializeDoc({
+        type: "doc",
+        content: [
+          {
+            type: "codeBlock",
+            content: [{ type: "text", text: "const x = 1;" }],
+          },
+        ],
+      }),
+    ).toBe("```\nconst x = 1;\n```");
+
+    expect(
+      serializeDoc({
+        type: "doc",
+        content: [
+          {
+            type: "codeBlock",
+            attrs: { language: "js" },
+            content: [{ type: "text", text: "const x = 1;" }],
+          },
+        ],
+      }),
+    ).toBe("```js\nconst x = 1;\n```");
+  });
+
+  it("serializes an empty code block", () => {
+    expect(
+      serializeDoc({
+        type: "doc",
+        content: [{ type: "codeBlock" }],
+      }),
+    ).toBe("```\n\n```");
   });
 });

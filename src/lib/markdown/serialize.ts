@@ -1,4 +1,4 @@
-import type { PMDoc, PMMark, PMTextNode } from "./types";
+import type { PMDoc, PMCodeBlockNode, PMMark, PMTextNode } from "./types";
 
 /**
  * Order in which marks are applied from the outside in. Markdown does not care
@@ -53,10 +53,20 @@ function escapeImageSrc(src: string): string {
   return src.replace(/\)/g, "\\)");
 }
 
+function serializeCodeBlock(node: PMCodeBlockNode): string {
+  const language = node.attrs?.language ?? "";
+  const text = (node.content ?? []).map((child) => child.text).join("");
+  const opener = language ? `\`\`\`${language}` : "```";
+  return `${opener}\n${text}\n\`\`\``;
+}
+
 export function serializeDoc(doc: PMDoc): string {
   const blocks = (doc.content ?? []).map((node) => {
     if (node.type === "paragraph") {
       return (node.content ?? []).map(serializeText).join("");
+    }
+    if (node.type === "codeBlock") {
+      return serializeCodeBlock(node);
     }
     if (node.type === "attachmentImage") {
       const alt = escapeImageAlt(node.attrs.alt ?? "");

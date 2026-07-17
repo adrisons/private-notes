@@ -7,9 +7,10 @@ interface ToolbarProps {
 }
 
 interface Action {
-  name: "bold" | "italic" | "underline" | "strike";
+  name: "bold" | "italic" | "underline" | "strike" | "codeBlock";
   label: string;
   shortcut: string;
+  mono?: boolean;
   toggle: (e: Editor) => boolean;
 }
 
@@ -38,6 +39,13 @@ const ACTIONS: Action[] = [
     shortcut: "⇧⌘X",
     toggle: (e) => e.chain().focus().toggleStrike().run(),
   },
+  {
+    name: "codeBlock",
+    label: "{ }",
+    shortcut: "⌥⌘C",
+    mono: true,
+    toggle: (e) => e.chain().focus().toggleCodeBlock().run(),
+  },
 ];
 
 export function EditorToolbar({ editor, onPickImage }: ToolbarProps) {
@@ -62,6 +70,7 @@ export function EditorToolbar({ editor, onPickImage }: ToolbarProps) {
               a.name === "underline" && "underline",
               a.name === "strike" && "line-through",
               a.name === "bold" && "font-bold",
+              a.mono && "font-[family-name:var(--font-mono)] text-xs",
               "disabled:opacity-40",
             )}
           >

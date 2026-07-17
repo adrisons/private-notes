@@ -23,4 +23,11 @@ describe("markdownToHtml", () => {
     expect(html).not.toMatch(/<p>\s*<img/);
     expect(html).toContain("<img");
   });
+
+  it("converts fenced code blocks to pre/code", () => {
+    const html = markdownToHtml("```\nhello\n```");
+    expect(html).toContain("<pre>");
+    expect(html).toContain("<code");
+    expect(html).toContain("hello");
+  });
 });

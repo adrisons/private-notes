@@ -2,6 +2,7 @@ import { useEditor, EditorContent, type Editor as TiptapEditor } from "@tiptap/r
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import { AttachmentImage } from "./extensions/AttachmentImage";
+import { FencedCodeBlock } from "./extensions/FencedCodeBlock";
 import { useEffect, useMemo } from "react";
 import { markdownToHtml } from "../lib/markdown/parse";
 import { serializeDoc } from "../lib/markdown/serialize";
@@ -35,7 +36,7 @@ export function Editor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        // We do not yet support headings/lists/code blocks. Disable the
+        // We do not yet support headings/lists/blockquotes. Disable the
         // toolbar-less keyboard shortcuts so users do not produce nodes the
         // serializer cannot round-trip yet.
         heading: false,
@@ -46,6 +47,7 @@ export function Editor({
         blockquote: false,
         horizontalRule: false,
       }),
+      FencedCodeBlock,
       Underline,
       AttachmentImage.configure({
         resolveSrc: resolveImageSrc ?? (async (s: string) => s),

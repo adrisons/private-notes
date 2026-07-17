@@ -22,8 +22,14 @@ export interface PMImageNode {
   attrs: { src: string; alt?: string };
 }
 
+export interface PMCodeBlockNode {
+  type: "codeBlock";
+  attrs?: { language?: string | null };
+  content?: PMTextNode[];
+}
+
 export type PMInlineNode = PMTextNode;
-export type PMBlockNode = PMParagraphNode | PMImageNode;
+export type PMBlockNode = PMParagraphNode | PMImageNode | PMCodeBlockNode;
 
 export interface PMDoc {
   type: "doc";
