@@ -12,11 +12,12 @@
 ## Decision
 
 1. **Embedding model:** default `Xenova/paraphrase-multilingual-MiniLM-L12-v2` (~384 dimensions, ~120 MB quantized), running in a **dedicated Web Worker** via [`@huggingface/transformers`](https://github.com/huggingface/transformers.js) (`embedder.worker.ts`).
-2. **`Embedder` interface** (`embedder.ts`): `embed(texts) → number[][]` returns **L2-normalized** vectors; production uses `TransformersEmbedder`, tests use `FakeEmbedder`.
-3. **Inference device:** WASM (`device: "wasm"`). WebGPU is detected in compatibility but not required.
-4. **Chunking:** word-based, ~200 words per chunk, ~32 words overlap (`chunk.ts`) — synchronous, no tokenizer in the chunker.
-5. **Lazy loading:** search API and worker start after the vault opens (`runtime.ts`, `App.tsx`) to keep the initial bundle small.
-6. **First run:** model weights download from the Hugging Face CDN and cache in the browser; later runs are offline.
+2. **`Embedder` interface** (`embedder.ts`): `embed(texts) → number[][]` returns **L2-normalized** vectors; production uses `TransformersEmbedder`, tests use `FakeEmbedder`. The interface keeps `indexer.ts` / `search.ts` free of worker and transformers.js imports.
+3. **Three embed layers:** `Embedder` (contract + test fake) → `TransformersEmbedder` (main-thread worker client) → `embedder.worker.ts` (inference only). Chunking, vault I/O, and dot-product scoring stay on the main thread; only model inference runs in the worker.
+4. **Inference device:** WASM (`device: "wasm"`). WebGPU is detected in compatibility but not required.
+5. **Chunking:** word-based, ~200 words per chunk, ~32 words overlap (`chunk.ts`) — synchronous, no tokenizer in the chunker.
+6. **Lazy loading:** search API and worker start after the vault opens (`runtime.ts`, `App.tsx`) to keep the initial bundle small.
+7. **First run:** model weights download from the Hugging Face CDN and cache in the browser; later runs are offline.
 
 ## Consequences
 
@@ -51,6 +52,7 @@ flowchart LR
 
 ## References
 
+- Deep dive (optional): [semantic-search-primer.md](../semantic-search-primer.md)
 - [transformers.js documentation](https://huggingface.co/docs/transformers.js)
 - [Model card: paraphrase-multilingual-MiniLM-L12-v2 (Xenova)](https://huggingface.co/Xenova/paraphrase-multilingual-MiniLM-L12-v2)
 - [Getting started with embeddings (Hugging Face)](https://huggingface.co/blog/getting-started-with-embeddings)

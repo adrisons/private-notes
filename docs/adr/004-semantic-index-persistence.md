@@ -80,6 +80,7 @@ flowchart TB
 
 ## References
 
+- Deep dive (optional): [semantic-search-primer.md](../semantic-search-primer.md)
 - [Cosine similarity (Wikipedia)](https://en.wikipedia.org/wiki/Cosine_similarity)
 - [SubtleCrypto.digest (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest) — used for `contentHash`
 - Related: [ADR-003](./003-semantic-search-embeddings.md), [ADR-007](./007-autosave-eventual-reindex.md), [ADR-008](./008-schema-compatibility.md)
