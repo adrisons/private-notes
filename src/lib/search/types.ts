@@ -3,6 +3,7 @@
  * so it can be shared across devices (e.g. via Dropbox) without touching the
  * notes themselves. Each note gets its own JSON file under
  * `.semantic-index/notes/<noteId>.json` to keep sync conflicts narrow.
+ * See docs/adr/004-semantic-index-persistence.md and docs/adr/008-schema-compatibility.md
  */
 export const SEMANTIC_SCHEMA_VERSION = 1 as const;
 
