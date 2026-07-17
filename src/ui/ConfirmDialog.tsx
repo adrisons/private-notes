@@ -1,5 +1,4 @@
-import { Dialog } from "./Dialog";
-import { Button } from "./Button";
+import { ActionDialog } from "./ActionDialog";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -23,33 +22,20 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   return (
-    <Dialog open={open} onClose={onCancel} label={title}>
-      <div className="p-5">
-        <h2 className="text-base font-semibold">{title}</h2>
-        {description ? (
-          <p className="mt-2 text-sm text-[var(--color-muted-foreground)]">
-            {description}
-          </p>
-        ) : null}
-        <div className="mt-5 flex items-center justify-end gap-2">
-          <Button size="sm" variant="secondary" onClick={onCancel}>
-            {cancelLabel}
-          </Button>
-          <Button
-            size="sm"
-            variant="primary"
-            onClick={onConfirm}
-            className={
-              destructive
-                ? "bg-[var(--color-danger)] text-white hover:opacity-90"
-                : undefined
-            }
-            autoFocus
-          >
-            {confirmLabel}
-          </Button>
-        </div>
-      </div>
-    </Dialog>
+    <ActionDialog
+      open={open}
+      onClose={onCancel}
+      title={title}
+      description={description}
+      primaryLabel={confirmLabel}
+      secondaryLabel={cancelLabel}
+      onPrimary={onConfirm}
+      primaryClassName={
+        destructive
+          ? "bg-[var(--color-danger)] text-white hover:brightness-110 active:brightness-95"
+          : undefined
+      }
+      autoFocusPrimary
+    />
   );
 }

@@ -6,7 +6,7 @@ export const WELCOME_NOTE_BODY = `Welcome! This app keeps your notes as plain Ma
 
 - **Create a note** — Click **New** in the sidebar, or press **⌘K** (Mac) / **Ctrl+K** (Windows) to open the command palette.
 - **Write freely** — Notes save automatically as you type. Edit the title at the top of each note.
-- **Search** — Use the search box in the sidebar. It understands meaning, not just exact words. The first search downloads a small local model (~120 MB); after that, search works offline.
+- **Search** — Click **Search…** in the sidebar or press **⌘K** (Mac) / **Ctrl+K** (Windows) to open the command palette. Search understands meaning, not just exact words. The first search downloads a small local model (~120 MB); after that, search works offline. Indexing progress appears below the search trigger; click **All indexed** to learn more or reindex manually.
 - **Insert images** — Use **Insert image** in the note header. Files are stored in your vault folder alongside your notes.
 - **Switch theme** — Toggle light/dark mode from the header.
 

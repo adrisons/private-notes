@@ -21,7 +21,7 @@
   --color-background: #ffffff;
   --color-foreground: #0a0a0a;
   --color-muted: #fafafa;
-  --color-muted-foreground: #6b7280;
+  --color-muted-foreground: #525252;
   --color-border: #ededed;
   --color-accent: #0a0a0a;
   --color-accent-foreground: #ffffff;
@@ -34,7 +34,7 @@ html[data-theme="light"] {
   --color-background: #ffffff;
   --color-foreground: #0a0a0a;
   --color-muted: #fafafa;
-  --color-muted-foreground: #6b7280;
+  --color-muted-foreground: #525252;
   --color-border: #ededed;
   --color-accent: #0a0a0a;
   --color-accent-foreground: #ffffff;
@@ -45,7 +45,7 @@ html[data-theme="dark"] {
   --color-background: #0a0a0a;
   --color-foreground: #fafafa;
   --color-muted: #111111;
-  --color-muted-foreground: #8a8a8a;
+  --color-muted-foreground: #a3a3a3;
   --color-border: #1f1f1f;
   --color-accent: #fafafa;
   --color-accent-foreground: #0a0a0a;
@@ -57,7 +57,7 @@ html[data-theme="dark"] {
     --color-background: #0a0a0a;
     --color-foreground: #fafafa;
     --color-muted: #111111;
-    --color-muted-foreground: #8a8a8a;
+    --color-muted-foreground: #a3a3a3;
     --color-border: #1f1f1f;
     --color-accent: #fafafa;
     --color-accent-foreground: #0a0a0a;

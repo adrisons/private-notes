@@ -12,7 +12,7 @@ import { Welcome } from "./screens/Welcome";
 import { NotesList } from "./screens/NotesList";
 import { NoteHeader } from "./screens/NoteHeader";
 import { EmptyState } from "./screens/EmptyState";
-import { SearchPanel } from "./screens/SearchPanel";
+import { SidebarSearch } from "./screens/SidebarSearch";
 import { pickFolder } from "./lib/fs/picker";
 import { getCompatibility } from "./lib/compatibility";
 import { Unsupported } from "./screens/Unsupported";
@@ -165,7 +165,7 @@ export function App() {
   }, [vault]);
 
   const runReindex = useCallback(async () => {
-    if (!vault || !embedderRef.current) return;
+    if (!vault || !embedderRef.current || reindexing) return;
     const search = searchApiRef.current ?? (await loadSearchApi());
     searchApiRef.current = search;
     setReindexing(true);
@@ -176,10 +176,13 @@ export function App() {
       await search.reindex(vault.root, live, embedderRef.current, {
         onProgress: setReindexProgress,
       });
+    } catch {
+      // Non-fatal — the next vault open will retry.
     } finally {
       setReindexing(false);
+      setReindexProgress(null);
     }
-  }, [vault]);
+  }, [vault, reindexing]);
 
   // Kick off a background reindex once the embedder is ready and we know
   // about the notes.
@@ -370,12 +373,11 @@ export function App() {
       header={headerNode}
       sidebar={
         <div className="flex h-full flex-col">
-          <SearchPanel
+          <SidebarSearch
             ready={embedderReady}
             reindexing={reindexing}
-            reindexProgress={reindexProgress}
-            onSearch={onSearch}
-            onOpenHit={openHit}
+            progress={reindexProgress}
+            onOpenCommandPalette={() => setPaletteOpen(true)}
             onReindex={runReindex}
           />
           <NotesList

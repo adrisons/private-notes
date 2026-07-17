@@ -42,13 +42,16 @@ export function Dialog({
 
   const width = size === "md" ? "max-w-xl" : "max-w-md";
 
+  // Align the dialog top with the sidebar search input: header (h-14) + panel padding (py-4).
+  const dialogTop = "pt-[calc(theme(spacing.14)+theme(spacing.4))]";
+
   return (
     <div
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className="fixed inset-0 z-50 grid place-items-start bg-black/40 px-4 pt-[12vh] backdrop-blur-sm"
+      className={`fixed inset-0 z-50 flex items-start justify-center bg-black/40 px-4 backdrop-blur-sm ${dialogTop}`}
     >
       <div
         ref={ref}

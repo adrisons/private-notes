@@ -58,6 +58,7 @@ Details: [ADR-002](./adr/002-note-storage-format.md), [ADR-004](./adr/004-semant
 | MD parse/serialize | `src/lib/markdown/` | [005](./adr/005-markdown-editor.md) |
 | Attachments + cache | `src/lib/attachments/` | [006](./adr/006-attachments-cache.md) |
 | Autosave, orchestration | `src/App.tsx` | [007](./adr/007-autosave-eventual-reindex.md) |
+| Sidebar search, index status | `src/screens/SidebarSearch.tsx`, `IndexStatus.tsx`, `src/lib/search/index-progress.ts` | [007](./adr/007-autosave-eventual-reindex.md) |
 | Command palette search | `src/screens/CommandPalette.tsx` | [003](./adr/003-semantic-search-embeddings.md), [004](./adr/004-semantic-index-persistence.md) |
 | Browser gate | `src/lib/compatibility.ts` | [001](./adr/001-local-first-vault.md), [008](./adr/008-schema-compatibility.md) |
 
@@ -122,12 +123,24 @@ flowchart LR
 
 ## Flow: full reindex
 
-Triggered when the vault opens (embedder ready) or manually from Search panel:
+Triggered when the vault opens (embedder ready) or manually from **All indexed** in the sidebar (`IndexStatus` → `ActionDialog`):
 
 1. `pruneOrphans` — remove embedding files for deleted notes.
 2. `reindex` — for each note, skip if `contentHash` and metadata still match; else re-embed.
 
+Progress is shown as a percentage under the sidebar search trigger; when complete, **All indexed** opens a short explanation and a **Reindex** action.
+
 Incremental reindex on save only processes the saved note ([ADR-007](./adr/007-autosave-eventual-reindex.md)).
+
+## Sidebar search
+
+`SidebarSearch` opens the command palette (click or **⌘K** / **Ctrl+K**). `IndexStatus` below it surfaces index state:
+
+- **Loading model…** — embedder not ready yet.
+- **Indexing N%** — full reindex in progress.
+- **All indexed** — clickable; opens `ActionDialog` with context and manual reindex.
+
+Semantic search itself runs inside `CommandPalette`, not inline in the sidebar.
 
 ## Command palette
 

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Button } from "../ui/Button";
 import { cn } from "../lib/cn";
 import type { NoteRecord } from "../lib/fs/types";
@@ -29,37 +30,44 @@ export function NotesList({
   onSelect,
   onCreate,
 }: NotesListProps) {
+  const sortedNotes = useMemo(
+    () =>
+      [...notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+    [notes],
+  );
+
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between px-3 py-2">
-        <span className="text-xs uppercase tracking-wider text-[var(--color-muted-foreground)]">
+      <div className="flex items-center justify-between px-4 py-3">
+        <span className="text-xs font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
           Notes
         </span>
         <Button size="sm" variant="secondary" onClick={onCreate}>
           New
         </Button>
       </div>
-      <ul className="flex-1 overflow-y-auto px-2 pb-3">
-        {notes.length === 0 ? (
-          <li className="px-2 py-6 text-center text-sm text-[var(--color-muted-foreground)]">
+      <ul className="flex-1 space-y-1 overflow-y-auto px-3 pt-2 pb-4">
+        {sortedNotes.length === 0 ? (
+          <li className="px-2 py-8 text-center text-sm text-[var(--color-muted-foreground)]">
             No notes yet
           </li>
         ) : (
-          notes.map((n) => (
+          sortedNotes.map((n) => (
             <li key={n.id}>
               <button
                 type="button"
                 onClick={() => onSelect(n.id)}
                 className={cn(
-                  "w-full rounded-md px-2 py-2 text-left text-sm",
-                  "hover:bg-[var(--color-background)]",
-                  selectedId === n.id && "bg-[var(--color-background)]",
+                  "w-full cursor-pointer rounded-md border px-3 py-2.5 text-left transition-colors",
+                  "border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-background)]",
+                  selectedId === n.id &&
+                    "border-[var(--color-border)] bg-[var(--color-background)]",
                 )}
               >
-                <div className="truncate font-medium">
+                <div className="truncate text-sm font-medium text-[var(--color-foreground)]">
                   {n.title || "Untitled"}
                 </div>
-                <div className="mt-0.5 text-xs text-[var(--color-muted-foreground)]">
+                <div className="mt-1 text-xs text-[var(--color-muted-foreground)]">
                   {formatRelative(n.updatedAt)}
                 </div>
               </button>

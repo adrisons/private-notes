@@ -93,11 +93,12 @@ of `src/styles.css`. Do not introduce inline colours.
 ### 4.2 Hierarchy
 
 - **Primitives** live in `src/ui/` (`Button`, `Input`, `Dialog`,
-`ConfirmDialog`, `AppShell`, `Logo`, `ThemeToggle`). They wrap a single
-HTML element, take `className`, and use `forwardRef` when applicable.
+`ActionDialog`, `ConfirmDialog`, `AppShell`, `Logo`, `ThemeToggle`, `Kbd`).
+They wrap a single HTML element (or a thin dialog shell), take `className`, and
+use `forwardRef` when applicable.
 - **Compositions** live in `src/screens/` (e.g. `NotesList`,
-`CommandPalette`, `SearchPanel`). They combine primitives and own
-layout. They never import from `App.tsx`.
+`CommandPalette`, `SidebarSearch`, `IndexStatus`). They combine primitives,
+own layout, and may encode product copy. They never import from `App.tsx`.
 - **Editor-specific** UI lives in `src/editor/`.
 - `App.tsx` is the only place that orchestrates vault lifecycle and wires
 screens together.
@@ -108,7 +109,7 @@ screens together.
 `secondary`, `ghost`} and `size` ∈ {`sm`, `md`}. Do not style raw
 `<button>` elements.
 - Inputs: use the `Input` primitive.
-- Modals: use `Dialog` / `ConfirmDialog`. Do not add a modal library.
+- Modals: use `Dialog` / `ActionDialog` / `ConfirmDialog`. Do not add a modal library.
 - Focus ring: every interactive element must show
 `focus-visible:ring-2 ring-[var(--color-ring)]` with offset (the
 primitives already do this — keep it that way).

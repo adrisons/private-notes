@@ -14,14 +14,14 @@ export function AppShell({ header, sidebar, children }: AppShellProps) {
   return (
     <div className="grid h-dvh grid-rows-[auto_1fr]">
       {header ? (
-        <header className="flex h-12 items-center border-b border-[var(--color-border)] px-4">
+        <header className="flex h-14 items-center border-b border-[var(--color-border)] px-5">
           {header}
         </header>
       ) : null}
       <div
         className={
           sidebar
-            ? "grid grid-cols-[260px_1fr] overflow-hidden"
+            ? "grid grid-cols-1 overflow-hidden sm:grid-cols-[280px_1fr]"
             : "overflow-hidden"
         }
       >

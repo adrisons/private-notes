@@ -70,14 +70,17 @@ export function CommandPalette({
   // recent notes. When non-empty: semantic hits first, then notes whose title
   // matches as a quick lexical fallback.
   const items: Item[] = useMemo(() => {
+    const sorted = [...notes].sort((a, b) =>
+      b.updatedAt.localeCompare(a.updatedAt),
+    );
     const trimmed = query.trim().toLowerCase();
     if (trimmed.length === 0) {
       return [
         { kind: "create" as const },
-        ...notes.slice(0, 8).map((n) => ({ kind: "note" as const, record: n })),
+        ...sorted.slice(0, 8).map((n) => ({ kind: "note" as const, record: n })),
       ];
     }
-    const lexical = notes
+    const lexical = sorted
       .filter((n) => n.title.toLowerCase().includes(trimmed))
       .slice(0, 5);
     return [
@@ -122,7 +125,7 @@ export function CommandPalette({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={searchReady ? "Search or jump to…" : "Loading search…"}
-          className="w-full bg-transparent px-4 py-3 text-base outline-none placeholder:text-[var(--color-muted-foreground)]"
+          className="w-full bg-transparent px-4 py-3.5 text-base outline-none placeholder:text-[var(--color-muted-foreground)]"
           aria-label="Search notes"
         />
         <ul className="max-h-[50vh] overflow-y-auto border-t border-[var(--color-border)]">
@@ -133,8 +136,10 @@ export function CommandPalette({
           ) : (
             items.map((item, i) => {
               const isActive = i === active;
-              const cls = `flex w-full items-start gap-3 px-4 py-2 text-left text-sm ${
-                isActive ? "bg-[var(--color-muted)]" : ""
+              const cls = `flex w-full cursor-pointer items-start gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
+                isActive
+                  ? "bg-[var(--color-muted)] text-[var(--color-foreground)]"
+                  : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]"
               }`;
               if (item.kind === "create") {
                 return (
@@ -195,7 +200,7 @@ export function CommandPalette({
             })
           )}
         </ul>
-        <div className="border-t border-[var(--color-border)] px-4 py-2 text-[10px] uppercase tracking-wider text-[var(--color-muted-foreground)]">
+        <div className="border-t border-[var(--color-border)] px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
           ↑↓ navigate · Enter to open · Esc to close
         </div>
       </div>

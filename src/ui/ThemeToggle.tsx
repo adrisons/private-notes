@@ -38,10 +38,10 @@ export function ThemeToggle() {
               persistTheme(opt.value);
             }}
             className={cn(
-              "h-7 w-7 rounded text-xs",
+              "h-7 w-7 cursor-pointer rounded text-xs transition-colors",
               active
                 ? "bg-[var(--color-muted)] text-[var(--color-foreground)]"
-                : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]",
+                : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]",
             )}
           >
             <span aria-hidden>{opt.icon}</span>
