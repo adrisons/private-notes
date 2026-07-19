@@ -44,6 +44,7 @@ export function AppShell({
 }: AppShellProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const panelId = useId();
+  const mainId = useId();
   const mainRef = useRef<HTMLElement>(null);
   const firstRender = useRef(true);
 
@@ -72,6 +73,9 @@ export function AppShell({
 
   return (
     <div className="grid h-dvh grid-rows-[auto_1fr] bg-[var(--canvas)]">
+      <a href={`#${mainId}`} className="u-skip-link">
+        Skip to content
+      </a>
       {header ? (
         <header className="flex h-[var(--header-height)] items-center gap-2 border-b border-[var(--border-strong)] bg-[var(--surface)] px-4 sm:px-5">
           {sidebar ? (
@@ -119,14 +123,23 @@ export function AppShell({
             className="u-disclosure absolute inset-x-0 top-0 z-30 md:contents"
           >
             <div className="md:contents">
-              <aside className="max-h-[70dvh] overflow-y-auto border-b border-[var(--border-strong)] bg-[var(--surface)] shadow-[var(--shadow-overlay)] md:max-h-none md:border-r md:border-b-0 md:shadow-none">
+              <aside
+                aria-label="Notes and search"
+                className="max-h-[70dvh] overflow-y-auto border-b border-[var(--border-strong)] bg-[var(--surface)] shadow-[var(--shadow-overlay)] md:max-h-none md:border-r md:border-b-0 md:shadow-none"
+              >
                 {sidebar}
               </aside>
             </div>
           </div>
         ) : null}
 
-        <main ref={mainRef} tabIndex={-1} className="overflow-y-auto outline-none">
+        <main
+          id={mainId}
+          ref={mainRef}
+          tabIndex={-1}
+          aria-label="Note content"
+          className="overflow-y-auto outline-none"
+        >
           {children}
         </main>
       </div>

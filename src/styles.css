@@ -265,7 +265,8 @@ body::before {
 }
 
 .gesture-annotate:hover::before,
-.gesture-annotate[aria-current="true"]::before {
+.gesture-annotate[aria-current="true"]::before,
+.gesture-annotate[aria-selected="true"]::before {
   transform: scaleY(1);
 }
 
@@ -375,24 +376,36 @@ body::before {
 .u-tooltip {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.625rem;
   max-width: min(18rem, calc(100vw - 2rem));
-  padding: 0.3rem 0.55rem;
+  padding: 0.35rem 0.6rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-raised);
   color: var(--foreground);
   box-shadow: var(--shadow-overlay);
   font-size: 0.75rem;
-  line-height: 1.3;
+  line-height: 1;
   white-space: nowrap;
   animation: enter-tooltip var(--duration-normal) var(--ease-out) both;
 }
 
+.u-tooltip-label {
+  line-height: 1;
+}
+
 .u-tooltip-shortcut {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
+  line-height: 1;
   color: var(--foreground-muted);
+  flex: none;
 }
 
 /* More controls: the chevron flips to point back the way it came. */
@@ -481,6 +494,34 @@ body::before {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
+
+/* Skip link: hidden until focused (WCAG 2.4.1). */
+.u-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  z-index: 100;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.u-skip-link:focus-visible {
+  left: 1rem;
+  top: 1rem;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: var(--shadow-overlay);
+}
 } /* @layer components */
 
 /*
@@ -539,7 +580,8 @@ body::before {
   }
 
   .gesture-annotate:hover::before,
-  .gesture-annotate[aria-current="true"]::before {
+  .gesture-annotate[aria-current="true"]::before,
+  .gesture-annotate[aria-selected="true"]::before {
     opacity: 1;
   }
 }

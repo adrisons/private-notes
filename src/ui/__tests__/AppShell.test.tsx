@@ -83,4 +83,15 @@ describe("AppShell", () => {
       screen.queryByRole("button", { name: /notes and search/i }),
     ).toBeNull();
   });
+
+  it("exposes a skip link and labeled landmarks", () => {
+    setup();
+    expect(screen.getByRole("link", { name: /skip to content/i })).toHaveAttribute(
+      "href",
+      `#${screen.getByRole("main", { name: /note content/i }).id}`,
+    );
+    expect(
+      screen.getByRole("complementary", { name: /notes and search/i }),
+    ).toBeInTheDocument();
+  });
 });

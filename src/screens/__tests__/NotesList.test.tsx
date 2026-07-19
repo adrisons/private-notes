@@ -31,14 +31,12 @@ describe("NotesList", () => {
     );
     expect(screen.getByText("Alpha note")).toBeInTheDocument();
     expect(screen.getByText("Beta note")).toBeInTheDocument();
-    // Selection is exposed semantically via listbox option state.
-    expect(screen.getByRole("option", { name: /beta note/i })).toHaveAttribute(
-      "aria-selected",
+    expect(screen.getByRole("button", { name: /beta note/i })).toHaveAttribute(
+      "aria-current",
       "true",
     );
-    expect(screen.getByRole("option", { name: /alpha note/i })).toHaveAttribute(
-      "aria-selected",
-      "false",
+    expect(screen.getByRole("button", { name: /alpha note/i })).not.toHaveAttribute(
+      "aria-current",
     );
   });
 
@@ -72,7 +70,7 @@ describe("NotesList", () => {
         onDuplicate={vi.fn()}
       />,
     );
-    await user.click(screen.getByRole("option", { name: /alpha note/i }));
+    await user.click(screen.getByRole("button", { name: /alpha note/i }));
     expect(onSelect).toHaveBeenCalledWith("a");
   });
 
@@ -90,10 +88,10 @@ describe("NotesList", () => {
       />,
     );
 
-    const alpha = screen.getByRole("option", { name: /alpha note/i });
+    const alpha = screen.getByRole("button", { name: /alpha note/i });
     alpha.focus();
     await user.keyboard("{ArrowDown}");
-    expect(screen.getByRole("option", { name: /beta note/i })).toHaveFocus();
+    expect(screen.getByRole("button", { name: /beta note/i })).toHaveFocus();
     await user.keyboard("{Enter}");
     expect(onSelect).toHaveBeenCalledWith("b");
   });
@@ -112,7 +110,7 @@ describe("NotesList", () => {
       />,
     );
 
-    screen.getByRole("option", { name: /alpha note/i }).focus();
+    screen.getByRole("button", { name: /alpha note/i }).focus();
     await user.keyboard("{Delete}");
     expect(onDelete).toHaveBeenCalledWith("a");
   });
@@ -130,7 +128,7 @@ describe("NotesList", () => {
         onDuplicate={vi.fn()}
       />,
     );
-    fireEvent.contextMenu(screen.getByRole("option", { name: /beta note/i }));
+    fireEvent.contextMenu(screen.getByRole("button", { name: /beta note/i }));
     await user.click(screen.getByRole("menuitem", { name: /delete note/i }));
     expect(onDelete).toHaveBeenCalledWith("b");
   });
@@ -148,7 +146,7 @@ describe("NotesList", () => {
         onDuplicate={onDuplicate}
       />,
     );
-    fireEvent.contextMenu(screen.getByRole("option", { name: /alpha note/i }));
+    fireEvent.contextMenu(screen.getByRole("button", { name: /alpha note/i }));
     await user.click(screen.getByRole("menuitem", { name: /duplicate note/i }));
     expect(onDuplicate).toHaveBeenCalledWith("a");
   });

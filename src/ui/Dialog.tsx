@@ -1,5 +1,7 @@
 import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import { trapFocus } from "../lib/focus-trap";
+import { setAppInert } from "../lib/set-app-inert";
 
 interface DialogProps {
   open: boolean;
@@ -15,8 +17,8 @@ interface DialogProps {
 
 /**
  * Minimal modal: focus-trapped at the dialog root, Esc closes, click on the
- * scrim closes. Avoids a heavy library — the app only needs a confirm dialog
- * and the command palette.
+ * scrim closes. Portaled to `document.body` so the app root can be marked
+ * `inert` while open.
  */
 export function Dialog({
   open,
@@ -33,6 +35,7 @@ export function Dialog({
     if (!open) return;
 
     previousFocusRef.current = document.activeElement as HTMLElement | null;
+    setAppInert(true);
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -57,6 +60,7 @@ export function Dialog({
 
     return () => {
       window.removeEventListener("keydown", onKey);
+      setAppInert(false);
       previousFocusRef.current?.focus?.();
     };
   }, [open, onClose, initialFocusRef]);
@@ -68,7 +72,7 @@ export function Dialog({
   // Align the dialog top with the sidebar search input: header + panel padding.
   const dialogTop = "pt-[calc(var(--header-height)+1rem)]";
 
-  return (
+  return createPortal(
     <div
       role="presentation"
       onClick={(e) => {
@@ -87,6 +91,7 @@ export function Dialog({
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

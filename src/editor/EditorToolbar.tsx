@@ -86,7 +86,7 @@ interface MarkAction {
   label: string;
   /** Human-readable name for the tooltip and the accessible name. */
   title: string;
-  shortcut: string;
+  shortcut?: string;
   mono?: boolean;
   isActive: (editor: Editor) => boolean;
   run: (editor: Editor) => boolean;
@@ -96,7 +96,7 @@ interface BlockAction {
   name: string;
   label: string;
   title: string;
-  shortcut: string;
+  shortcut?: string;
   mono?: boolean;
   isActive: (editor: Editor) => boolean;
   run: (editor: Editor) => boolean;
@@ -252,18 +252,20 @@ function ToolbarButton({
   label: string;
   name: string;
   title: string;
-  shortcut: string;
+  shortcut?: string;
   active: boolean;
   disabled: boolean;
   mono?: boolean;
   onClick: () => void;
 }) {
+  const accessibleName = shortcut ? `${title} (${shortcut})` : title;
+
   return (
     <Tooltip label={title} shortcut={shortcut}>
     <button
       type="button"
       aria-pressed={active}
-      aria-label={`${title} (${shortcut})`}
+      aria-label={accessibleName}
       disabled={disabled}
       onClick={onClick}
       className={cn(

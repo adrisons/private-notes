@@ -16,6 +16,7 @@ import {
   expectErrorToast,
   expectLoggedNoteIOError,
   openVaultFromWelcomeScreen,
+  sidebarNoteButton,
   stubDirectoryPicker,
   waitForIndexErrorInSidebar,
   type IntegrationTestContext,
@@ -162,9 +163,7 @@ describe("App error handling integration", () => {
           "Make sure the notes folder is writable, then try again.",
         ),
       );
-      fireEvent.contextMenu(
-        screen.getByRole("option", { name: /original/i }),
-      );
+      fireEvent.contextMenu(sidebarNoteButton(/original/i));
       await result.user.click(
         screen.getByRole("menuitem", { name: /duplicate note/i }),
       );
@@ -193,9 +192,7 @@ describe("App error handling integration", () => {
           "The note file may be missing or unreadable. Try refreshing the folder.",
         ),
       );
-      await result.user.click(
-        screen.getByRole("option", { name: /second note/i }),
-      );
+      await result.user.click(sidebarNoteButton(/second note/i));
 
       await waitFor(() => {
         expectErrorToast(

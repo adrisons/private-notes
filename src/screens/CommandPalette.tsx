@@ -208,6 +208,9 @@ export function CommandPalette({
         <Input
           ref={inputRef}
           variant="ghost"
+          role="combobox"
+          aria-expanded={open}
+          aria-autocomplete="list"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={searchReady ? "Search or jump to…" : "Loading search…"}

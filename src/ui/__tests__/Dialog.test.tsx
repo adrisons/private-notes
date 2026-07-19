@@ -70,6 +70,21 @@ describe("Dialog", () => {
     expect(document.activeElement).toBe(second);
   });
 
+  it("marks the app root inert while open", () => {
+    const root = document.createElement("div");
+    root.id = "root";
+    document.body.appendChild(root);
+
+    render(
+      <Dialog open onClose={vi.fn()} label="Test dialog">
+        <p>Dialog body</p>
+      </Dialog>,
+    );
+
+    expect(root).toHaveAttribute("inert");
+    root.remove();
+  });
+
   it("focuses the initial focus target when provided", async () => {
     function Harness() {
       const inputRef = useRef<HTMLInputElement>(null);

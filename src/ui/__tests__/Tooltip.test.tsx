@@ -60,4 +60,40 @@ describe("Tooltip", () => {
     // Not exposed in the accessible tree, so it is never announced twice.
     expect(screen.queryByRole("tooltip")).toBeNull();
   });
+
+  it("lays out the label and shortcut as separate flex children", async () => {
+    const user = userEvent.setup();
+    render(
+      <Tooltip label="Numbered list" shortcut="⇧⌘7">
+        <button type="button" aria-label="Numbered list (⇧⌘7)">
+          1.
+        </button>
+      </Tooltip>,
+    );
+
+    await user.hover(screen.getByRole("button"));
+    const tooltip = screen.getByRole("tooltip", { hidden: true });
+    expect(tooltip.querySelector(".u-tooltip-label")).toHaveTextContent(
+      "Numbered list",
+    );
+    expect(tooltip.querySelector(".u-tooltip-shortcut")).toHaveTextContent(
+      "⇧⌘7",
+    );
+  });
+
+  it("shows the divider markdown shortcut separated from the label", async () => {
+    const user = userEvent.setup();
+    render(
+      <Tooltip label="Divider" shortcut="---">
+        <button type="button" aria-label="Divider (---)">
+          —
+        </button>
+      </Tooltip>,
+    );
+
+    await user.hover(screen.getByRole("button"));
+    const tooltip = screen.getByRole("tooltip", { hidden: true });
+    expect(tooltip.querySelector(".u-tooltip-label")).toHaveTextContent("Divider");
+    expect(tooltip.querySelector(".u-tooltip-shortcut")).toHaveTextContent("---");
+  });
 });

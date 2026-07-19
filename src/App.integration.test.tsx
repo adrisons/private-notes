@@ -18,6 +18,7 @@ import {
   openVaultSkippingWelcome,
   searchInCommandPalette,
   setFieldValue,
+  sidebarNoteButton,
   stubDirectoryPicker,
   type IntegrationTestContext,
 } from "./test/integrationHelpers";
@@ -39,7 +40,7 @@ describe("App integration", () => {
     it("shows Welcome on cold start then opens the vault from the picker", async () => {
       await openVaultFromWelcomeScreen();
       expect(
-        screen.getByRole("option", { name: /welcome to private-notes/i }),
+        sidebarNoteButton(/welcome to private-notes/i),
       ).toBeInTheDocument();
     });
 
@@ -51,7 +52,7 @@ describe("App integration", () => {
         }),
       ).not.toBeInTheDocument();
       expect(
-        screen.getByRole("option", { name: /welcome to private-notes/i }),
+        sidebarNoteButton(/welcome to private-notes/i),
       ).toBeInTheDocument();
     });
   });
@@ -75,9 +76,7 @@ describe("App integration", () => {
         expect(screen.getByDisplayValue("Untitled")).toBeInTheDocument();
       });
 
-      await result.user.click(
-        screen.getByRole("option", { name: /second note/i }),
-      );
+      await result.user.click(sidebarNoteButton(/second note/i));
       await waitFor(() => {
         expect(screen.getByDisplayValue("Second note")).toBeInTheDocument();
       });
@@ -137,9 +136,7 @@ describe("App integration", () => {
       const result = await openVaultSkippingWelcome(ctx.pickerRoot);
       await createNoteWithTitle(result, "Context delete");
 
-      const noteButton = screen.getByRole("option", {
-        name: /context delete/i,
-      });
+      const noteButton = sidebarNoteButton(/context delete/i);
       fireEvent.contextMenu(noteButton);
       await result.user.click(
         screen.getByRole("menuitem", { name: /delete note/i }),
@@ -155,16 +152,14 @@ describe("App integration", () => {
       const result = await openVaultSkippingWelcome(ctx.pickerRoot);
       await createNoteWithTitle(result, "My Original");
 
-      fireEvent.contextMenu(
-        screen.getByRole("option", { name: /my original/i }),
-      );
+      fireEvent.contextMenu(sidebarNoteButton(/my original/i));
       await result.user.click(
         screen.getByRole("menuitem", { name: /duplicate note/i }),
       );
 
       await waitFor(() => {
         expect(
-          screen.getByRole("option", { name: /my original \(copy\)/i }),
+          sidebarNoteButton(/my original \(copy\)/i),
         ).toBeInTheDocument();
         expect(
           screen.getByDisplayValue("My Original (copy)"),

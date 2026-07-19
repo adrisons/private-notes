@@ -69,13 +69,22 @@ export function NotesList({
     }
   }, [focusedIndex, sortedNotes.length]);
 
+  const openMenuAt = (
+    index: number,
+    trigger: HTMLButtonElement,
+    coords: { x: number; y: number },
+  ) => {
+    const note = sortedNotes[index];
+    if (!note) return;
+    menuTriggerRef.current = trigger;
+    setMenu({ x: coords.x, y: coords.y, noteId: note.id });
+  };
+
   const openMenuForIndex = (index: number) => {
     const button = noteRefs.current[index];
-    const note = sortedNotes[index];
-    if (!button || !note) return;
-    menuTriggerRef.current = button;
+    if (!button) return;
     const rect = button.getBoundingClientRect();
-    setMenu({ x: rect.left, y: rect.bottom + 4, noteId: note.id });
+    openMenuAt(index, button, { x: rect.left, y: rect.bottom + 4 });
   };
 
   const handleListKeyDown = (event: React.KeyboardEvent<HTMLUListElement>) => {
@@ -157,7 +166,7 @@ export function NotesList({
       </div>
       <ul
         ref={listRef}
-        role="listbox"
+        role="list"
         aria-label="Notes"
         onKeyDown={handleListKeyDown}
         className="flex-1 space-y-1 overflow-y-auto px-3 pt-2 pb-4 outline-none"
@@ -168,23 +177,24 @@ export function NotesList({
           </li>
         ) : (
           sortedNotes.map((n, index) => (
-            <li key={n.id} role="presentation">
+            <li key={n.id}>
               {/* Select: a coral hairline wipes in from the left (§5.7). */}
               <button
                 ref={(el) => {
                   noteRefs.current[index] = el;
                 }}
                 type="button"
-                role="option"
-                aria-selected={selectedId === n.id}
+                aria-current={selectedId === n.id ? "true" : undefined}
                 tabIndex={index === focusedIndex ? 0 : -1}
                 onFocus={() => setFocusedIndex(index)}
                 onClick={() => onSelect(n.id)}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   setFocusedIndex(index);
-                  menuTriggerRef.current = noteRefs.current[index];
-                  setMenu({ x: e.clientX, y: e.clientY, noteId: n.id });
+                  openMenuAt(index, e.currentTarget, {
+                    x: e.clientX,
+                    y: e.clientY,
+                  });
                 }}
                 className={cn(
                   "gesture-annotate u-press u-lift u-focus w-full cursor-pointer overflow-hidden",

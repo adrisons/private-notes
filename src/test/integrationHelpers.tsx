@@ -16,6 +16,12 @@ export interface IntegrationTestContext {
   pickerRoot: FileSystemDirectoryHandle;
 }
 
+/** Sidebar note row button by title fragment. */
+export function sidebarNoteButton(title: string | RegExp): HTMLElement {
+  const pattern = typeof title === "string" ? new RegExp(title, "i") : title;
+  return screen.getByRole("button", { name: pattern });
+}
+
 /** Set an input or textarea value in one shot (faster than userEvent.type). */
 export function setFieldValue(element: HTMLElement, value: string): void {
   fireEvent.change(element, { target: { value } });
@@ -57,9 +63,7 @@ export async function createNoteWithTitle(
   setFieldValue(screen.getByDisplayValue("Untitled"), title);
   await advanceAutosave();
   await waitFor(() => {
-    expect(
-      screen.getByRole("option", { name: new RegExp(title, "i") }),
-    ).toBeInTheDocument();
+    expect(sidebarNoteButton(title)).toBeInTheDocument();
   });
 }
 

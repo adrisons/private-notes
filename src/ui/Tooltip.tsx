@@ -81,9 +81,9 @@ export function Tooltip({ label, shortcut, children }: TooltipProps) {
               style={{ left: anchor.x, top: anchor.y }}
             >
               <span className="u-tooltip">
-                {label}
+                <span className="u-tooltip-label">{label}</span>
                 {shortcut ? (
-                  <span className="u-tooltip-shortcut">{shortcut}</span>
+                  <kbd className="u-tooltip-shortcut">{shortcut}</kbd>
                 ) : null}
               </span>
             </div>,
