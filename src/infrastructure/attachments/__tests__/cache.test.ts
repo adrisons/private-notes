@@ -61,6 +61,20 @@ describe("AttachmentURLCache", () => {
     expect(await cache.resolve("attachments/missing.png")).toBeNull();
   });
 
+  it("notifies onLoadError when a path cannot be read", async () => {
+    const root = makeFakeRoot();
+    await initializeVault(root);
+    const onLoadError = vi.fn();
+    const cache = new AttachmentURLCache(root, { onLoadError });
+
+    await cache.resolve("attachments/missing.png");
+
+    expect(onLoadError).toHaveBeenCalledWith(
+      "attachments/missing.png",
+      expect.anything(),
+    );
+  });
+
   it("invalidate drops a cached blob so the next resolve re-reads disk", async () => {
     const root = makeFakeRoot();
     await initializeVault(root);

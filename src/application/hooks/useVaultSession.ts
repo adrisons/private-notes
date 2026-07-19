@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getCompatibility } from "../../lib/compatibility";
 import { defaultInfrastructure } from "../composition";
 import { openVault } from "../use-cases/open-vault";
-import { userFacingMessage } from "../errors";
+import { reportUserError } from "../errors";
 import type { VaultSession, VaultStartup } from "../vault-session";
 import type { OpenNoteState } from "../view-models";
 import { toNoteListItems, type NoteListItem } from "../view-models";
@@ -101,7 +101,8 @@ export function useVaultSession(
       flushBeforeSwitch?.();
       await activateFromHandle(handle);
     } catch (err) {
-      setError(userFacingMessage(err));
+      const payload = reportUserError(err);
+      setError(`${payload.message} ${payload.fixHint}`);
     }
   }, [activateFromHandle, flushBeforeSwitch]);
 

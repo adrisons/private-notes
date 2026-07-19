@@ -1,0 +1,111 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+  BackgroundTaskError,
+  NoteIOError,
+  guardNoteIO,
+  registerBackgroundError,
+  reportUserError,
+  resetErrorReportingForTests,
+  setBackgroundErrorListener,
+  userFacingMessage,
+  userFixHint,
+} from "../errors";
+
+describe("application/errors", () => {
+  beforeEach(() => {
+    resetErrorReportingForTests();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("wraps note I/O failures as NoteIOError", async () => {
+    await expect(
+      guardNoteIO(
+        {
+          operation: "save-note",
+          module: "application/use-cases/save-note.ts",
+          trace: "saveNote → VaultSession.saveNote",
+          fixHint: "Check FsNoteRepository.update.",
+        },
+        "Could not save your note.",
+        "Try again.",
+        async () => {
+          throw new Error("disk full");
+        },
+      ),
+    ).rejects.toBeInstanceOf(NoteIOError);
+  });
+
+  it("reports user errors with friendly payload and technical console log", () => {
+    const error = new NoteIOError(
+      "Could not save your note.",
+      {
+        operation: "save-note",
+        module: "application/use-cases/save-note.ts",
+        trace: "saveNote → VaultSession.saveNote",
+        fixHint: "Check FsNoteRepository.update.",
+      },
+      "Try again.",
+      new Error("disk full"),
+    );
+
+    const payload = reportUserError(error);
+
+    expect(payload).toEqual({
+      message: "Could not save your note.",
+      fixHint: "Try again.",
+    });
+    expect(console.error).toHaveBeenCalledWith(
+      "[private-notes] NoteIOError",
+      expect.objectContaining({
+        operation: "save-note",
+        module: "application/use-cases/save-note.ts",
+        trace: "saveNote → VaultSession.saveNote",
+        fixHint: "Check FsNoteRepository.update.",
+      }),
+      expect.any(Error),
+    );
+  });
+
+  it("registers background errors once and notifies listeners", () => {
+    const listener = vi.fn();
+    setBackgroundErrorListener(listener);
+
+    registerBackgroundError("reindex", new Error("worker crashed"), {
+      operation: "run-full-reindex",
+      module: "application/use-cases/run-full-reindex.ts",
+      trace: "runFullReindex → search.reindex",
+      fixHint: "Retry via IndexStatus.onReindex.",
+    });
+    registerBackgroundError("reindex", new Error("worker crashed"), {
+      operation: "run-full-reindex",
+      module: "application/use-cases/run-full-reindex.ts",
+      trace: "runFullReindex → search.reindex",
+      fixHint: "Retry via IndexStatus.onReindex.",
+    });
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener.mock.calls[0]?.[0]).toBeInstanceOf(BackgroundTaskError);
+    expect(console.error).toHaveBeenCalledTimes(1);
+  });
+
+  it("extracts user-facing text from typed errors", () => {
+    const error = new NoteIOError(
+      "Could not open this note.",
+      {
+        operation: "open-note",
+        module: "application/use-cases/open-note.ts",
+        trace: "openNote → VaultSession.openNote",
+        fixHint: "Check FsNoteRepository.read.",
+      },
+      "Try reopening the folder.",
+    );
+
+    expect(userFacingMessage(error)).toBe("Could not open this note.");
+    expect(userFixHint(error)).toBe("Try reopening the folder.");
+  });
+});

@@ -5,7 +5,10 @@ import { createSemanticSearch, loadDefaultEmbedder } from "../composition";
 import type { SemanticSearch } from "../ports/semantic-search";
 import type { VaultSession } from "../vault-session";
 import type { ReindexProgress, SearchResultItem } from "../view-models";
-import { userFacingMessage } from "../errors";
+import {
+  setBackgroundErrorListener,
+  type BackgroundTaskError,
+} from "../errors";
 import {
   runFullReindex,
   scheduleReindex as scheduleReindexUseCase,
@@ -14,13 +17,14 @@ import { searchNotes } from "../use-cases/search-notes";
 
 export interface UseSemanticIndexOptions {
   session: VaultSession | null;
-  onError: (message: string) => void;
+  onError: (error: unknown) => void;
 }
 
 export interface UseSemanticIndexResult {
   embedderReady: boolean;
   reindexing: boolean;
   reindexProgress: ReindexProgress | null;
+  indexError: boolean;
   runReindex: () => Promise<void>;
   onSearch: (query: string) => Promise<SearchResultItem[]>;
   scheduleReindex: (records: NoteRecord[]) => void;
@@ -38,10 +42,23 @@ export function useSemanticIndex({
   const [reindexProgress, setReindexProgress] = useState<ReindexProgress | null>(
     null,
   );
+  const [indexError, setIndexError] = useState(false);
+
+  const handleBackgroundError = useCallback((error: BackgroundTaskError) => {
+    if (error.task === "reindex") {
+      setIndexError(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    setBackgroundErrorListener(handleBackgroundError);
+    return () => setBackgroundErrorListener(null);
+  }, [handleBackgroundError]);
 
   useEffect(() => {
     if (!session) {
       setEmbedderReady(false);
+      setIndexError(false);
       searchRef.current = null;
       return;
     }
@@ -54,7 +71,7 @@ export function useSemanticIndex({
         }
         if (!cancelled) setEmbedderReady(true);
       } catch (err) {
-        if (!cancelled) onError(userFacingMessage(err));
+        if (!cancelled) onError(err);
       }
     })();
     return () => {
@@ -77,9 +94,10 @@ export function useSemanticIndex({
         searchRef.current,
         embedderRef.current,
         records,
+        handleBackgroundError,
       );
     },
-    [session, embedderReady],
+    [session, embedderReady, handleBackgroundError],
   );
 
   const runReindex = useCallback(async () => {
@@ -88,18 +106,23 @@ export function useSemanticIndex({
     }
     setReindexing(true);
     setReindexProgress({ done: 0, total: 0 });
+    setIndexError(false);
     try {
-      await runFullReindex(
+      const error = await runFullReindex(
         session,
         searchRef.current,
         embedderRef.current,
-        { onProgress: setReindexProgress },
+        {
+          onProgress: setReindexProgress,
+          onBackgroundError: handleBackgroundError,
+        },
       );
+      if (error) setIndexError(true);
     } finally {
       setReindexing(false);
       setReindexProgress(null);
     }
-  }, [session, reindexing]);
+  }, [session, reindexing, handleBackgroundError]);
 
   useEffect(() => {
     if (embedderReady && session) void runReindex();
@@ -124,6 +147,7 @@ export function useSemanticIndex({
     embedderReady,
     reindexing,
     reindexProgress,
+    indexError,
     runReindex,
     onSearch,
     scheduleReindex,

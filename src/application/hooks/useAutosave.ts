@@ -14,6 +14,7 @@ export interface UseAutosaveOptions {
   refreshSummaries: () => Promise<void>;
   scheduleReindex: (records: NoteRecord[]) => void;
   embedderReady: boolean;
+  onError: (error: unknown) => void;
 }
 
 export interface UseAutosaveResult {
@@ -27,6 +28,7 @@ export function useAutosave({
   refreshSummaries,
   scheduleReindex,
   embedderReady,
+  onError,
 }: UseAutosaveOptions): UseAutosaveResult {
   const persist = useCallback(
     async (id: string, title: string, body: string) => {
@@ -39,12 +41,13 @@ export function useAutosave({
             setCurrent(result.state);
             await refreshSummaries();
           },
+          onError,
           scheduleReindex,
           embedderReady,
         },
       );
     },
-    [session, setCurrent, refreshSummaries, scheduleReindex, embedderReady],
+    [session, setCurrent, refreshSummaries, scheduleReindex, embedderReady, onError],
   );
 
   const debouncedPersist = useDebouncedCallback(persist, AUTOSAVE_MS);

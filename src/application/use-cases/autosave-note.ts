@@ -12,6 +12,7 @@ export interface AutosaveInput {
 
 export interface AutosaveCallbacks {
   onSaved: (result: SaveNoteResult) => void | Promise<void>;
+  onError: (error: unknown) => void;
   scheduleReindex: (records: NoteRecord[]) => void;
   embedderReady: boolean;
 }
@@ -22,9 +23,13 @@ export async function autosaveNote(
   input: AutosaveInput,
   callbacks: AutosaveCallbacks,
 ): Promise<void> {
-  const result = await saveNote(session, input.id, input.title, input.body);
-  await callbacks.onSaved(result);
-  if (callbacks.embedderReady) {
-    callbacks.scheduleReindex([noteToReindexRecord(result.note)]);
+  try {
+    const result = await saveNote(session, input.id, input.title, input.body);
+    await callbacks.onSaved(result);
+    if (callbacks.embedderReady) {
+      callbacks.scheduleReindex([noteToReindexRecord(result.note)]);
+    }
+  } catch (error) {
+    callbacks.onError(error);
   }
 }

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "./ui/AppShell";
 import { Logo } from "./ui/Logo";
+import { Toast } from "./ui/Toast";
 import { Welcome } from "./screens/Welcome";
 import { NotesList } from "./screens/NotesList";
 import { NoteHeader } from "./screens/NoteHeader";
@@ -11,6 +12,7 @@ import { Unsupported } from "./screens/Unsupported";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { ThemeToggle } from "./ui/ThemeToggle";
 import { CommandPalette } from "./screens/CommandPalette";
+import { useAppToast } from "./application/hooks/useAppToast";
 import { useVaultSession } from "./application/hooks/useVaultSession";
 import { useCurrentNote } from "./application/hooks/useCurrentNote";
 import { useSemanticIndex } from "./application/hooks/useSemanticIndex";
@@ -23,13 +25,14 @@ const Editor = lazy(() =>
 const compat = getCompatibility();
 
 export function App() {
+  const { toast, showError, dismiss } = useAppToast();
   const flushRef = useRef<() => void>(() => {});
   const vault = useVaultSession({
     flushBeforeSwitch: () => flushRef.current(),
   });
   const search = useSemanticIndex({
     session: vault.session,
-    onError: vault.setError,
+    onError: showError,
   });
   const note = useCurrentNote({
     session: vault.session,
@@ -38,12 +41,14 @@ export function App() {
     refreshSummaries: vault.refreshSummaries,
     scheduleReindex: search.scheduleReindex,
     embedderReady: search.embedderReady,
+    onError: showError,
   });
   flushRef.current = note.flushPersist;
 
   const attachments = useAttachments({
     session: vault.session,
     currentNoteId: vault.current?.id ?? null,
+    onError: showError,
   });
 
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -124,6 +129,7 @@ export function App() {
             ready={search.embedderReady}
             reindexing={search.reindexing}
             progress={search.reindexProgress}
+            indexError={search.indexError}
             onOpenCommandPalette={() => setPaletteOpen(true)}
             onReindex={search.runReindex}
           />
@@ -170,6 +176,13 @@ export function App() {
       ) : (
         <EmptyState onCreate={note.createNote} />
       )}
+      {toast ? (
+        <Toast
+          message={toast.message}
+          fixHint={toast.fixHint}
+          onDismiss={dismiss}
+        />
+      ) : null}
       <ConfirmDialog
         open={pendingDeleteId !== null}
         title="Delete this note?"

@@ -17,6 +17,7 @@ export interface UseCurrentNoteOptions {
   refreshSummaries: () => Promise<void>;
   scheduleReindex: (records: NoteRecord[]) => void;
   embedderReady: boolean;
+  onError: (error: unknown) => void;
 }
 
 export interface UseCurrentNoteResult {
@@ -36,6 +37,7 @@ export function useCurrentNote({
   refreshSummaries,
   scheduleReindex,
   embedderReady,
+  onError,
 }: UseCurrentNoteOptions): UseCurrentNoteResult {
   const currentIdRef = useRef<string | null>(null);
   currentIdRef.current = current?.id ?? null;
@@ -46,6 +48,7 @@ export function useCurrentNote({
     refreshSummaries,
     scheduleReindex,
     embedderReady,
+    onError,
   });
 
   const switchToNote = useCallback(
@@ -53,10 +56,14 @@ export function useCurrentNote({
       if (!session) return;
       if (currentIdRef.current === id) return;
       autosave.flush();
-      const state = await openNote(session, id as NoteId);
-      if (state) setCurrent(state);
+      try {
+        const state = await openNote(session, id as NoteId);
+        if (state) setCurrent(state);
+      } catch (error) {
+        onError(error);
+      }
     },
-    [session, setCurrent, autosave],
+    [session, setCurrent, autosave, onError],
   );
 
   const onTitleChange = useCallback(
@@ -79,33 +86,45 @@ export function useCurrentNote({
 
   const handleCreateNote = useCallback(async () => {
     if (!session) return;
-    const state = await createNote(session);
-    setCurrent(state);
-    await refreshSummaries();
-  }, [session, setCurrent, refreshSummaries]);
+    try {
+      const state = await createNote(session);
+      setCurrent(state);
+      await refreshSummaries();
+    } catch (error) {
+      onError(error);
+    }
+  }, [session, setCurrent, refreshSummaries, onError]);
 
   const handleDuplicateNote = useCallback(
     async (id: string) => {
       if (!session) return;
-      const result = await duplicateNote(session, id as NoteId);
-      if (!result) return;
-      setCurrent(result.state);
-      await refreshSummaries();
-      if (embedderReady) {
-        scheduleReindex([noteToReindexRecord(result.note)]);
+      try {
+        const result = await duplicateNote(session, id as NoteId);
+        if (!result) return;
+        setCurrent(result.state);
+        await refreshSummaries();
+        if (embedderReady) {
+          scheduleReindex([noteToReindexRecord(result.note)]);
+        }
+      } catch (error) {
+        onError(error);
       }
     },
-    [session, setCurrent, refreshSummaries, scheduleReindex, embedderReady],
+    [session, setCurrent, refreshSummaries, scheduleReindex, embedderReady, onError],
   );
 
   const handleDeleteNote = useCallback(
     async (id: string) => {
       if (!session) return;
-      await deleteNote(session, id as NoteId);
-      if (current?.id === id) setCurrent(null);
-      await refreshSummaries();
+      try {
+        await deleteNote(session, id as NoteId);
+        if (current?.id === id) setCurrent(null);
+        await refreshSummaries();
+      } catch (error) {
+        onError(error);
+      }
     },
-    [session, current, setCurrent, refreshSummaries],
+    [session, current, setCurrent, refreshSummaries, onError],
   );
 
   return {

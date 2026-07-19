@@ -43,17 +43,20 @@ export function formatIndexStatusLabel(
   ready: boolean,
   reindexing: boolean,
   progress: ReindexProgress | null,
+  indexError = false,
 ): string {
   if (!ready) return "Loading model…";
   if (reindexing) return formatIndexingLabel(progress);
+  if (indexError) return "Index error — tap to retry";
   return "All indexed";
 }
 
 export function isIndexStatusInteractive(
   ready: boolean,
   reindexing: boolean,
+  indexError = false,
 ): boolean {
-  return ready && !reindexing;
+  return (ready && !reindexing) || indexError;
 }
 
 export function toNoteListItem(summary: NoteSummary): NoteListItem {

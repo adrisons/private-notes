@@ -121,7 +121,9 @@ describe("useVaultSession", () => {
       await result.current.handlePick();
     });
 
-    expect(result.current.error).toBe("Permission denied");
+    expect(result.current.error).toBe(
+      "Permission denied Try again. If it keeps failing, reopen the folder.",
+    );
   });
 
   it("refreshSummaries reloads note items from the active session", async () => {

@@ -1,5 +1,8 @@
 import { FsNoteRepository } from "../notes/fs-note-repository";
-import { FsAttachmentStore } from "../attachments/fs-attachment-store";
+import {
+  FsAttachmentStore,
+  type FsAttachmentStoreOptions,
+} from "../attachments/fs-attachment-store";
 import { fsVaultGateway } from "../fs/fs-vault-gateway";
 import { idbVaultHandleStore } from "../fs/idb-vault-handle-store";
 import { browserFolderPicker } from "../fs/browser-folder-picker";
@@ -27,8 +30,11 @@ export function createNoteRepository(root: FileSystemDirectoryHandle) {
   return new FsNoteRepository(root);
 }
 
-export function createAttachmentStore(root: FileSystemDirectoryHandle) {
-  return new FsAttachmentStore(root);
+export function createAttachmentStore(
+  root: FileSystemDirectoryHandle,
+  options?: FsAttachmentStoreOptions,
+) {
+  return new FsAttachmentStore(root, options);
 }
 
 export function createSemanticSearch(root: FileSystemDirectoryHandle) {

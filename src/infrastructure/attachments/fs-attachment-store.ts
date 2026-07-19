@@ -4,13 +4,22 @@ import { storeAttachment } from "./storage";
 import type { AttachmentStore } from "../../application/ports/attachment-store";
 import type { NoteId } from "../../domain";
 
+export interface FsAttachmentStoreOptions {
+  onCacheError?: (path: string, cause: unknown) => void;
+}
+
 export class FsAttachmentStore implements AttachmentStore {
   private readonly root: FileSystemDirectoryHandle;
   private readonly cache: AttachmentURLCache;
 
-  constructor(root: FileSystemDirectoryHandle) {
+  constructor(
+    root: FileSystemDirectoryHandle,
+    options: FsAttachmentStoreOptions = {},
+  ) {
     this.root = root;
-    this.cache = new AttachmentURLCache(root);
+    this.cache = new AttachmentURLCache(root, {
+      onLoadError: options.onCacheError,
+    });
   }
 
   async store(file: File) {

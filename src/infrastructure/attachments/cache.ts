@@ -1,5 +1,9 @@
 import { getFile } from "../fs/handle";
 
+export interface AttachmentURLCacheOptions {
+  onLoadError?: (path: string, cause: unknown) => void;
+}
+
 /**
  * Per-vault cache of attachment blob URLs. Browsers cannot load a relative
  * path like `attachments/<hash>.png` on their own — we read the file
@@ -13,9 +17,14 @@ export class AttachmentURLCache {
   private root: FileSystemDirectoryHandle;
   private cache = new Map<string, string>();
   private inflight = new Map<string, Promise<string | null>>();
+  private onLoadError?: (path: string, cause: unknown) => void;
 
-  constructor(root: FileSystemDirectoryHandle) {
+  constructor(
+    root: FileSystemDirectoryHandle,
+    options: AttachmentURLCacheOptions = {},
+  ) {
     this.root = root;
+    this.onLoadError = options.onLoadError;
   }
 
   async resolve(src: string): Promise<string | null> {
@@ -41,7 +50,8 @@ export class AttachmentURLCache {
       const url = URL.createObjectURL(blob);
       this.cache.set(src, url);
       return url;
-    } catch {
+    } catch (cause) {
+      this.onLoadError?.(src, cause);
       return null;
     }
   }

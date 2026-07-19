@@ -1,6 +1,7 @@
 import type { Note, NoteId } from "../../domain";
 import type { VaultSession } from "../vault-session";
 import type { OpenNoteState } from "../view-models";
+import { guardNoteIO } from "../errors";
 
 export interface SaveNoteResult {
   state: OpenNoteState;
@@ -15,5 +16,17 @@ export async function saveNote(
   title: string,
   body: string,
 ): Promise<SaveNoteResult> {
-  return session.saveNote(id, title, body);
+  return guardNoteIO(
+    {
+      operation: "save-note",
+      module: "application/use-cases/save-note.ts",
+      trace: "saveNote → VaultSession.saveNote → FsNoteRepository.update",
+      fixHint:
+        "Check FsNoteRepository.update, withIndexLock, and syncRefsForBodyChange in infrastructure/notes/storage.ts.",
+      details: { noteId: id },
+    },
+    "Could not save your note.",
+    "Check that the folder is still accessible, then keep editing — we'll retry on the next change.",
+    () => session.saveNote(id, title, body),
+  );
 }

@@ -7,6 +7,7 @@ interface SidebarSearchProps {
   ready: boolean;
   reindexing: boolean;
   progress: ReindexProgress | null;
+  indexError?: boolean;
   onOpenCommandPalette: () => void;
   onReindex: () => void;
 }
@@ -34,6 +35,7 @@ export function SidebarSearch({
   ready,
   reindexing,
   progress,
+  indexError = false,
   onOpenCommandPalette,
   onReindex,
 }: SidebarSearchProps) {
@@ -56,6 +58,7 @@ export function SidebarSearch({
           ready={ready}
           reindexing={reindexing}
           progress={progress}
+          indexError={indexError}
           onReindex={onReindex}
         />
       </div>

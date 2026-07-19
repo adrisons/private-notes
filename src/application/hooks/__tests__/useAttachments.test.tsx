@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { noteId } from "../../../domain";
 import { FsAttachmentStore } from "../../../infrastructure/attachments/fs-attachment-store";
@@ -23,7 +23,7 @@ describe("useAttachments", () => {
   it("stores an attachment and registers a ref for the open note", async () => {
     const { session, noteId: id } = await sessionWithNote();
     const { result } = renderHook(() =>
-      useAttachments({ session, currentNoteId: id }),
+      useAttachments({ session, currentNoteId: id, onError: vi.fn() }),
     );
 
     let path = "";
@@ -41,7 +41,7 @@ describe("useAttachments", () => {
   it("throws when there is no active note", async () => {
     const { session } = await sessionWithNote();
     const { result } = renderHook(() =>
-      useAttachments({ session, currentNoteId: null }),
+      useAttachments({ session, currentNoteId: null, onError: vi.fn() }),
     );
 
     await expect(
@@ -53,7 +53,7 @@ describe("useAttachments", () => {
 
   it("returns null from resolveImageSrc when the session is missing", async () => {
     const { result } = renderHook(() =>
-      useAttachments({ session: null, currentNoteId: noteId("n1") }),
+      useAttachments({ session: null, currentNoteId: noteId("n1"), onError: vi.fn() }),
     );
 
     await expect(

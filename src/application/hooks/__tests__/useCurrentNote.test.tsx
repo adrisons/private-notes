@@ -62,6 +62,7 @@ describe("useCurrentNote", () => {
           refreshSummaries,
           scheduleReindex,
           embedderReady: false,
+          onError: vi.fn(),
           ...extras,
         },
       },

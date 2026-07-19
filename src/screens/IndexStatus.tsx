@@ -10,22 +10,36 @@ interface IndexStatusProps {
   ready: boolean;
   reindexing: boolean;
   progress: ReindexProgress | null;
+  indexError?: boolean;
   onReindex: () => void;
 }
 
 const INDEX_INFO =
   "Search understands meaning, not just exact words. The app reads your notes on this device and builds a local index — nothing leaves your machine. Reindex if results look stale after large edits.";
 
+const INDEX_ERROR_INFO =
+  "The search index could not be updated. Your notes are still saved — only search may be incomplete. Try reindexing. If the problem persists, reopen the folder and check the browser console for details.";
+
 /** Sidebar line showing semantic index progress and an optional info dialog. */
 export function IndexStatus({
   ready,
   reindexing,
   progress,
+  indexError = false,
   onReindex,
 }: IndexStatusProps) {
   const [infoOpen, setInfoOpen] = useState(false);
-  const statusLabel = formatIndexStatusLabel(ready, reindexing, progress);
-  const statusInteractive = isIndexStatusInteractive(ready, reindexing);
+  const statusLabel = formatIndexStatusLabel(
+    ready,
+    reindexing,
+    progress,
+    indexError,
+  );
+  const statusInteractive = isIndexStatusInteractive(
+    ready,
+    reindexing,
+    indexError,
+  );
 
   return (
     <>
@@ -33,7 +47,11 @@ export function IndexStatus({
         <button
           type="button"
           onClick={() => setInfoOpen(true)}
-          className="cursor-pointer text-xs text-[var(--color-muted-foreground)] transition-colors hover:text-[var(--color-foreground)] hover:underline"
+          className={
+            indexError
+              ? "cursor-pointer text-xs text-[var(--color-danger)] transition-colors hover:underline"
+              : "cursor-pointer text-xs text-[var(--color-muted-foreground)] transition-colors hover:text-[var(--color-foreground)] hover:underline"
+          }
           aria-label={`${statusLabel}. Learn about semantic indexing.`}
         >
           {statusLabel}
@@ -49,8 +67,8 @@ export function IndexStatus({
       <ActionDialog
         open={infoOpen}
         onClose={() => setInfoOpen(false)}
-        title="Semantic index"
-        description={INDEX_INFO}
+        title={indexError ? "Index error" : "Semantic index"}
+        description={indexError ? INDEX_ERROR_INFO : INDEX_INFO}
         primaryLabel="Reindex"
         onPrimary={() => {
           onReindex();

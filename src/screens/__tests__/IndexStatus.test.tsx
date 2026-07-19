@@ -23,4 +23,30 @@ describe("IndexStatus", () => {
 
     expect(onReindex).toHaveBeenCalledTimes(1);
   });
+
+  it("shows index error state and opens the error dialog", async () => {
+    const user = userEvent.setup();
+    const onReindex = vi.fn();
+    render(
+      <IndexStatus
+        ready
+        reindexing={false}
+        progress={null}
+        indexError
+        onReindex={onReindex}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /index error — tap to retry/i }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /index error — tap to retry/i }),
+    );
+    expect(screen.getByRole("dialog", { name: /index error/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^reindex$/i }));
+    expect(onReindex).toHaveBeenCalledTimes(1);
+  });
 });
