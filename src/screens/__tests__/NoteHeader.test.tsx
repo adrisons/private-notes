@@ -39,4 +39,28 @@ describe("NoteHeader", () => {
     await user.keyboard("{Enter}");
     expect(onTitleChange).not.toHaveBeenCalled();
   });
+
+  it("announces saving and saved states", () => {
+    const { rerender } = render(
+      <NoteHeader
+        title="Welcome"
+        onTitleChange={vi.fn()}
+        onDelete={vi.fn()}
+        savedAt={null}
+        isSaving
+      />,
+    );
+    expect(screen.getByText("Saving…")).toBeInTheDocument();
+
+    rerender(
+      <NoteHeader
+        title="Welcome"
+        onTitleChange={vi.fn()}
+        onDelete={vi.fn()}
+        savedAt="2026-05-17T12:00:00Z"
+        isSaving={false}
+      />,
+    );
+    expect(screen.getByText(/saved/i)).toBeInTheDocument();
+  });
 });

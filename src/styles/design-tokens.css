@@ -69,6 +69,7 @@ html[data-theme="light"] {
   --ring: #d2542f;
 
   --danger: #b3261e;
+  --danger-foreground: #fffaf7;
   --danger-soft: #fbe6e4;
   --success: #1f7a4d;
   --warning: #96631a;
@@ -135,6 +136,7 @@ html[data-theme="dark"] {
   --ring: #ff9d7d;
 
   --danger: #f0776a;
+  --danger-foreground: #2a1109;
   --danger-soft: #3b1f1c;
   --success: #6dc99a;
   --warning: #dfae6a;
@@ -196,6 +198,7 @@ html[data-theme="dark"] {
     --ring: #ff9d7d;
 
     --danger: #f0776a;
+    --danger-foreground: #2a1109;
     --danger-soft: #3b1f1c;
     --success: #6dc99a;
     --warning: #dfae6a;

@@ -6,6 +6,7 @@ interface NoteHeaderProps {
   onTitleChange: (value: string) => void;
   onDelete: () => void;
   savedAt: string | null;
+  isSaving?: boolean;
 }
 
 export function NoteHeader({
@@ -13,6 +14,7 @@ export function NoteHeader({
   onTitleChange,
   onDelete,
   savedAt,
+  isSaving = false,
 }: NoteHeaderProps) {
   const titleRef = useRef<HTMLTextAreaElement>(null);
 
@@ -39,13 +41,23 @@ export function NoteHeader({
     return () => observer.disconnect();
   }, [title]);
 
+  const saveStatus = isSaving
+    ? "Saving…"
+    : savedAt
+      ? `Saved ${new Date(savedAt).toLocaleTimeString()}`
+      : "";
+
   return (
     // Full width of its container: the title is the page, not a card in it.
     // Left padding matches the toolbar and the editor body so the three line up.
     <div className="w-full px-5 pt-8 sm:px-6 sm:pt-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-xs font-medium text-[var(--foreground-subtle)]">
-          {savedAt ? `Saved ${new Date(savedAt).toLocaleTimeString()}` : ""}
+        <span
+          aria-live="polite"
+          aria-atomic="true"
+          className="text-xs font-medium text-[var(--foreground-muted)]"
+        >
+          {saveStatus}
         </span>
         {/* Destructive: same shape as any other button, danger tint on hover. */}
         <Button size="sm" variant="danger" onClick={onDelete}>
@@ -63,7 +75,7 @@ export function NoteHeader({
         }}
         placeholder="Untitled"
         aria-label="Note title"
-        className="mt-4 w-full resize-none overflow-hidden break-words bg-transparent text-3xl font-semibold tracking-tight outline-none placeholder:text-[var(--foreground-subtle)]"
+        className="u-focus mt-4 w-full resize-none overflow-hidden break-words bg-transparent text-3xl font-semibold tracking-tight placeholder:text-[var(--foreground-subtle)]"
       />
     </div>
   );

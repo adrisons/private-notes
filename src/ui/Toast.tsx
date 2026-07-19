@@ -17,7 +17,7 @@ export function Toast({ message, fixHint, onDismiss, className }: ToastProps) {
         // Centered with margins, not a transform: the entrance animation owns
         // `transform` and would otherwise cancel the centering.
         "u-enter-panel fixed inset-x-4 bottom-4 z-50 mx-auto w-auto max-w-[28rem]",
-        "rounded-[var(--radius-lg)] border border-[var(--danger)]/30 bg-[var(--surface-raised)]",
+        "rounded-[var(--radius-lg)] border border-[var(--danger-soft)] bg-[var(--surface-raised)]",
         "px-4 py-3 shadow-[var(--shadow-overlay)]",
         className,
       )}

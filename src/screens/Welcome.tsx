@@ -9,10 +9,10 @@ export function Welcome({ onPickFolder, disabledReason }: WelcomeProps) {
   return (
     <section className="u-enter mx-auto flex h-full max-w-xl flex-col items-start justify-center gap-6 px-6">
       <div>
-        <h1 className="text-4xl font-semibold tracking-tight">
+        <h1 className="text-3xl font-semibold tracking-tight">
           Your notes, on your machine.
         </h1>
-        <p className="mt-3 text-[var(--foreground-muted)]">
+        <p className="mt-3 text-sm text-[var(--foreground-muted)]">
           Choose a folder. The app reads and writes plain Markdown there.
           Search runs locally with a small embedding model — nothing leaves
           this device.

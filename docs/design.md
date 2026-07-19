@@ -113,7 +113,7 @@ components as `var(--role)`) live in `design-tokens.css`:
 | `--border` / `--border-strong` | Hairline and region dividers |
 | `--accent` / `--accent-hover` / `--accent-foreground` / `--accent-soft` | Primary action pair and tinted fills |
 | `--ring` | Focus only. Never decorative |
-| `--danger` / `--danger-soft` / `--success` / `--warning` | Status only |
+| `--danger` / `--danger-foreground` / `--danger-soft` / `--success` / `--warning` | Status only |
 | `--shadow-rest` / `--shadow-hover` / `--shadow-overlay` / `--shadow-offset` | Elevation stacks |
 | `--backdrop` / `--ambient-warm` / `--ambient-cool` / `--glow` | Overlays and ambient depth |
 

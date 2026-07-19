@@ -39,7 +39,7 @@ describe("App integration", () => {
     it("shows Welcome on cold start then opens the vault from the picker", async () => {
       await openVaultFromWelcomeScreen();
       expect(
-        screen.getByRole("button", { name: /welcome to private-notes/i }),
+        screen.getByRole("option", { name: /welcome to private-notes/i }),
       ).toBeInTheDocument();
     });
 
@@ -51,7 +51,7 @@ describe("App integration", () => {
         }),
       ).not.toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: /welcome to private-notes/i }),
+        screen.getByRole("option", { name: /welcome to private-notes/i }),
       ).toBeInTheDocument();
     });
   });
@@ -76,7 +76,7 @@ describe("App integration", () => {
       });
 
       await result.user.click(
-        screen.getByRole("button", { name: /second note/i }),
+        screen.getByRole("option", { name: /second note/i }),
       );
       await waitFor(() => {
         expect(screen.getByDisplayValue("Second note")).toBeInTheDocument();
@@ -137,7 +137,7 @@ describe("App integration", () => {
       const result = await openVaultSkippingWelcome(ctx.pickerRoot);
       await createNoteWithTitle(result, "Context delete");
 
-      const noteButton = screen.getByRole("button", {
+      const noteButton = screen.getByRole("option", {
         name: /context delete/i,
       });
       fireEvent.contextMenu(noteButton);
@@ -156,7 +156,7 @@ describe("App integration", () => {
       await createNoteWithTitle(result, "My Original");
 
       fireEvent.contextMenu(
-        screen.getByRole("button", { name: /my original/i }),
+        screen.getByRole("option", { name: /my original/i }),
       );
       await result.user.click(
         screen.getByRole("menuitem", { name: /duplicate note/i }),
@@ -164,7 +164,7 @@ describe("App integration", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByRole("button", { name: /my original \(copy\)/i }),
+          screen.getByRole("option", { name: /my original \(copy\)/i }),
         ).toBeInTheDocument();
         expect(
           screen.getByDisplayValue("My Original (copy)"),

@@ -163,7 +163,7 @@ describe("App error handling integration", () => {
         ),
       );
       fireEvent.contextMenu(
-        screen.getByRole("button", { name: /original/i }),
+        screen.getByRole("option", { name: /original/i }),
       );
       await result.user.click(
         screen.getByRole("menuitem", { name: /duplicate note/i }),
@@ -194,7 +194,7 @@ describe("App error handling integration", () => {
         ),
       );
       await result.user.click(
-        screen.getByRole("button", { name: /second note/i }),
+        screen.getByRole("option", { name: /second note/i }),
       );
 
       await waitFor(() => {

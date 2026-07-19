@@ -167,7 +167,7 @@ const BLOCK_ACTIONS: BlockAction[] = [
   {
     name: "blockquote",
     title: "Quote",
-    label: "❝",
+    label: "",
     shortcut: "⇧⌘B",
     isActive: (e) => e.isActive("blockquote"),
     run: (e) => e.chain().focus().toggleBlockquote().run(),
@@ -181,6 +181,25 @@ const BLOCK_ACTIONS: BlockAction[] = [
     run: (e) => e.chain().focus().setHorizontalRule().run(),
   },
 ];
+
+/** Line icon, 24px grid, round caps — never an emoji (design.md §1.2). */
+function QuoteIcon() {
+  return (
+    <svg
+      aria-hidden
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M7 11h3v6H4V11c0-2 1.5-3.5 3-4" />
+      <path d="M17 11h3v6h-6V11c0-2 1.5-3.5 3-4" />
+    </svg>
+  );
+}
 
 /** Line icon, 24px grid, round caps — never an emoji (design.md §1.2). */
 function ImageIcon() {
@@ -249,7 +268,7 @@ function ToolbarButton({
       onClick={onClick}
       className={cn(
         // Same playful zoom as the sidebar's + (design.md §4.7).
-        "gesture-zoom u-focus h-9 min-w-9 rounded-[var(--radius-full)] px-2 text-sm font-medium max-md:h-11 max-md:min-w-11",
+        "gesture-zoom u-press u-focus h-9 min-w-9 rounded-[var(--radius-full)] px-2 text-sm font-medium max-md:h-11 max-md:min-w-11",
         "hover:bg-[var(--accent-soft)] hover:text-[var(--accent-soft-foreground)]",
         active && "bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)]",
         name === "italic" && "italic",
@@ -257,10 +276,10 @@ function ToolbarButton({
         name === "strike" && "line-through",
         name === "bold" && "font-bold",
         mono && "font-[family-name:var(--font-mono)] text-xs",
-        "disabled:opacity-40",
+        "disabled:opacity-50",
       )}
     >
-      {label}
+      {name === "blockquote" ? <QuoteIcon /> : label}
     </button>
     </Tooltip>
   );

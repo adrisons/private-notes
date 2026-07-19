@@ -31,13 +31,13 @@ describe("NotesList", () => {
     );
     expect(screen.getByText("Alpha note")).toBeInTheDocument();
     expect(screen.getByText("Beta note")).toBeInTheDocument();
-    // Selection is exposed semantically; the styling hangs off aria-current.
-    expect(screen.getByRole("button", { name: /beta note/i })).toHaveAttribute(
-      "aria-current",
+    // Selection is exposed semantically via listbox option state.
+    expect(screen.getByRole("option", { name: /beta note/i })).toHaveAttribute(
+      "aria-selected",
       "true",
     );
-    expect(screen.getByRole("button", { name: /alpha note/i })).toHaveAttribute(
-      "aria-current",
+    expect(screen.getByRole("option", { name: /alpha note/i })).toHaveAttribute(
+      "aria-selected",
       "false",
     );
   });
@@ -72,8 +72,49 @@ describe("NotesList", () => {
         onDuplicate={vi.fn()}
       />,
     );
-    await user.click(screen.getByRole("button", { name: /alpha note/i }));
+    await user.click(screen.getByRole("option", { name: /alpha note/i }));
     expect(onSelect).toHaveBeenCalledWith("a");
+  });
+
+  it("navigates notes with arrow keys and opens with Enter", async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    render(
+      <NotesList
+        notes={notes}
+        selectedId="a"
+        onSelect={onSelect}
+        onCreate={vi.fn()}
+        onDelete={vi.fn()}
+        onDuplicate={vi.fn()}
+      />,
+    );
+
+    const alpha = screen.getByRole("option", { name: /alpha note/i });
+    alpha.focus();
+    await user.keyboard("{ArrowDown}");
+    expect(screen.getByRole("option", { name: /beta note/i })).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(onSelect).toHaveBeenCalledWith("b");
+  });
+
+  it("calls onDelete when Delete is pressed on a focused note", async () => {
+    const user = userEvent.setup();
+    const onDelete = vi.fn();
+    render(
+      <NotesList
+        notes={notes}
+        selectedId="a"
+        onSelect={vi.fn()}
+        onCreate={vi.fn()}
+        onDelete={onDelete}
+        onDuplicate={vi.fn()}
+      />,
+    );
+
+    screen.getByRole("option", { name: /alpha note/i }).focus();
+    await user.keyboard("{Delete}");
+    expect(onDelete).toHaveBeenCalledWith("a");
   });
 
   it("calls onDelete from the context menu", async () => {
@@ -89,7 +130,7 @@ describe("NotesList", () => {
         onDuplicate={vi.fn()}
       />,
     );
-    fireEvent.contextMenu(screen.getByRole("button", { name: /beta note/i }));
+    fireEvent.contextMenu(screen.getByRole("option", { name: /beta note/i }));
     await user.click(screen.getByRole("menuitem", { name: /delete note/i }));
     expect(onDelete).toHaveBeenCalledWith("b");
   });
@@ -107,7 +148,7 @@ describe("NotesList", () => {
         onDuplicate={onDuplicate}
       />,
     );
-    fireEvent.contextMenu(screen.getByRole("button", { name: /alpha note/i }));
+    fireEvent.contextMenu(screen.getByRole("option", { name: /alpha note/i }));
     await user.click(screen.getByRole("menuitem", { name: /duplicate note/i }));
     expect(onDuplicate).toHaveBeenCalledWith("a");
   });

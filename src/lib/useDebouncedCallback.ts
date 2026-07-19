@@ -10,6 +10,8 @@ export interface DebouncedCallback<TArgs extends unknown[]> {
   flush: () => void;
   /** Drop any pending call without running it. */
   cancel: () => void;
+  /** True while a debounced call is waiting or running its timer. */
+  hasPending: () => boolean;
 }
 
 /**
@@ -65,6 +67,9 @@ export function useDebouncedCallback<TArgs extends unknown[]>(
       clearTimer();
       pendingArgsRef.current = null;
     };
+
+    debounced.hasPending = () =>
+      pendingArgsRef.current !== null || timerRef.current !== null;
 
     return debounced;
   }, [delayMs]);

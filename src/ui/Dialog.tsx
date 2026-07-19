@@ -1,4 +1,5 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { trapFocus } from "../lib/focus-trap";
 
 interface DialogProps {
   open: boolean;
@@ -7,6 +8,8 @@ interface DialogProps {
   label: string;
   /** Width hint. Defaults to a centered "sm" size. */
   size?: "sm" | "md";
+  /** When set, initial focus lands here instead of the dialog shell. */
+  initialFocusRef?: RefObject<HTMLElement | null>;
   children: ReactNode;
 }
 
@@ -20,23 +23,43 @@ export function Dialog({
   onClose,
   label,
   size = "sm",
+  initialFocusRef,
   children,
 }: DialogProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
+
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();
         onClose();
+        return;
+      }
+      if (e.key === "Tab" && ref.current) {
+        trapFocus(ref.current, e);
       }
     };
+
     window.addEventListener("keydown", onKey);
-    // Push initial focus into the dialog so screen-reader users land here.
-    queueMicrotask(() => ref.current?.focus());
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+    queueMicrotask(() => {
+      const initial = initialFocusRef?.current;
+      if (initial) {
+        initial.focus();
+        return;
+      }
+      ref.current?.focus();
+    });
+
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      previousFocusRef.current?.focus?.();
+    };
+  }, [open, onClose, initialFocusRef]);
 
   if (!open) return null;
 

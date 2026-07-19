@@ -58,7 +58,7 @@ export async function createNoteWithTitle(
   await advanceAutosave();
   await waitFor(() => {
     expect(
-      screen.getByRole("button", { name: new RegExp(title, "i") }),
+      screen.getByRole("option", { name: new RegExp(title, "i") }),
     ).toBeInTheDocument();
   });
 }

@@ -22,6 +22,7 @@ export interface UseCurrentNoteOptions {
 
 export interface UseCurrentNoteResult {
   flushPersist: () => void;
+  isSaving: boolean;
   onTitleChange: (title: string) => void;
   onBodyChange: (body: string) => void;
   openNoteById: (id: string) => Promise<void>;
@@ -129,6 +130,7 @@ export function useCurrentNote({
 
   return {
     flushPersist: autosave.flush,
+    isSaving: autosave.isSaving,
     onTitleChange,
     onBodyChange,
     openNoteById: switchToNote,

@@ -9,7 +9,7 @@ export function Unsupported({ reasons }: UnsupportedProps) {
         <h1 className="text-3xl font-semibold tracking-tight">
           This browser isn’t supported yet.
         </h1>
-        <p className="mt-3 text-[var(--foreground-muted)]">
+        <p className="mt-3 text-sm text-[var(--foreground-muted)]">
           The app needs a Chromium-based browser to read and write a folder on
           your machine and to run a small embedding model locally.
         </p>

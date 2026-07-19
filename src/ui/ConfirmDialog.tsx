@@ -32,7 +32,7 @@ export function ConfirmDialog({
       onPrimary={onConfirm}
       primaryClassName={
         destructive
-          ? "bg-[var(--danger)] text-white shadow-[var(--shadow-offset-danger),var(--shadow-rest)]"
+          ? "bg-[var(--danger)] text-[var(--danger-foreground)] shadow-[var(--shadow-offset-danger),var(--shadow-rest)]"
           : undefined
       }
       autoFocusPrimary

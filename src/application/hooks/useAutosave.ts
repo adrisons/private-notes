@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDebouncedCallback } from "../../lib/useDebouncedCallback";
 import type { NoteId } from "../../domain";
 import type { NoteRecord } from "../ports/note-record";
@@ -20,6 +20,7 @@ export interface UseAutosaveOptions {
 export interface UseAutosaveResult {
   flush: () => void;
   schedule: (id: string, title: string, body: string) => void;
+  isSaving: boolean;
 }
 
 export function useAutosave({
@@ -30,27 +31,38 @@ export function useAutosave({
   embedderReady,
   onError,
 }: UseAutosaveOptions): UseAutosaveResult {
-  const persist = useCallback(
+  const [isSaving, setIsSaving] = useState(false);
+  const inFlightRef = useRef(0);
+
+  const debouncedPersist = useDebouncedCallback(
     async (id: string, title: string, body: string) => {
       if (!session) return;
-      await autosaveNote(
-        session,
-        { id: id as NoteId, title, body },
-        {
-          onSaved: async (result) => {
-            setCurrent(result.state);
-            await refreshSummaries();
+      inFlightRef.current += 1;
+      setIsSaving(true);
+      try {
+        await autosaveNote(
+          session,
+          { id: id as NoteId, title, body },
+          {
+            onSaved: async (result) => {
+              setCurrent(result.state);
+              await refreshSummaries();
+            },
+            onError,
+            scheduleReindex,
+            embedderReady,
           },
-          onError,
-          scheduleReindex,
-          embedderReady,
-        },
-      );
+        );
+      } finally {
+        inFlightRef.current -= 1;
+        setIsSaving(
+          inFlightRef.current > 0 || debouncedPersistRef.current.hasPending(),
+        );
+      }
     },
-    [session, setCurrent, refreshSummaries, scheduleReindex, embedderReady, onError],
+    AUTOSAVE_MS,
   );
 
-  const debouncedPersist = useDebouncedCallback(persist, AUTOSAVE_MS);
   const debouncedPersistRef = useRef(debouncedPersist);
   debouncedPersistRef.current = debouncedPersist;
 
@@ -73,10 +85,11 @@ export function useAutosave({
 
   const schedule = useCallback(
     (id: string, title: string, body: string) => {
+      setIsSaving(true);
       debouncedPersist(id, title, body);
     },
     [debouncedPersist],
   );
 
-  return { flush, schedule };
+  return { flush, schedule, isSaving };
 }

@@ -102,7 +102,10 @@ export function App() {
   if (vault.booting) {
     return (
       <AppShell header={headerNode}>
-        <div className="flex h-full items-center justify-center text-sm text-[var(--foreground-muted)]">
+        <div
+          className="flex h-full items-center justify-center text-sm text-[var(--foreground-muted)]"
+          aria-live="polite"
+        >
           <span className="u-glow">Loading…</span>
         </div>
       </AppShell>
@@ -153,11 +156,15 @@ export function App() {
             onTitleChange={note.onTitleChange}
             onDelete={() => requestDelete()}
             savedAt={vault.current.savedAt}
+            isSaving={note.isSaving}
           />
           <div className="flex-1">
             <Suspense
               fallback={
-                <div className="flex h-full items-center justify-center text-sm text-[var(--foreground-muted)]">
+                <div
+                  className="flex h-full items-center justify-center text-sm text-[var(--foreground-muted)]"
+                  aria-live="polite"
+                >
                   <span className="u-glow">Loading editor…</span>
                 </div>
               }
