@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../ui/Button";
 import { ContextMenu } from "../ui/ContextMenu";
-import { cn } from "../lib/cn";
+import { useTouchActionsEnabled } from "../lib/touch-actions";
+import { NoteListRow } from "./NoteListRow";
 import type { NoteListItem } from "../application/view-models";
 
 interface NotesListProps {
@@ -43,9 +44,11 @@ export function NotesList({
 }: NotesListProps) {
   const [menu, setMenu] = useState<OpenMenu | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(0);
+  const [openSwipeId, setOpenSwipeId] = useState<string | null>(null);
   const noteRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const touchActionsEnabled = useTouchActionsEnabled();
 
   const sortedNotes = useMemo(
     () =>
@@ -68,6 +71,14 @@ export function NotesList({
       setFocusedIndex(Math.max(0, sortedNotes.length - 1));
     }
   }, [focusedIndex, sortedNotes.length]);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || !openSwipeId) return;
+    const close = () => setOpenSwipeId(null);
+    list.addEventListener("scroll", close, { passive: true });
+    return () => list.removeEventListener("scroll", close);
+  }, [openSwipeId]);
 
   const openMenuAt = (
     index: number,
@@ -177,41 +188,33 @@ export function NotesList({
           </li>
         ) : (
           sortedNotes.map((n, index) => (
-            <li key={n.id}>
-              {/* Select: a coral hairline wipes in from the left (§5.7). */}
-              <button
-                ref={(el) => {
-                  noteRefs.current[index] = el;
-                }}
-                type="button"
-                aria-current={selectedId === n.id ? "true" : undefined}
-                tabIndex={index === focusedIndex ? 0 : -1}
-                onFocus={() => setFocusedIndex(index)}
-                onClick={() => onSelect(n.id)}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  setFocusedIndex(index);
-                  openMenuAt(index, e.currentTarget, {
-                    x: e.clientX,
-                    y: e.clientY,
-                  });
-                }}
-                className={cn(
-                  "gesture-annotate u-press u-lift u-focus w-full cursor-pointer overflow-hidden",
-                  "rounded-[var(--radius-md)] px-3.5 py-3 text-left max-md:min-h-[var(--hit-touch)]",
-                  "hover:bg-[var(--surface-raised)]",
-                  selectedId === n.id &&
-                    "bg-[var(--surface-raised)] shadow-[var(--shadow-rest)]",
-                )}
-              >
-                <div className="truncate text-sm font-medium text-[var(--foreground)]">
-                  {n.title || "Untitled"}
-                </div>
-                <div className="mt-1 text-xs text-[var(--foreground-muted)]">
-                  {formatRelative(n.updatedAt)}
-                </div>
-              </button>
-            </li>
+            <NoteListRow
+              key={n.id}
+              ref={(el) => {
+                noteRefs.current[index] = el;
+              }}
+              note={n}
+              selected={selectedId === n.id}
+              focused={index === focusedIndex}
+              touchActionsEnabled={touchActionsEnabled}
+              swipeOpen={openSwipeId === n.id}
+              onSwipeOpenChange={(open) => {
+                setOpenSwipeId(open ? n.id : null);
+              }}
+              onSelect={() => onSelect(n.id)}
+              onFocus={() => setFocusedIndex(index)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setFocusedIndex(index);
+                openMenuAt(index, e.currentTarget, {
+                  x: e.clientX,
+                  y: e.clientY,
+                });
+              }}
+              onDelete={() => onDelete(n.id)}
+              onDuplicate={() => onDuplicate(n.id)}
+              formatRelative={formatRelative}
+            />
           ))
         )}
       </ul>

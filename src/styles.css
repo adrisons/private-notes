@@ -395,6 +395,32 @@ html[data-theme-transition] *::after {
   }
 }
 
+/*
+ * Swipe-to-reveal row actions in the note list (design.md §7). The panel
+ * slides over coloured action buttons; only rendered on touch/narrow viewports.
+ */
+.u-swipe-row {
+  position: relative;
+  overflow: hidden;
+}
+
+.u-swipe-actions {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+}
+
+.u-swipe-panel {
+  position: relative;
+  z-index: 1;
+  touch-action: pan-y;
+  transition: transform var(--duration-fast) var(--ease-smooth);
+}
+
+.u-swipe-panel[data-dragging="true"] {
+  transition: none;
+}
+
 /* Reserves the collapsed height so the unrolled pill can float over content. */
 .u-clamp-spacer {
   height: var(--clamp-spacer);

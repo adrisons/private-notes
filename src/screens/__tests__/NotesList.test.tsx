@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NotesList } from "../NotesList";
+import { TOUCH_ACTIONS_MEDIA } from "../../lib/touch-actions";
 import type { NoteListItem } from "../../application/view-models";
 
 const notes: NoteListItem[] = [
@@ -17,7 +18,48 @@ const notes: NoteListItem[] = [
   },
 ];
 
+function mockTouchActions(enabled: boolean) {
+  vi.spyOn(window, "matchMedia").mockImplementation((query: string) => ({
+    matches: enabled && query === TOUCH_ACTIONS_MEDIA,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+}
+
+function swipeLeft(element: HTMLElement, distance = 120) {
+  const start = { clientX: 220, clientY: 40 };
+  const end = { clientX: 220 - distance, clientY: 40 };
+
+  act(() => {
+    fireEvent.touchStart(element, {
+      touches: [start],
+      changedTouches: [start],
+    });
+    fireEvent.touchMove(element, {
+      touches: [end],
+      changedTouches: [end],
+    });
+    fireEvent.touchEnd(element, {
+      touches: [],
+      changedTouches: [end],
+    });
+  });
+}
+
 describe("NotesList", () => {
+  beforeEach(() => {
+    mockTouchActions(false);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("renders notes and highlights the selected one", () => {
     render(
       <NotesList
@@ -149,5 +191,73 @@ describe("NotesList", () => {
     fireEvent.contextMenu(screen.getByRole("button", { name: /alpha note/i }));
     await user.click(screen.getByRole("menuitem", { name: /duplicate note/i }));
     expect(onDuplicate).toHaveBeenCalledWith("a");
+  });
+
+  it("reveals duplicate and delete actions after a left swipe on touch", async () => {
+    mockTouchActions(true);
+    const user = userEvent.setup();
+    const onDuplicate = vi.fn();
+    const onDelete = vi.fn();
+
+    render(
+      <NotesList
+        notes={notes}
+        selectedId={null}
+        onSelect={vi.fn()}
+        onCreate={vi.fn()}
+        onDelete={onDelete}
+        onDuplicate={onDuplicate}
+      />,
+    );
+
+    const row = screen.getByRole("button", { name: /alpha note/i });
+    swipeLeft(row);
+
+    await user.click(screen.getByRole("button", { name: /duplicate note/i }));
+    expect(onDuplicate).toHaveBeenCalledWith("a");
+    expect(onDelete).not.toHaveBeenCalled();
+  });
+
+  it("calls onDelete from the swipe action on touch", async () => {
+    mockTouchActions(true);
+    const user = userEvent.setup();
+    const onDelete = vi.fn();
+
+    render(
+      <NotesList
+        notes={notes}
+        selectedId={null}
+        onSelect={vi.fn()}
+        onCreate={vi.fn()}
+        onDelete={onDelete}
+        onDuplicate={vi.fn()}
+      />,
+    );
+
+    swipeLeft(screen.getByRole("button", { name: /beta note/i }));
+    await user.click(screen.getByRole("button", { name: /delete note/i }));
+    expect(onDelete).toHaveBeenCalledWith("b");
+  });
+
+  it("closes swipe actions instead of selecting when the row is open", async () => {
+    mockTouchActions(true);
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+
+    render(
+      <NotesList
+        notes={notes}
+        selectedId={null}
+        onSelect={onSelect}
+        onCreate={vi.fn()}
+        onDelete={vi.fn()}
+        onDuplicate={vi.fn()}
+      />,
+    );
+
+    const row = screen.getByRole("button", { name: /alpha note/i });
+    swipeLeft(row);
+    await user.click(row);
+    expect(onSelect).not.toHaveBeenCalled();
   });
 });
