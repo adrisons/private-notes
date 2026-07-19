@@ -98,8 +98,8 @@ export function AppShell({
       <div
         className={
           sidebar
-            ? "relative grid grid-cols-1 overflow-hidden md:grid-cols-[var(--sidebar-width)_1fr]"
-            : "overflow-hidden"
+            ? "relative grid min-h-0 grid-cols-1 overflow-hidden md:grid-cols-[var(--sidebar-width)_1fr]"
+            : "min-h-0 overflow-hidden"
         }
       >
         {sidebar && panelOpen ? (
@@ -125,7 +125,7 @@ export function AppShell({
             <div className="md:contents">
               <aside
                 aria-label="Notes and search"
-                className="max-h-[70dvh] overflow-y-auto border-b border-[var(--border-strong)] bg-[var(--surface)] shadow-[var(--shadow-overlay)] md:max-h-none md:border-r md:border-b-0 md:shadow-none"
+                className="max-h-[70dvh] min-h-0 overflow-y-auto border-b border-[var(--border-strong)] bg-[var(--surface)] shadow-[var(--shadow-overlay)] md:h-full md:max-h-none md:border-r md:border-b-0 md:shadow-none"
               >
                 {sidebar}
               </aside>
@@ -138,7 +138,7 @@ export function AppShell({
           ref={mainRef}
           tabIndex={-1}
           aria-label="Note content"
-          className="overflow-y-auto outline-none"
+          className="min-h-0 overflow-y-auto outline-none"
         >
           {children}
         </main>

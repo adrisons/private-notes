@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { ComponentProps } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NotesList } from "../NotesList";
@@ -16,7 +17,27 @@ const notes: NoteListItem[] = [
     title: "Beta note",
     updatedAt: "2026-05-16T12:00:00Z",
   },
+  {
+    id: "c",
+    title: "Gamma note",
+    updatedAt: "2026-05-15T12:00:00Z",
+  },
 ];
+
+function renderNotesList(
+  props: Partial<ComponentProps<typeof NotesList>> = {},
+) {
+  const defaults = {
+    notes,
+    selectedId: null as string | null,
+    onSelect: vi.fn(),
+    onCreate: vi.fn(),
+    onDelete: vi.fn(),
+    onBulkDelete: vi.fn(),
+    onDuplicate: vi.fn(),
+  };
+  return render(<NotesList {...defaults} {...props} />);
+}
 
 function mockTouchActions(enabled: boolean) {
   vi.spyOn(window, "matchMedia").mockImplementation((query: string) => ({
@@ -61,16 +82,7 @@ describe("NotesList", () => {
   });
 
   it("renders notes and highlights the selected one", () => {
-    render(
-      <NotesList
-        notes={notes}
-        selectedId="b"
-        onSelect={vi.fn()}
-        onCreate={vi.fn()}
-        onDelete={vi.fn()}
-        onDuplicate={vi.fn()}
-      />,
-    );
+    renderNotesList({ selectedId: "b" });
     expect(screen.getByText("Alpha note")).toBeInTheDocument();
     expect(screen.getByText("Beta note")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /beta note/i })).toHaveAttribute(
@@ -85,16 +97,7 @@ describe("NotesList", () => {
   it("calls onCreate when New is clicked", async () => {
     const user = userEvent.setup();
     const onCreate = vi.fn();
-    render(
-      <NotesList
-        notes={[]}
-        selectedId={null}
-        onSelect={vi.fn()}
-        onCreate={onCreate}
-        onDelete={vi.fn()}
-        onDuplicate={vi.fn()}
-      />,
-    );
+    renderNotesList({ notes: [], onCreate });
     await user.click(screen.getByRole("button", { name: /^new$/i }));
     expect(onCreate).toHaveBeenCalledTimes(1);
   });
@@ -102,16 +105,7 @@ describe("NotesList", () => {
   it("calls onSelect when a note is clicked", async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
-    render(
-      <NotesList
-        notes={notes}
-        selectedId={null}
-        onSelect={onSelect}
-        onCreate={vi.fn()}
-        onDelete={vi.fn()}
-        onDuplicate={vi.fn()}
-      />,
-    );
+    renderNotesList({ onSelect });
     await user.click(screen.getByRole("button", { name: /alpha note/i }));
     expect(onSelect).toHaveBeenCalledWith("a");
   });
@@ -119,16 +113,7 @@ describe("NotesList", () => {
   it("navigates notes with arrow keys and opens with Enter", async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
-    render(
-      <NotesList
-        notes={notes}
-        selectedId="a"
-        onSelect={onSelect}
-        onCreate={vi.fn()}
-        onDelete={vi.fn()}
-        onDuplicate={vi.fn()}
-      />,
-    );
+    renderNotesList({ selectedId: "a", onSelect });
 
     const alpha = screen.getByRole("button", { name: /alpha note/i });
     alpha.focus();
@@ -141,16 +126,7 @@ describe("NotesList", () => {
   it("calls onDelete when Delete is pressed on a focused note", async () => {
     const user = userEvent.setup();
     const onDelete = vi.fn();
-    render(
-      <NotesList
-        notes={notes}
-        selectedId="a"
-        onSelect={vi.fn()}
-        onCreate={vi.fn()}
-        onDelete={onDelete}
-        onDuplicate={vi.fn()}
-      />,
-    );
+    renderNotesList({ selectedId: "a", onDelete });
 
     screen.getByRole("button", { name: /alpha note/i }).focus();
     await user.keyboard("{Delete}");
@@ -160,16 +136,7 @@ describe("NotesList", () => {
   it("calls onDelete from the context menu", async () => {
     const user = userEvent.setup();
     const onDelete = vi.fn();
-    render(
-      <NotesList
-        notes={notes}
-        selectedId={null}
-        onSelect={vi.fn()}
-        onCreate={vi.fn()}
-        onDelete={onDelete}
-        onDuplicate={vi.fn()}
-      />,
-    );
+    renderNotesList({ onDelete });
     fireEvent.contextMenu(screen.getByRole("button", { name: /beta note/i }));
     await user.click(screen.getByRole("menuitem", { name: /delete note/i }));
     expect(onDelete).toHaveBeenCalledWith("b");
@@ -178,16 +145,7 @@ describe("NotesList", () => {
   it("calls onDuplicate from the context menu", async () => {
     const user = userEvent.setup();
     const onDuplicate = vi.fn();
-    render(
-      <NotesList
-        notes={notes}
-        selectedId={null}
-        onSelect={vi.fn()}
-        onCreate={vi.fn()}
-        onDelete={vi.fn()}
-        onDuplicate={onDuplicate}
-      />,
-    );
+    renderNotesList({ onDuplicate });
     fireEvent.contextMenu(screen.getByRole("button", { name: /alpha note/i }));
     await user.click(screen.getByRole("menuitem", { name: /duplicate note/i }));
     expect(onDuplicate).toHaveBeenCalledWith("a");
@@ -199,16 +157,7 @@ describe("NotesList", () => {
     const onDuplicate = vi.fn();
     const onDelete = vi.fn();
 
-    render(
-      <NotesList
-        notes={notes}
-        selectedId={null}
-        onSelect={vi.fn()}
-        onCreate={vi.fn()}
-        onDelete={onDelete}
-        onDuplicate={onDuplicate}
-      />,
-    );
+    renderNotesList({ onDuplicate, onDelete });
 
     const row = screen.getByRole("button", { name: /alpha note/i });
     swipeLeft(row);
@@ -223,16 +172,7 @@ describe("NotesList", () => {
     const user = userEvent.setup();
     const onDelete = vi.fn();
 
-    render(
-      <NotesList
-        notes={notes}
-        selectedId={null}
-        onSelect={vi.fn()}
-        onCreate={vi.fn()}
-        onDelete={onDelete}
-        onDuplicate={vi.fn()}
-      />,
-    );
+    renderNotesList({ onDelete });
 
     swipeLeft(screen.getByRole("button", { name: /beta note/i }));
     await user.click(screen.getByRole("button", { name: /delete note/i }));
@@ -244,20 +184,76 @@ describe("NotesList", () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
 
-    render(
-      <NotesList
-        notes={notes}
-        selectedId={null}
-        onSelect={onSelect}
-        onCreate={vi.fn()}
-        onDelete={vi.fn()}
-        onDuplicate={vi.fn()}
-      />,
-    );
+    renderNotesList({ onSelect });
 
     const row = screen.getByRole("button", { name: /alpha note/i });
     swipeLeft(row);
     await user.click(row);
     expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("enters selection mode and toggles notes with click", async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    renderNotesList({ onSelect });
+
+    await user.click(screen.getByRole("button", { name: /^select$/i }));
+    expect(screen.getByText("Select notes")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: /select alpha note/i }));
+    expect(screen.getByText("1 selected")).toBeInTheDocument();
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("selects a consecutive range with Shift+click", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const onBulkDelete = vi.fn();
+    renderNotesList({ onBulkDelete });
+
+    await user.click(screen.getByRole("button", { name: /^select$/i }));
+    await user.click(screen.getByRole("checkbox", { name: /select alpha note/i }));
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /select gamma note/i }),
+      { shiftKey: true },
+    );
+    expect(screen.getByText("3 selected")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /delete 3 selected notes/i }),
+    );
+    expect(onBulkDelete).toHaveBeenCalledWith(["a", "b", "c"]);
+  });
+
+  it("exits selection mode with Cancel and Escape", async () => {
+    const user = userEvent.setup();
+    renderNotesList();
+
+    await user.click(screen.getByRole("button", { name: /^select$/i }));
+    await user.click(screen.getByRole("checkbox", { name: /select alpha note/i }));
+    expect(screen.getByText("1 selected")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^cancel$/i }));
+    expect(screen.getByText("Notes")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^select$/i }));
+    const alpha = screen.getByRole("checkbox", { name: /select alpha note/i });
+    alpha.focus();
+    await act(async () => {
+      fireEvent.keyDown(screen.getByRole("list", { name: /^notes$/i }), {
+        key: "Escape",
+      });
+    });
+    expect(screen.getByText("Notes")).toBeInTheDocument();
+  });
+
+  it("toggles selection with Space in selection mode", async () => {
+    const user = userEvent.setup();
+    renderNotesList({ selectedId: "a" });
+
+    await user.click(screen.getByRole("button", { name: /^select$/i }));
+    screen.getByRole("checkbox", { name: /select alpha note/i }).focus();
+    await user.keyboard(" ");
+    expect(screen.getByText("1 selected")).toBeInTheDocument();
   });
 });

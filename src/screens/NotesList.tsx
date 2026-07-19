@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../ui/Button";
 import { ContextMenu } from "../ui/ContextMenu";
 import { useTouchActionsEnabled } from "../lib/touch-actions";
@@ -11,6 +11,7 @@ interface NotesListProps {
   onSelect: (id: string) => void;
   onCreate: () => void;
   onDelete: (id: string) => void;
+  onBulkDelete: (ids: string[]) => void;
   onDuplicate: (id: string) => void;
 }
 
@@ -40,14 +41,18 @@ export function NotesList({
   onSelect,
   onCreate,
   onDelete,
+  onBulkDelete,
   onDuplicate,
 }: NotesListProps) {
   const [menu, setMenu] = useState<OpenMenu | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [openSwipeId, setOpenSwipeId] = useState<string | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(() => new Set());
   const noteRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const anchorIndexRef = useRef(0);
   const touchActionsEnabled = useTouchActionsEnabled();
 
   const sortedNotes = useMemo(
@@ -59,6 +64,58 @@ export function NotesList({
   const menuNote = menu
     ? sortedNotes.find((n) => n.id === menu.noteId)
     : undefined;
+
+  const checkedCount = checkedIds.size;
+
+  const exitSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    setCheckedIds(new Set());
+    setOpenSwipeId(null);
+  }, []);
+
+  const enterSelectionMode = useCallback(() => {
+    anchorIndexRef.current = focusedIndex;
+    setSelectionMode(true);
+    setCheckedIds(new Set());
+    setMenu(null);
+    setOpenSwipeId(null);
+  }, [focusedIndex]);
+
+  const handleCheckClick = useCallback(
+    (index: number, shiftKey: boolean) => {
+      const note = sortedNotes[index];
+      if (!note) return;
+
+      if (shiftKey) {
+        const anchor = anchorIndexRef.current;
+        const start = Math.min(anchor, index);
+        const end = Math.max(anchor, index);
+        setCheckedIds((prev) => {
+          const next = new Set(prev);
+          for (let i = start; i <= end; i++) {
+            next.add(sortedNotes[i].id);
+          }
+          return next;
+        });
+        return;
+      }
+
+      anchorIndexRef.current = index;
+      setCheckedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(note.id)) next.delete(note.id);
+        else next.add(note.id);
+        return next;
+      });
+    },
+    [sortedNotes],
+  );
+
+  const requestBulkDelete = useCallback(() => {
+    if (checkedIds.size === 0) return;
+    onBulkDelete([...checkedIds]);
+    exitSelectionMode();
+  }, [checkedIds, onBulkDelete, exitSelectionMode]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -75,9 +132,10 @@ export function NotesList({
   useEffect(() => {
     const list = listRef.current;
     if (!list || !openSwipeId) return;
+    const scrollRoot = list.closest("aside") ?? list;
     const close = () => setOpenSwipeId(null);
-    list.addEventListener("scroll", close, { passive: true });
-    return () => list.removeEventListener("scroll", close);
+    scrollRoot.addEventListener("scroll", close, { passive: true });
+    return () => scrollRoot.removeEventListener("scroll", close);
   }, [openSwipeId]);
 
   const openMenuAt = (
@@ -100,6 +158,12 @@ export function NotesList({
 
   const handleListKeyDown = (event: React.KeyboardEvent<HTMLUListElement>) => {
     if (menu || sortedNotes.length === 0) return;
+
+    if (event.key === "Escape" && selectionMode) {
+      event.preventDefault();
+      exitSelectionMode();
+      return;
+    }
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -136,51 +200,99 @@ export function NotesList({
       return;
     }
 
-    if (event.key === "Enter") {
+    if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       const note = sortedNotes[focusedIndex];
-      if (note) onSelect(note.id);
+      if (!note) return;
+      if (selectionMode) handleCheckClick(focusedIndex, event.shiftKey);
+      else onSelect(note.id);
       return;
     }
 
     if (event.key === "Delete" || event.key === "Backspace") {
       event.preventDefault();
       const note = sortedNotes[focusedIndex];
-      if (note) onDelete(note.id);
+      if (!note) return;
+      if (selectionMode) {
+        if (checkedIds.size > 0) requestBulkDelete();
+        else handleCheckClick(focusedIndex, false);
+      } else {
+        onDelete(note.id);
+      }
       return;
     }
 
-    if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
+    if (
+      !selectionMode &&
+      (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey))
+    ) {
       event.preventDefault();
       openMenuForIndex(focusedIndex);
     }
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between px-4 py-3">
-        <span className="text-xs font-medium uppercase tracking-wider text-[var(--foreground-muted)]">
-          Notes
+    <section>
+      <div className="flex items-center justify-between gap-2 px-4 py-3">
+        <span className="min-w-0 truncate text-xs font-medium uppercase tracking-wider text-[var(--foreground-muted)]">
+          {selectionMode
+            ? checkedCount === 0
+              ? "Select notes"
+              : `${checkedCount} selected`
+            : "Notes"}
         </span>
-        {/* Create: the + rotates a quarter turn and the button pops (§5.7). */}
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={onCreate}
-          className="gesture-create"
-        >
-          <span aria-hidden className="gesture-icon text-base leading-none">
-            +
-          </span>
-          New
-        </Button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {selectionMode ? (
+            <>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={requestBulkDelete}
+                disabled={checkedCount === 0}
+                aria-label={
+                  checkedCount === 0
+                    ? "Delete selected notes"
+                    : `Delete ${checkedCount} selected notes`
+                }
+              >
+                Delete
+              </Button>
+              <Button size="sm" variant="secondary" onClick={exitSelectionMode}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={enterSelectionMode}
+                disabled={sortedNotes.length === 0}
+              >
+                Select
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={onCreate}
+                className="gesture-create"
+              >
+                <span aria-hidden className="gesture-icon text-base leading-none">
+                  +
+                </span>
+                New
+              </Button>
+            </>
+          )}
+        </div>
       </div>
       <ul
         ref={listRef}
         role="list"
         aria-label="Notes"
+        aria-multiselectable={selectionMode || undefined}
         onKeyDown={handleListKeyDown}
-        className="flex-1 space-y-1 overflow-y-auto px-3 pt-2 pb-4 outline-none"
+        className="space-y-1 px-3 pt-2 pb-4 outline-none"
       >
         {sortedNotes.length === 0 ? (
           <li className="px-2 py-8 text-center text-sm text-[var(--foreground-muted)]">
@@ -195,6 +307,8 @@ export function NotesList({
               }}
               note={n}
               selected={selectedId === n.id}
+              checked={checkedIds.has(n.id)}
+              selectionMode={selectionMode}
               focused={index === focusedIndex}
               touchActionsEnabled={touchActionsEnabled}
               swipeOpen={openSwipeId === n.id}
@@ -202,6 +316,7 @@ export function NotesList({
                 setOpenSwipeId(open ? n.id : null);
               }}
               onSelect={() => onSelect(n.id)}
+              onToggleCheck={(shiftKey) => handleCheckClick(index, shiftKey)}
               onFocus={() => setFocusedIndex(index)}
               onContextMenu={(e) => {
                 e.preventDefault();
@@ -237,6 +352,6 @@ export function NotesList({
           ]}
         />
       ) : null}
-    </div>
+    </section>
   );
 }

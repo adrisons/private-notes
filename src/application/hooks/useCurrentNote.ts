@@ -29,6 +29,7 @@ export interface UseCurrentNoteResult {
   createNote: () => Promise<void>;
   duplicateNote: (id: string) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
+  deleteNotes: (ids: string[]) => Promise<void>;
 }
 
 export function useCurrentNote({
@@ -128,6 +129,22 @@ export function useCurrentNote({
     [session, current, setCurrent, refreshSummaries, onError],
   );
 
+  const handleDeleteNotes = useCallback(
+    async (ids: string[]) => {
+      if (!session || ids.length === 0) return;
+      try {
+        for (const id of ids) {
+          await deleteNote(session, id as NoteId);
+        }
+        if (current && ids.includes(current.id)) setCurrent(null);
+        await refreshSummaries();
+      } catch (error) {
+        onError(error);
+      }
+    },
+    [session, current, setCurrent, refreshSummaries, onError],
+  );
+
   return {
     flushPersist: autosave.flush,
     isSaving: autosave.isSaving,
@@ -137,5 +154,6 @@ export function useCurrentNote({
     createNote: handleCreateNote,
     duplicateNote: handleDuplicateNote,
     deleteNote: handleDeleteNote,
+    deleteNotes: handleDeleteNotes,
   };
 }

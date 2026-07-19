@@ -148,6 +148,29 @@ describe("App integration", () => {
       });
     });
 
+    it("deletes multiple notes from bulk selection mode", async () => {
+      const result = await openVaultSkippingWelcome(ctx.pickerRoot);
+      await createNoteWithTitle(result, "Bulk one");
+      await createNoteWithTitle(result, "Bulk two");
+
+      await result.user.click(screen.getByRole("button", { name: /^select$/i }));
+      await result.user.click(
+        screen.getByRole("checkbox", { name: /select bulk one/i }),
+      );
+      await result.user.click(
+        screen.getByRole("checkbox", { name: /select bulk two/i }),
+      );
+      await result.user.click(
+        screen.getByRole("button", { name: /delete 2 selected notes/i }),
+      );
+      await confirmDeleteDialog(result, /delete 2 notes/i);
+
+      await waitFor(() => {
+        expect(screen.queryByText("Bulk one")).not.toBeInTheDocument();
+        expect(screen.queryByText("Bulk two")).not.toBeInTheDocument();
+      });
+    });
+
     it("duplicates a note from the sidebar context menu", async () => {
       const result = await openVaultSkippingWelcome(ctx.pickerRoot);
       await createNoteWithTitle(result, "My Original");

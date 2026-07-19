@@ -70,9 +70,10 @@ export async function createNoteWithTitle(
 /** Confirm the delete-note dialog. */
 export async function confirmDeleteDialog(
   result: AppRenderResult,
+  title: RegExp = /delete (this note|\d+ notes)/i,
 ): Promise<void> {
   const dialog = await screen.findByRole("dialog", {
-    name: /delete this note/i,
+    name: title,
   });
   await result.user.click(
     within(dialog).getByRole("button", { name: /^delete$/i }),

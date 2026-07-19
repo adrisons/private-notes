@@ -44,11 +44,14 @@ function DeleteIcon() {
 export interface NoteListRowProps {
   note: NoteListItem;
   selected: boolean;
+  checked: boolean;
+  selectionMode: boolean;
   focused: boolean;
   touchActionsEnabled: boolean;
   swipeOpen: boolean;
   onSwipeOpenChange: (open: boolean) => void;
   onSelect: () => void;
+  onToggleCheck: (shiftKey: boolean) => void;
   onFocus: () => void;
   onContextMenu: (event: MouseEvent<HTMLButtonElement>) => void;
   onDelete: () => void;
@@ -61,11 +64,14 @@ export const NoteListRow = forwardRef<HTMLButtonElement, NoteListRowProps>(
     {
       note,
       selected,
+      checked,
+      selectionMode,
       focused,
       touchActionsEnabled,
       swipeOpen,
       onSwipeOpenChange,
       onSelect,
+      onToggleCheck,
       onFocus,
       onContextMenu,
       onDelete,
@@ -74,20 +80,13 @@ export const NoteListRow = forwardRef<HTMLButtonElement, NoteListRowProps>(
     },
     ref,
   ) {
+    const swipeEnabled = touchActionsEnabled && !selectionMode;
     const { offset, isDragging, close, bind } = useSwipeReveal({
       actionsWidth: NOTE_SWIPE_ACTIONS_WIDTH,
-      enabled: touchActionsEnabled,
+      enabled: swipeEnabled,
       open: swipeOpen,
       onOpenChange: onSwipeOpenChange,
     });
-
-    const handleSelectClick = () => {
-      if (swipeOpen) {
-        close();
-        return;
-      }
-      onSelect();
-    };
 
     const handleDuplicate = () => {
       close();
@@ -133,32 +132,81 @@ export const NoteListRow = forwardRef<HTMLButtonElement, NoteListRowProps>(
         <button
           ref={ref}
           type="button"
-          aria-current={selected ? "true" : undefined}
+          role={selectionMode ? "checkbox" : undefined}
+          aria-checked={selectionMode ? checked : undefined}
+          aria-current={!selectionMode && selected ? "true" : undefined}
+          aria-label={
+            selectionMode
+              ? `${checked ? "Deselect" : "Select"} ${note.title || "Untitled"}`
+              : undefined
+          }
           tabIndex={focused ? 0 : -1}
           onFocus={onFocus}
-          onClick={handleSelectClick}
-          onContextMenu={onContextMenu}
-          {...(touchActionsEnabled ? bind : {})}
+          onClick={(event) => {
+            if (swipeOpen) {
+              close();
+              return;
+            }
+            if (selectionMode) {
+              onToggleCheck(event.shiftKey);
+              return;
+            }
+            onSelect();
+          }}
+          onContextMenu={selectionMode ? undefined : onContextMenu}
+          {...(swipeEnabled ? bind : {})}
           data-dragging={isDragging ? "true" : undefined}
           style={
-            touchActionsEnabled
-              ? { transform: `translateX(${offset}px)` }
-              : undefined
+            swipeEnabled ? { transform: `translateX(${offset}px)` } : undefined
           }
           className={cn(
             "u-swipe-panel gesture-annotate u-press u-lift u-focus w-full cursor-pointer overflow-hidden",
             "rounded-[var(--radius-md)] px-3.5 py-3 text-left max-md:min-h-[var(--hit-touch)]",
             "hover:bg-[var(--surface-raised)]",
-            selected &&
+            selectionMode &&
+              checked &&
+              "bg-[var(--accent-soft)] ring-1 ring-[var(--accent)]/30",
+            !selectionMode &&
+              selected &&
               "bg-[var(--surface-raised)] shadow-[var(--shadow-rest)]",
-            !selected && "bg-[var(--canvas)]",
+            !selectionMode && !selected && "bg-[var(--canvas)]",
+            selectionMode && !checked && "bg-[var(--canvas)]",
           )}
         >
-          <div className="truncate text-sm font-medium text-[var(--foreground)]">
-            {note.title || "Untitled"}
-          </div>
-          <div className="mt-1 text-xs text-[var(--foreground-muted)]">
-            {formatRelative(note.updatedAt)}
+          <div className="flex items-start gap-3">
+            {selectionMode ? (
+              <span
+                aria-hidden
+                className={cn(
+                  "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border",
+                  checked
+                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
+                    : "border-[var(--border-strong)] bg-[var(--surface)]",
+                )}
+              >
+                {checked ? (
+                  <svg
+                    className="h-2.5 w-2.5"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M2.5 6.5 5 9l4.5-6" />
+                  </svg>
+                ) : null}
+              </span>
+            ) : null}
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium text-[var(--foreground)]">
+                {note.title || "Untitled"}
+              </div>
+              <div className="mt-1 text-xs text-[var(--foreground-muted)]">
+                {formatRelative(note.updatedAt)}
+              </div>
+            </div>
           </div>
         </button>
       </li>

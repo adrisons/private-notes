@@ -52,7 +52,7 @@ export function App() {
     onError: showError,
   });
 
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const currentNoteId = vault.current?.id ?? null;
 
@@ -70,20 +70,44 @@ export function App() {
   const requestDelete = useCallback(
     (id?: string) => {
       const targetId = id ?? currentNoteId;
-      if (targetId) setPendingDeleteId(targetId);
+      if (targetId) setPendingDeleteIds([targetId]);
     },
     [currentNoteId],
   );
 
+  const requestBulkDelete = useCallback((ids: string[]) => {
+    if (ids.length > 0) setPendingDeleteIds(ids);
+  }, []);
+
   const handleDelete = useCallback(async () => {
-    if (!pendingDeleteId) return;
-    const deletedId = pendingDeleteId;
-    await note.deleteNote(deletedId);
-    setPendingDeleteId(null);
+    if (pendingDeleteIds.length === 0) return;
+    const ids = pendingDeleteIds;
+    if (ids.length === 1) {
+      await note.deleteNote(ids[0]);
+    } else {
+      await note.deleteNotes(ids);
+    }
+    setPendingDeleteIds([]);
     if (search.embedderReady) {
       await search.pruneOrphans();
     }
-  }, [pendingDeleteId, note, search]);
+  }, [pendingDeleteIds, note, search]);
+
+  const pendingDeleteTitle =
+    pendingDeleteIds.length === 1
+      ? vault.noteItems.find((n) => n.id === pendingDeleteIds[0])?.title ||
+        "Untitled"
+      : null;
+  const deleteDialogTitle =
+    pendingDeleteIds.length <= 1
+      ? "Delete this note?"
+      : `Delete ${pendingDeleteIds.length} notes?`;
+  const deleteDialogDescription =
+    pendingDeleteIds.length === 0
+      ? undefined
+      : pendingDeleteIds.length === 1
+        ? `“${pendingDeleteTitle}” will be removed permanently from this device.`
+        : `These ${pendingDeleteIds.length} notes will be removed permanently from this device.`;
 
   const headerNode = (
     <div className="flex w-full items-center justify-between">
@@ -130,7 +154,7 @@ export function App() {
       // Picking a note collapses the mobile panel (docs/design.md §8).
       collapseKey={currentNoteId}
       sidebar={
-        <div className="flex h-full flex-col">
+        <div className="flex flex-col">
           <VaultIndicator
             name={vault.session.root.name}
             onChange={vault.handlePick}
@@ -149,6 +173,7 @@ export function App() {
             onSelect={note.openNoteById}
             onCreate={note.createNote}
             onDelete={requestDelete}
+            onBulkDelete={requestBulkDelete}
             onDuplicate={note.duplicateNote}
           />
         </div>
@@ -197,17 +222,13 @@ export function App() {
         />
       ) : null}
       <ConfirmDialog
-        open={pendingDeleteId !== null}
-        title="Delete this note?"
-        description={
-          pendingDeleteId
-            ? `“${vault.noteItems.find((n) => n.id === pendingDeleteId)?.title || "Untitled"}” will be removed permanently from this device.`
-            : undefined
-        }
+        open={pendingDeleteIds.length > 0}
+        title={deleteDialogTitle}
+        description={deleteDialogDescription}
         confirmLabel="Delete"
         destructive
         onConfirm={handleDelete}
-        onCancel={() => setPendingDeleteId(null)}
+        onCancel={() => setPendingDeleteIds([])}
       />
       <CommandPalette
         open={paletteOpen}

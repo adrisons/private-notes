@@ -35,6 +35,7 @@ describe("accessibility", () => {
         onSelect={vi.fn()}
         onCreate={vi.fn()}
         onDelete={vi.fn()}
+        onBulkDelete={vi.fn()}
         onDuplicate={vi.fn()}
       />,
     );
