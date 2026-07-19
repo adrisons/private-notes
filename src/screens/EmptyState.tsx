@@ -6,8 +6,8 @@ interface EmptyStateProps {
 
 export function EmptyState({ onCreate }: EmptyStateProps) {
   return (
-    <div className="flex h-full items-center justify-center">
-      <div className="u-enter max-w-sm px-6 text-center">
+    <div className="u-content-swap flex h-full items-center justify-center">
+      <div className="max-w-sm px-6 text-center">
         <h2 className="text-xl font-semibold tracking-tight">
           No note selected
         </h2>

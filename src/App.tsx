@@ -150,7 +150,10 @@ export function App() {
       }
     >
       {vault.current ? (
-        <div className="flex h-full flex-col">
+        <div
+          key={vault.current.id}
+          className="u-content-swap flex h-full flex-col"
+        >
           <NoteHeader
             title={vault.current.title}
             onTitleChange={note.onTitleChange}
@@ -170,7 +173,6 @@ export function App() {
               }
             >
               <Editor
-                key={vault.current.id}
                 value={vault.current.body}
                 onChange={note.onBodyChange}
                 onUploadImage={attachments.onUploadImage}
@@ -180,7 +182,7 @@ export function App() {
           </div>
         </div>
       ) : (
-        <EmptyState onCreate={note.createNote} />
+        <EmptyState key="empty" onCreate={note.createNote} />
       )}
       {toast ? (
         <Toast

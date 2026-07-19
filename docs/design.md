@@ -194,7 +194,11 @@ by `.u-press` (and `.u-lift` / `.u-slab` for compound controls).
   First and Last, Invert with a transform, Play it back. Never animate
   `top`/`left`.
 - Long lists and large surfaces animate **movement and fade only** — no
-  scale, no blur — so scrolling never looks like it is breathing.
+  scale, no blur — so scrolling never looks like it is breathing. Implemented
+  by `.u-content-swap` (note body, search results, empty state).
+- **Theme palette changes** cross-fade every colour-bearing property over
+  `--duration-slow` with `--ease-smooth`. Applied via `data-theme-transition`
+  on `<html>` for one beat while tokens repoint; skipped on first paint.
 
 ### 4.5 Loading
 
@@ -346,6 +350,7 @@ transitions:
 | Class | Purpose |
 |---|---|
 | `.u-enter` / `.u-enter-pop` / `.u-enter-panel` / `.u-enter-backdrop` | Blur-in entrances and overlay backdrop |
+| `.u-content-swap` | Large-surface swap: opacity + `translateY(4px)`, no blur |
 | `.u-press` | Press scale and fast transitions |
 | `.u-lift` | Hover elevation + press |
 | `.u-slab` | Primary button offset shadow body |

@@ -117,6 +117,18 @@ body::before {
   }
 }
 
+/* Large-surface swap: fade + shift only, no blur (design.md §4.4). */
+@keyframes content-swap-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Tooltips fade in, lift 4px and clear a 2px blur (§5). */
 @keyframes enter-tooltip {
   from {
@@ -163,6 +175,33 @@ body::before {
 .u-enter-backdrop {
   animation: fade-backdrop var(--duration-normal) var(--ease-smooth) both;
   backdrop-filter: blur(6px);
+}
+
+/*
+ * Note body and search results swap with a short fade + lift (§4.4). No blur
+ * on large surfaces — scrolling must not look like it is breathing.
+ */
+.u-content-swap {
+  animation: content-swap-in var(--duration-normal) var(--ease-out) both;
+}
+
+/*
+ * Theme palette cross-fade. Applied via data-theme-transition on <html> for
+ * one --duration-slow beat while tokens repoint (design.md §4.1).
+ */
+html[data-theme-transition] *,
+html[data-theme-transition] *::before,
+html[data-theme-transition] *::after {
+  transition-property:
+    background-color,
+    border-color,
+    box-shadow,
+    color,
+    fill,
+    outline-color,
+    stroke;
+  transition-duration: var(--duration-slow);
+  transition-timing-function: var(--ease-smooth);
 }
 
 /* Every clickable element responds to press (§5.3). */
@@ -562,6 +601,11 @@ body::before {
   .u-tooltip {
     animation: fade-backdrop var(--duration-fast) linear both;
     filter: none;
+  }
+
+  .u-content-swap {
+    animation: fade-backdrop var(--duration-fast) linear both;
+    transform: none;
   }
 
   .u-enter-backdrop {

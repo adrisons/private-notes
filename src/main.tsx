@@ -6,7 +6,7 @@ import { applyTheme, readStoredTheme } from "./lib/theme";
 
 // Apply the stored theme before React mounts to avoid a flash of the
 // system theme on hard reloads.
-applyTheme(readStoredTheme());
+applyTheme(readStoredTheme(), { animate: false });
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

@@ -127,9 +127,6 @@ export function CommandPalette({
     [notes],
   );
 
-  // Build the unified list. When the query is empty: a "create" entry and
-  // recent notes. When non-empty: semantic hits first, then notes whose title
-  // matches as a quick lexical fallback.
   const items: Item[] = useMemo(() => {
     const sorted = [...notes].sort((a, b) =>
       b.updatedAt.localeCompare(a.updatedAt),
@@ -158,6 +155,13 @@ export function CommandPalette({
       ...lexical.map((n) => ({ kind: "note" as const, record: n })),
     ];
   }, [query, hits, notes]);
+
+  // Re-animate results when a debounced search completes, not on every keystroke.
+  const resultsAnimateKey = useMemo(() => {
+    const trimmed = query.trim();
+    if (trimmed.length === 0) return "recent";
+    return `${trimmed}:${hits.map((hit) => hit.noteId).join(",")}`;
+  }, [query, hits]);
 
   // Clamp the active index any time the list shrinks.
   useEffect(() => {
@@ -223,9 +227,10 @@ export function CommandPalette({
         />
         <ul
           id="command-palette-results"
+          key={resultsAnimateKey}
           role="listbox"
           aria-label="Search results"
-          className="max-h-[50vh] overflow-y-auto border-t border-[var(--border)]"
+          className="u-content-swap max-h-[50vh] overflow-y-auto border-t border-[var(--border)]"
           aria-live="polite"
         >
           {items.length === 0 ? (

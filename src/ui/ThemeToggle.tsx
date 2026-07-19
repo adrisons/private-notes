@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { applyTheme, persistTheme, readStoredTheme, type Theme } from "../lib/theme";
+import {
+  applyTheme,
+  persistTheme,
+  readStoredTheme,
+  subscribeSystemThemeChanges,
+  type Theme,
+} from "../lib/theme";
 import { cn } from "../lib/cn";
 import { Tooltip } from "./Tooltip";
 
@@ -57,7 +63,8 @@ export function ThemeToggle() {
   useEffect(() => {
     const stored = readStoredTheme();
     setTheme(stored);
-    applyTheme(stored);
+    applyTheme(stored, { animate: false });
+    return subscribeSystemThemeChanges();
   }, []);
 
   return (
