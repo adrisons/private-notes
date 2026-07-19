@@ -7,6 +7,7 @@ import { NotesList } from "./screens/NotesList";
 import { NoteHeader } from "./screens/NoteHeader";
 import { EmptyState } from "./screens/EmptyState";
 import { SidebarSearch } from "./screens/SidebarSearch";
+import { VaultIndicator } from "./screens/VaultIndicator";
 import { getCompatibility } from "./lib/compatibility";
 import { Unsupported } from "./screens/Unsupported";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
@@ -130,6 +131,10 @@ export function App() {
       collapseKey={currentNoteId}
       sidebar={
         <div className="flex h-full flex-col">
+          <VaultIndicator
+            name={vault.session.root.name}
+            onChange={vault.handlePick}
+          />
           <SidebarSearch
             ready={search.embedderReady}
             reindexing={search.reindexing}

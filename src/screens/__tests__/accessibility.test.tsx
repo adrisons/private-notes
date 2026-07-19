@@ -5,6 +5,7 @@ import { Welcome } from "../Welcome";
 import { NotesList } from "../NotesList";
 import { CommandPalette } from "../CommandPalette";
 import { ConfirmDialog } from "../../ui/ConfirmDialog";
+import { VaultIndicator } from "../VaultIndicator";
 import type { NoteListItem } from "../../application/view-models";
 
 const notes: NoteListItem[] = [
@@ -51,6 +52,13 @@ describe("accessibility", () => {
         onOpenNote={vi.fn()}
         onCreate={vi.fn()}
       />,
+    );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("VaultIndicator has no axe violations", async () => {
+    const { container } = render(
+      <VaultIndicator name="My notes" onChange={vi.fn()} />,
     );
     expect(await axe(container)).toHaveNoViolations();
   });
