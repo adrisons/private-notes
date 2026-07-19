@@ -39,6 +39,8 @@
   --sidebar-width: 288px;
   --header-height: 56px;
   --measure: 46rem; /* editor line length */
+  --attachment-max-width: 35rem; /* default cap for large attachment images */
+  --attachment-resize-stroke: 6px;
 }
 
 /* ---------------------------------------------------------------------

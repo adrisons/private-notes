@@ -3,11 +3,18 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import { AttachmentImage } from "./extensions/AttachmentImage";
 import { FencedCodeBlock } from "./extensions/FencedCodeBlock";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { markdownToHtml } from "../infrastructure/markdown/parse";
 import { serializeDoc } from "../infrastructure/markdown/serialize";
 import type { PMDoc } from "../infrastructure/markdown/types";
 import { EditorToolbar } from "./EditorToolbar";
+import { defaultAttachmentImageWidth } from "./attachment-image-size";
+import {
+  hasImageFilesInDataTransfer,
+  imageFilesFromClipboard,
+  imageFilesFromDataTransfer,
+} from "./image-files";
+import { insertAttachmentImages } from "./insert-attachment-images";
 
 interface EditorProps {
   /** Initial markdown content. Re-applied when this value changes. */
@@ -32,6 +39,8 @@ export function Editor({
   resolveImageSrc,
 }: EditorProps) {
   const html = useMemo(() => markdownToHtml(value), [value]);
+  const onUploadImageRef = useRef(onUploadImage);
+  onUploadImageRef.current = onUploadImage;
 
   const editor = useEditor({
     extensions: [
@@ -56,6 +65,51 @@ export function Editor({
         class:
           "prose-like outline-none px-5 sm:px-6 py-8 max-w-[var(--measure)] min-h-[60vh]",
       },
+      handleDrop(view, event, _slice, moved) {
+        if (moved || !onUploadImageRef.current) return false;
+
+        const files = imageFilesFromDataTransfer(event.dataTransfer);
+        if (files.length === 0) return false;
+
+        event.preventDefault();
+
+        const coords = view.posAtCoords({
+          left: event.clientX,
+          top: event.clientY,
+        });
+        const insertPos = coords?.pos ?? view.state.selection.from;
+
+        void insertAttachmentImages(
+          view,
+          files,
+          onUploadImageRef.current,
+          insertPos,
+        );
+
+        return true;
+      },
+      handlePaste(view, event) {
+        if (!onUploadImageRef.current) return false;
+
+        const files = imageFilesFromClipboard(event.clipboardData);
+        if (files.length === 0) return false;
+
+        event.preventDefault();
+        void insertAttachmentImages(view, files, onUploadImageRef.current);
+        return true;
+      },
+      handleDOMEvents: {
+        dragover(_view, event) {
+          if (!onUploadImageRef.current) return false;
+          const dataTransfer = event.dataTransfer;
+          if (!dataTransfer || !hasImageFilesInDataTransfer(dataTransfer)) {
+            return false;
+          }
+          event.preventDefault();
+          dataTransfer.dropEffect = "copy";
+          return true;
+        },
+      },
     },
   });
 
@@ -72,13 +126,16 @@ export function Editor({
 
   const insertImage = async (file: File) => {
     if (!editor || !onUploadImage) return;
-    const src = await onUploadImage(file);
+    const [src, width] = await Promise.all([
+      onUploadImage(file),
+      defaultAttachmentImageWidth(file),
+    ]);
     editor
       .chain()
       .focus()
       .insertContent({
         type: "attachmentImage",
-        attrs: { src, alt: file.name },
+        attrs: { src, alt: file.name, width },
       })
       .run();
   };

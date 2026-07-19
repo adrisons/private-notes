@@ -33,8 +33,8 @@ const ALLOWED_TAGS = [
   "img",
 ] as const;
 
-// `src`/`alt` for images, `class` so fenced code keeps its `language-*` hint.
-const ALLOWED_ATTR = ["src", "alt", "class"] as const;
+// `src`/`alt`/`width` for images, `class` so fenced code keeps its `language-*` hint.
+const ALLOWED_ATTR = ["src", "alt", "width", "class"] as const;
 
 /**
  * Convert markdown into the sanitized HTML representation Tiptap consumes via

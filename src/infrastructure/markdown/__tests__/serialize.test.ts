@@ -70,6 +70,25 @@ describe("serializeDoc", () => {
     );
   });
 
+  it("serializes resized attachment images as HTML img tags", () => {
+    const out = serializeDoc({
+      type: "doc",
+      content: [
+        {
+          type: "attachmentImage",
+          attrs: {
+            src: "attachments/x/abc.png",
+            alt: 'cat "quote"',
+            width: 480,
+          },
+        },
+      ],
+    });
+    expect(out).toBe(
+      '<img src="attachments/x/abc.png" alt="cat &quot;quote&quot;" width="480">',
+    );
+  });
+
   it("serializes fenced code blocks", () => {
     expect(
       serializeDoc({

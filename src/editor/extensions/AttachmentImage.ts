@@ -1,19 +1,33 @@
-import { Node, mergeAttributes } from "@tiptap/core";
+import { NodeSelection } from "@tiptap/pm/state";
+import { Node, mergeAttributes, type Editor } from "@tiptap/core";
 import {
   ReactNodeViewRenderer,
   NodeViewWrapper,
   type NodeViewProps,
 } from "@tiptap/react";
-import { createElement as h, useEffect, useState } from "react";
+import {
+  createElement as h,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
+import {
+  ATTACHMENT_IMAGE_MAX_WIDTH,
+  clampAttachmentImageWidth,
+} from "../attachment-image-size";
+import { cn } from "../../lib/cn";
 
 /**
- * Block-level image node. Always full-width; cannot live inside a paragraph,
- * which prevents the surrounding text from being reflowed around the image.
+ * Block-level image node. Cannot live inside a paragraph, which prevents the
+ * surrounding text from being reflowed around the image.
  *
- * Markdown representation is `![alt](src)` rendered as its own paragraph. The
- * stored `src` is a relative path (`attachments/<sha256>.<ext>`) that
- * the browser cannot fetch on its own — the host app injects `resolveSrc` to
- * map the path to a usable `blob:` URL backed by the vault file handle.
+ * Markdown representation is `![alt](src)` or, when resized,
+ * `<img src="..." alt="..." width="N">`. The stored `src` is a relative path
+ * (`attachments/<sha256>.<ext>`) that the browser cannot fetch on its own —
+ * the host app injects `resolveSrc` to map the path to a usable `blob:` URL.
  */
 export interface AttachmentImageOptions {
   resolveSrc: (src: string) => Promise<string | null>;
@@ -36,6 +50,19 @@ export const AttachmentImage = Node.create<AttachmentImageOptions>({
     return {
       src: { default: null },
       alt: { default: "" },
+      width: {
+        default: null,
+        parseHTML: (element) => {
+          const raw = element.getAttribute("width");
+          if (!raw) return null;
+          const parsed = Number.parseInt(raw, 10);
+          return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.width) return {};
+          return { width: attributes.width };
+        },
+      },
     };
   },
 
@@ -44,9 +71,6 @@ export const AttachmentImage = Node.create<AttachmentImageOptions>({
   },
 
   renderHTML({ HTMLAttributes }) {
-    // Used when the editor falls back to non-React HTML rendering (e.g.
-    // copy-paste, .getHTML()). The interactive NodeView below covers the
-    // common case of editing inside the app.
     return [
       "figure",
       { class: "attachment-figure" },
@@ -57,11 +81,38 @@ export const AttachmentImage = Node.create<AttachmentImageOptions>({
   addNodeView() {
     return ReactNodeViewRenderer(AttachmentImageView);
   },
+
+  addKeyboardShortcuts() {
+    const deleteSelectedImage = ({ editor }: { editor: Editor }) => {
+      const { selection } = editor.state;
+      if (
+        !(selection instanceof NodeSelection) ||
+        selection.node.type.name !== this.name
+      ) {
+        return false;
+      }
+      return editor.commands.deleteSelection();
+    };
+
+    return {
+      Backspace: deleteSelectedImage,
+      Delete: deleteSelectedImage,
+    };
+  },
 });
 
-function AttachmentImageView({ node, extension }: NodeViewProps) {
+function AttachmentImageView({
+  node,
+  extension,
+  editor,
+  getPos,
+  selected,
+  updateAttributes,
+}: NodeViewProps) {
   const src: string = node.attrs.src ?? "";
   const alt: string = node.attrs.alt ?? "";
+  const width: number | null = node.attrs.width ?? null;
+  const figureRef = useRef<HTMLElement>(null);
   const [resolved, setResolved] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,11 +135,74 @@ function AttachmentImageView({ node, extension }: NodeViewProps) {
     };
   }, [src, extension]);
 
+  const onFigureClick = useCallback(
+    (event: ReactMouseEvent<HTMLElement>) => {
+      // Clicks land on the inner img; explicitly select the atom so Backspace
+      // / Delete remove the whole attachment, not adjacent text.
+      event.preventDefault();
+      const pos = getPos();
+      if (typeof pos !== "number") return;
+      editor.chain().focus().setNodeSelection(pos).run();
+    },
+    [editor, getPos],
+  );
+
+  const onResizePointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const figure = figureRef.current;
+      if (!figure) return;
+
+      const startX = event.clientX;
+      const startWidth = width ?? figure.getBoundingClientRect().width;
+      const maxWidth =
+        figure.parentElement?.clientWidth ?? ATTACHMENT_IMAGE_MAX_WIDTH;
+
+      const onPointerMove = (moveEvent: PointerEvent) => {
+        const next = clampAttachmentImageWidth(
+          startWidth + (moveEvent.clientX - startX),
+          maxWidth,
+        );
+        updateAttributes({ width: next });
+      };
+
+      const onPointerUp = () => {
+        document.removeEventListener("pointermove", onPointerMove);
+        document.removeEventListener("pointerup", onPointerUp);
+      };
+
+      document.addEventListener("pointermove", onPointerMove);
+      document.addEventListener("pointerup", onPointerUp);
+    },
+    [updateAttributes, width],
+  );
+
+  const imgStyle =
+    width !== null ? { width: `${width}px`, maxWidth: "100%" } : undefined;
+
   return h(
     NodeViewWrapper,
-    { as: "figure", className: "attachment-figure" },
+    {
+      as: "figure",
+      className: cn(
+        "attachment-figure",
+        selected && "attachment-figure--selected",
+      ),
+      ref: figureRef,
+      onClick: onFigureClick,
+      "data-selected": selected ? "true" : undefined,
+    },
     resolved
-      ? h("img", { src: resolved, alt, loading: "lazy" })
+      ? h("img", {
+          src: resolved,
+          alt,
+          loading: "lazy",
+          draggable: false,
+          style: imgStyle,
+          className: width === null ? "attachment-image--default-size" : undefined,
+        })
       : h(
           "div",
           {
@@ -98,5 +212,14 @@ function AttachmentImageView({ node, extension }: NodeViewProps) {
           },
           error ? `Could not load: ${error}` : "Loading image…",
         ),
+    selected && resolved
+      ? h("button", {
+          type: "button",
+          className: "attachment-resize-handle",
+          "aria-label": "Resize image",
+          contentEditable: false,
+          onPointerDown: onResizePointerDown,
+        })
+      : null,
   );
 }

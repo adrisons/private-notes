@@ -5,6 +5,7 @@ import type {
   PMBulletListNode,
   PMCodeBlockNode,
   PMHeadingNode,
+  PMImageNode,
   PMListItemNode,
   PMMark,
   PMOrderedListNode,
@@ -67,6 +68,25 @@ function escapeImageAlt(alt: string): string {
 
 function escapeImageSrc(src: string): string {
   return src.replace(/\)/g, "\\)");
+}
+
+function escapeHtmlAttr(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;");
+}
+
+function serializeAttachmentImage(node: PMImageNode): string {
+  const alt = escapeImageAlt(node.attrs.alt ?? "");
+  const src = escapeImageSrc(node.attrs.src);
+  const width = node.attrs.width;
+
+  if (width && width > 0) {
+    return `<img src="${escapeHtmlAttr(src)}" alt="${escapeHtmlAttr(alt)}" width="${width}">`;
+  }
+
+  return `![${alt}](${src})`;
 }
 
 function serializeParagraph(node: PMParagraphNode): string {
@@ -177,11 +197,8 @@ function serializeBlock(node: PMBlockNode): string {
       return serializeOrderedList(node);
     case "horizontalRule":
       return "---";
-    case "attachmentImage": {
-      const alt = escapeImageAlt(node.attrs.alt ?? "");
-      const src = escapeImageSrc(node.attrs.src);
-      return `![${alt}](${src})`;
-    }
+    case "attachmentImage":
+      return serializeAttachmentImage(node);
     default:
       return "";
   }

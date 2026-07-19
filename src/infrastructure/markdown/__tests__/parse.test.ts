@@ -84,5 +84,13 @@ describe("markdownToHtml", () => {
       const html = markdownToHtml("![cat](attachments/abc.png)");
       expect(html).toContain('src="attachments/abc.png"');
     });
+
+    it("preserves width on HTML attachment images", () => {
+      const html = markdownToHtml(
+        '<img src="attachments/abc.png" alt="cat" width="480">',
+      );
+      expect(html).toContain('src="attachments/abc.png"');
+      expect(html).toContain('width="480"');
+    });
   });
 });

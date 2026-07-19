@@ -46,7 +46,7 @@ export interface PMBlockquoteNode {
 
 export interface PMImageNode {
   type: "attachmentImage";
-  attrs: { src: string; alt?: string };
+  attrs: { src: string; alt?: string; width?: number | null };
 }
 
 export interface PMCodeBlockNode {

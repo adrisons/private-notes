@@ -773,17 +773,88 @@ html[data-theme-transition] *::after {
   color: var(--foreground);
 }
 
-/* Image attachments are always full-width blocks. */
+/* Image attachments are block-level; width is controlled per node. */
 .prose-like .attachment-figure {
+  position: relative;
   margin: 1.5em 0;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: var(--radius-lg);
+}
+
+.prose-like .attachment-figure--selected,
+.prose-like .attachment-figure.ProseMirror-selectednode {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 .prose-like .attachment-figure img {
   display: block;
-  width: 100%;
   height: auto;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-rest);
+}
+
+.prose-like .attachment-figure img.attachment-image--default-size {
+  width: auto;
+  max-width: min(100%, var(--attachment-max-width));
+}
+
+.prose-like .attachment-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: var(--hit-min);
+  height: var(--hit-min);
+  border: none;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.prose-like .attachment-resize-handle:focus-visible {
+  outline: none;
+}
+
+/*
+ * Corner arc sharing the image border-radius. ::before draws the theme ring;
+ * ::after fills the grip in accent. No light halo — it read as a white corner.
+ */
+.prose-like .attachment-resize-handle::before,
+.prose-like .attachment-resize-handle::after {
+  content: "";
+  position: absolute;
+  box-sizing: border-box;
+  border-bottom-right-radius: var(--radius-lg);
+  pointer-events: none;
+  transition:
+    border-color var(--duration-fast) var(--ease-smooth),
+    border-width var(--duration-fast) var(--ease-smooth);
+}
+
+.prose-like .attachment-resize-handle::before {
+  right: 0;
+  bottom: 0;
+  width: calc(var(--radius-lg) * 2.5);
+  height: calc(var(--radius-lg) * 2.5);
+  border-right: calc(var(--attachment-resize-stroke) + 2px) solid var(--ring);
+  border-bottom: calc(var(--attachment-resize-stroke) + 2px) solid var(--ring);
+}
+
+.prose-like .attachment-resize-handle::after {
+  right: calc(var(--radius-sm) / 8);
+  bottom: calc(var(--radius-sm) / 8);
+  width: calc(var(--radius-lg) * 2.5 - var(--radius-sm) / 4);
+  height: calc(var(--radius-lg) * 2.5 - var(--radius-sm) / 4);
+  border-right: var(--attachment-resize-stroke) solid var(--accent);
+  border-bottom: var(--attachment-resize-stroke) solid var(--accent);
+}
+
+.prose-like .attachment-resize-handle:hover::after,
+.prose-like .attachment-resize-handle:focus-visible::after {
+  border-color: var(--accent-hover);
 }
 
 .prose-like .attachment-placeholder {
