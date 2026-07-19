@@ -281,6 +281,11 @@ blur over `--duration-normal`. They never appear instantly. Rules:
   already carries the text, and a clipped or transformed ancestor would
   otherwise cut the bubble off.
 - A keyboard hint may follow the label in the mono face.
+- **Pointer-only on hover; keyboard-only on focus.** Tooltips supplement
+  discovery for mouse hover and keyboard tabbing. They never open for touch
+  (`pointerType !== "mouse"`) and never on tap focus (`:focus-visible` only).
+  On touch the trigger's `aria-label` is the whole story — a bubble after a
+  tap would sit on top of the control the user just pressed.
 
 ---
 

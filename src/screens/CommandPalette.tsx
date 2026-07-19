@@ -218,7 +218,7 @@ export function CommandPalette({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={searchReady ? "Search or jump to…" : "Loading search…"}
-          className="rounded-none px-4 py-3.5 placeholder:text-[var(--foreground-muted)]"
+          className="rounded-none px-4 py-3.5 placeholder:text-[var(--foreground-muted)] focus-visible:!outline-none focus-visible:!outline-offset-0"
           aria-label="Search notes"
           aria-controls="command-palette-results"
           aria-activedescendant={
@@ -230,7 +230,7 @@ export function CommandPalette({
           key={resultsAnimateKey}
           role="listbox"
           aria-label="Search results"
-          className="u-content-swap max-h-[50vh] overflow-y-auto border-t border-[var(--border)]"
+          className="u-content-swap max-h-[50vh] overflow-y-auto border-y border-[var(--border)] divide-y divide-[var(--border)]"
           aria-live="polite"
         >
           {items.length === 0 ? (
@@ -283,7 +283,7 @@ export function CommandPalette({
             })
           )}
         </ul>
-        <div className="border-t border-[var(--border)] px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-[var(--foreground-muted)]">
+        <div className="px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-[var(--foreground-muted)]">
           ↑↓ navigate · Enter to open · Esc to close
         </div>
       </div>

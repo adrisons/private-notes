@@ -64,7 +64,20 @@ export function Tooltip({ label, shortcut, children }: TooltipProps) {
         }}
         onPointerLeave={hide}
         onPointerDown={hide}
-        onFocus={show}
+        onFocus={(e) => {
+          const target = e.target;
+          if (!(target instanceof HTMLElement)) return;
+          // Keyboard discovery only. A touch tap also focuses the control but
+          // must not open a bubble — there is no hover on touch (design.md §5).
+          requestAnimationFrame(() => {
+            if (
+              document.activeElement === target &&
+              target.matches(":focus-visible")
+            ) {
+              show();
+            }
+          });
+        }}
         onBlur={hide}
         onKeyDown={(e) => {
           if (e.key === "Escape") hide();

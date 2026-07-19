@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Tooltip } from "../Tooltip";
 
@@ -33,13 +33,22 @@ describe("Tooltip", () => {
       </Tooltip>,
     );
 
+    const button = screen.getByRole("button");
+    const matchSpy = vi.spyOn(button, "matches").mockImplementation((selector) => {
+      if (selector === ":focus-visible") return true;
+      return HTMLElement.prototype.matches.call(button, selector);
+    });
+
     await user.tab();
-    expect(screen.getByRole("tooltip", { hidden: true })).toHaveTextContent(
-      "Insert image",
-    );
+    await waitFor(() => {
+      expect(screen.getByRole("tooltip", { hidden: true })).toHaveTextContent(
+        "Insert image",
+      );
+    });
 
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("tooltip", { hidden: true })).toBeNull();
+    matchSpy.mockRestore();
   });
 
   it("is hidden from assistive tech — the trigger already carries the name", async () => {
@@ -79,6 +88,42 @@ describe("Tooltip", () => {
     expect(tooltip.querySelector(".u-tooltip-shortcut")).toHaveTextContent(
       "⇧⌘7",
     );
+  });
+
+  it("does not show on touch pointer enter", () => {
+    render(
+      <Tooltip label="More controls">
+        <button type="button" aria-label="Show more formatting controls">
+          ^
+        </button>
+      </Tooltip>,
+    );
+
+    fireEvent.pointerEnter(screen.getByRole("button"), {
+      pointerType: "touch",
+    });
+    expect(screen.queryByRole("tooltip", { hidden: true })).toBeNull();
+  });
+
+  it("does not show after a touch tap", async () => {
+    const user = userEvent.setup();
+    render(
+      <Tooltip label="More controls">
+        <button type="button" aria-label="Show more formatting controls">
+          ^
+        </button>
+      </Tooltip>,
+    );
+
+    const button = screen.getByRole("button");
+    const matchSpy = vi.spyOn(button, "matches").mockImplementation((selector) => {
+      if (selector === ":focus-visible") return false;
+      return HTMLElement.prototype.matches.call(button, selector);
+    });
+
+    await user.click(button);
+    expect(screen.queryByRole("tooltip", { hidden: true })).toBeNull();
+    matchSpy.mockRestore();
   });
 
   it("shows the divider markdown shortcut separated from the label", async () => {
