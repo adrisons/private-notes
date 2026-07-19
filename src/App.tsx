@@ -102,8 +102,8 @@ export function App() {
   if (vault.booting) {
     return (
       <AppShell header={headerNode}>
-        <div className="flex h-full items-center justify-center text-sm text-[var(--color-muted-foreground)]">
-          Loading…
+        <div className="flex h-full items-center justify-center text-sm text-[var(--foreground-muted)]">
+          <span className="u-glow">Loading…</span>
         </div>
       </AppShell>
     );
@@ -123,6 +123,8 @@ export function App() {
   return (
     <AppShell
       header={headerNode}
+      // Picking a note collapses the mobile panel (docs/design.md §8).
+      collapseKey={currentNoteId}
       sidebar={
         <div className="flex h-full flex-col">
           <SidebarSearch
@@ -150,16 +152,13 @@ export function App() {
             title={vault.current.title}
             onTitleChange={note.onTitleChange}
             onDelete={() => requestDelete()}
-            onInsertImage={() => {
-              /* the editor toolbar's hidden input handles file selection */
-            }}
             savedAt={vault.current.savedAt}
           />
           <div className="flex-1">
             <Suspense
               fallback={
-                <div className="flex h-full items-center justify-center text-sm text-muted">
-                  Loading editor…
+                <div className="flex h-full items-center justify-center text-sm text-[var(--foreground-muted)]">
+                  <span className="u-glow">Loading editor…</span>
                 </div>
               }
             >

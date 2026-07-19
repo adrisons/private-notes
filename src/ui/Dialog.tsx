@@ -42,8 +42,8 @@ export function Dialog({
 
   const width = size === "md" ? "max-w-xl" : "max-w-md";
 
-  // Align the dialog top with the sidebar search input: header (h-14) + panel padding (py-4).
-  const dialogTop = "pt-[calc(theme(spacing.14)+theme(spacing.4))]";
+  // Align the dialog top with the sidebar search input: header + panel padding.
+  const dialogTop = "pt-[calc(var(--header-height)+1rem)]";
 
   return (
     <div
@@ -51,15 +51,16 @@ export function Dialog({
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className={`fixed inset-0 z-50 flex items-start justify-center bg-black/40 px-4 backdrop-blur-sm ${dialogTop}`}
+      className={`u-enter-backdrop fixed inset-0 z-50 flex items-start justify-center bg-[var(--backdrop)] px-4 ${dialogTop}`}
     >
+      {/* Overlays enter from scale(0.98) with the blur entrance (§5.8). */}
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-label={label}
         tabIndex={-1}
-        className={`w-full ${width} rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] shadow-2xl outline-none`}
+        className={`u-enter-panel w-full ${width} rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-raised)] shadow-[var(--shadow-overlay)] outline-none`}
       >
         {children}
       </div>

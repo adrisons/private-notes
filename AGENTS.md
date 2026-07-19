@@ -68,27 +68,26 @@ way.
 
 ## 4. Design system
 
-The visual language is a minimal, Vercel-inspired editor surface: lots of
+The visual language is documented in [docs/design.md](./docs/design.md): warm
+paper surfaces, coral accent, generous rounding, tactile motion. Lots of
 whitespace, thin borders, no chrome, content first.
 
 ### 4.1 Tokens (the only colours and fonts you may use)
 
-Defined in `src/styles.css` via `@theme` and overridden under
-`html[data-theme="light"|"dark"]` (with `prefers-color-scheme` as fallback).
-Always reference them with CSS variables — **never** hardcode hex values in
-components:
+Criteria live in [docs/design.md](./docs/design.md). Values live in
+`src/styles/design-tokens.css` (light/dark palettes on `:root` /
+`html[data-theme]`). Components consume canonical names as
+`var(--canvas)`, `var(--foreground-muted)`, etc. — **never** hardcode hex,
+durations, easings, radii or shadows.
 
-```
---color-background      --color-foreground
---color-muted           --color-muted-foreground
---color-border          --color-ring
---color-accent          --color-accent-foreground
---color-danger
---font-sans (Geist)     --font-mono (Geist Mono)
-```
+Common roles: `--canvas`, `--surface`, `--surface-raised`, `--foreground`,
+`--foreground-muted`, `--border`, `--accent`, `--accent-foreground`,
+`--ring`, `--danger`, `--shadow-rest`, `--radius-md`, `--duration-fast`,
+`--ease-smooth`. Full list: `design-tokens.css`.
 
-If you need a new colour, add it as a token in both light and dark blocks
-of `src/styles.css`. Do not introduce inline colours.
+Shared motion/interaction utilities (`.u-press`, `.u-lift`, `.gesture-*`) live
+in `src/styles.css`. Adding a new role: describe it in `design.md` first,
+then add the value in `design-tokens.css` for both themes.
 
 ### 4.2 Hierarchy
 
@@ -110,10 +109,11 @@ screens together.
 `<button>` elements.
 - Inputs: use the `Input` primitive.
 - Modals: use `Dialog` / `ActionDialog` / `ConfirmDialog`. Do not add a modal library.
-- Focus ring: every interactive element must show
-`focus-visible:ring-2 ring-[var(--color-ring)]` with offset (the
-primitives already do this — keep it that way).
-- Radii: `rounded-md` for controls, `rounded-xl` for dialogs and cards.
+- Focus ring: every interactive element must show a visible ring via
+`.u-focus` or `outline: 2px solid var(--ring)` with offset (the primitives
+already do this — keep it that way).
+- Radii: `rounded-[var(--radius-md)]` for controls,
+`rounded-[var(--radius-lg)]` for dialogs and cards.
 - Spacing scale: stay on Tailwind's default scale (multiples of 4 px).
 - Iconography: prefer text or inline SVG; do not import an icon library.
 

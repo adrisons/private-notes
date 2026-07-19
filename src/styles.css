@@ -1,16 +1,18 @@
 @import "tailwindcss";
+@import "./styles/design-tokens.css";
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
 
 /*
- * Vercel-inspired design tokens.
+ * Design system entry point. The criteria live in docs/design.md, the values
+ * in ./styles/design-tokens.css. This file only:
+ *   1. exposes tokens to Tailwind as utilities (@theme),
+ *   2. sets base element styles,
+ *   3. defines the shared motion/depth utilities from design.md §5,
+ *   4. styles the editor surface.
  *
- * Theming model:
- * - @theme sets the design tokens Tailwind v4 turns into utilities at build
- *   time. We seed it with the light palette.
- * - The runtime palette is then layered on top with CSS variables that follow
- *   the `data-theme` attribute on <html>. When nothing is set, the
- *   `prefers-color-scheme` media query supplies the dark values.
+ * Do not put literal colors, durations, easings, radii or shadows here or in
+ * components — add a token instead.
  */
 @theme {
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system,
@@ -18,50 +20,24 @@
   --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo,
     Consolas, monospace;
 
-  --color-background: #ffffff;
-  --color-foreground: #0a0a0a;
-  --color-muted: #fafafa;
-  --color-muted-foreground: #525252;
-  --color-border: #ededed;
-  --color-accent: #0a0a0a;
-  --color-accent-foreground: #ffffff;
-  --color-ring: #2563eb;
-  --color-danger: #b91c1c;
-}
-
-/* Explicit light theme — wins over the system dark media query below. */
-html[data-theme="light"] {
-  --color-background: #ffffff;
-  --color-foreground: #0a0a0a;
-  --color-muted: #fafafa;
-  --color-muted-foreground: #525252;
-  --color-border: #ededed;
-  --color-accent: #0a0a0a;
-  --color-accent-foreground: #ffffff;
-}
-
-/* Explicit dark theme. */
-html[data-theme="dark"] {
-  --color-background: #0a0a0a;
-  --color-foreground: #fafafa;
-  --color-muted: #111111;
-  --color-muted-foreground: #a3a3a3;
-  --color-border: #1f1f1f;
-  --color-accent: #fafafa;
-  --color-accent-foreground: #0a0a0a;
-}
-
-/* Follow the OS when no explicit choice has been made. */
-@media (prefers-color-scheme: dark) {
-  html:not([data-theme]) {
-    --color-background: #0a0a0a;
-    --color-foreground: #fafafa;
-    --color-muted: #111111;
-    --color-muted-foreground: #a3a3a3;
-    --color-border: #1f1f1f;
-    --color-accent: #fafafa;
-    --color-accent-foreground: #0a0a0a;
-  }
+  /* Surfaces and text (design.md §4.1). */
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-subtle: var(--foreground-subtle);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-ring: var(--ring);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
 }
 
 html,
@@ -71,8 +47,8 @@ body,
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
+  background: var(--canvas);
+  color: var(--foreground);
   font-family: var(--font-sans);
   font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
@@ -80,7 +56,497 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Editor surface. We keep it lightweight — no @tailwindcss/typography needed. */
+/*
+ * Ambient depth wash (design.md §5.8). Two very low-opacity radial gradients
+ * fixed behind everything: felt as warmth, never seen as an object.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 40rem at 12% -10%, var(--ambient-warm), transparent 70%),
+    radial-gradient(50rem 36rem at 100% 8%, var(--ambient-cool), transparent 70%);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-soft-foreground);
+}
+
+/* ---------------------------------------------------------------------
+ * Motion utilities (design.md §5). Components compose these instead of
+ * re-deriving transitions.
+ * ------------------------------------------------------------------ */
+
+/* Entrances blur in — opacity + upward shift + clearing blur (§5.2). */
+@keyframes enter-blur {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes enter-blur-panel {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes fade-backdrop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Tooltips fade in, lift 4px and clear a 2px blur (§5). */
+@keyframes enter-tooltip {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* Loading label glow sweep — no spinners (§5.5). */
+@keyframes glow-sweep {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/*
+ * These live in the components layer on purpose: a Tailwind utility written
+ * on a component (e.g. `md:contents` on a disclosure) must be able to
+ * override the shared rule.
+ */
+@layer components {
+
+.u-enter {
+  animation: enter-blur var(--duration-normal) var(--ease-out) both;
+}
+
+.u-enter-pop {
+  animation: enter-blur var(--duration-normal) var(--ease-spring) both;
+}
+
+.u-enter-panel {
+  animation: enter-blur-panel var(--duration-normal) var(--ease-out) both;
+}
+
+.u-enter-backdrop {
+  animation: fade-backdrop var(--duration-normal) var(--ease-smooth) both;
+  backdrop-filter: blur(6px);
+}
+
+/* Every clickable element responds to press (§5.3). */
+.u-press {
+  transition:
+    transform var(--duration-fast) var(--ease-smooth),
+    box-shadow var(--duration-fast) var(--ease-smooth),
+    background-color var(--duration-fast) var(--ease-smooth),
+    border-color var(--duration-fast) var(--ease-smooth),
+    color var(--duration-fast) var(--ease-smooth);
+}
+
+.u-press:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Hover lifts one step and animates the whole shadow stack (§6, §7). */
+.u-lift:hover:not(:disabled) {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+}
+
+.u-lift:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Loading state: the label itself glows, size never changes (§5.5). */
+.u-glow {
+  background-image: linear-gradient(
+    90deg,
+    currentColor 0%,
+    currentColor 35%,
+    var(--glow) 50%,
+    currentColor 65%,
+    currentColor 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: glow-sweep 2s var(--ease-in-out) infinite;
+}
+
+/*
+ * Expand / collapse. Grid rows, never a max-height hack (§5.4). The parent
+ * carries `data-open`, the single child is the measured content.
+ */
+.u-disclosure {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--duration-slow) var(--ease-smooth);
+}
+
+.u-disclosure[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+
+.u-disclosure > * {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* --- Signature gestures, one per action (design.md §5.7) ------------- */
+
+/* Create: the icon rotates a quarter turn, the control pops. */
+.gesture-create .gesture-icon {
+  transition: transform var(--duration-normal) var(--ease-spring);
+}
+
+.gesture-create:hover:not(:disabled) .gesture-icon {
+  transform: rotate(90deg);
+}
+
+/*
+ * Destructive: never bounces, and never moves on its own. Same hover shape
+ * and press response as its neighbours, tinted danger (design.md §5.7).
+ */
+.gesture-danger:hover:not(:disabled) {
+  color: var(--danger);
+  background-color: var(--danger-soft);
+}
+
+/* Select: a coral hairline wipes in from the left, annotation-style. */
+.gesture-annotate {
+  position: relative;
+}
+
+.gesture-annotate::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12%;
+  bottom: 12%;
+  width: 3px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform var(--duration-normal) var(--ease-smooth);
+}
+
+.gesture-annotate:hover::before,
+.gesture-annotate[aria-current="true"]::before {
+  transform: scaleY(1);
+}
+
+/* Mobile disclosure: the hamburger morphs into a close cross. */
+.gesture-disclosure .bar {
+  transform-origin: center;
+  transition:
+    transform var(--duration-fast) var(--ease-smooth),
+    opacity var(--duration-fast) var(--ease-smooth);
+}
+
+.gesture-disclosure[aria-expanded="true"] .bar-top {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.gesture-disclosure[aria-expanded="true"] .bar-mid {
+  opacity: 0;
+}
+
+.gesture-disclosure[aria-expanded="true"] .bar-bottom {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/*
+ * Zoom: the playful one, shared by the editor toolbar controls. The element
+ * grows a little with overshoot, the way the New button's + swings round.
+ */
+.gesture-zoom {
+  transition:
+    transform var(--duration-normal) var(--ease-spring),
+    background-color var(--duration-fast) var(--ease-smooth),
+    color var(--duration-fast) var(--ease-smooth);
+}
+
+.gesture-zoom:hover:not(:disabled) {
+  transform: scale(1.14);
+}
+
+.gesture-zoom:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/*
+ * The toolbar clamps itself to a single row and unrolls on hover or when a
+ * clipped control takes focus (design.md §5.4). Heights are measured, not
+ * guessed — the component sets both custom properties.
+ */
+.u-clamp-row {
+  height: var(--clamp-collapsed);
+  overflow: hidden;
+  transition: height var(--duration-normal) var(--ease-smooth);
+}
+
+/*
+ * Hover only unrolls where hovering exists. On touch, `:hover` sticks after a
+ * tap and would fight the explicit toggle, so those devices get the button
+ * only (design.md §7).
+ */
+@media (hover: hover) {
+  .u-clamp-host:hover .u-clamp-row {
+    height: var(--clamp-expanded);
+  }
+}
+
+/*
+ * Focus-within is scoped to the clipped row, not the host: the expand toggle
+ * is a sibling inside the host, so a host-level rule kept the toolbar open
+ * against the very button that had just asked it to close.
+ */
+.u-clamp-row:focus-within,
+.u-clamp-host[data-open="true"] .u-clamp-row {
+  height: var(--clamp-expanded);
+}
+
+/*
+ * Shown only where hover cannot do the job: touch devices of any size, plus
+ * narrow windows. Binding this to width alone would strand touch tablets,
+ * which sit above the `md` breakpoint and still clamp the toolbar.
+ */
+.u-touch-only {
+  display: none;
+}
+
+@media (hover: none), (max-width: 767px) {
+  .u-touch-only {
+    display: inline-flex;
+  }
+}
+
+/* Reserves the collapsed height so the unrolled pill can float over content. */
+.u-clamp-spacer {
+  height: var(--clamp-spacer);
+}
+
+/*
+ * Tooltip (§5). The anchor is a zero-size fixed point centred on the trigger;
+ * the bubble animates inside it so the centring transform is never fighting
+ * the entrance transform.
+ */
+.u-tooltip-anchor {
+  position: fixed;
+  z-index: 60;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.u-tooltip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: min(18rem, calc(100vw - 2rem));
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--foreground);
+  box-shadow: var(--shadow-overlay);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  animation: enter-tooltip var(--duration-normal) var(--ease-out) both;
+}
+
+.u-tooltip-shortcut {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--foreground-muted);
+}
+
+/* More controls: the chevron flips to point back the way it came. */
+.gesture-more .gesture-icon {
+  transition: transform var(--duration-normal) var(--ease-spring);
+}
+
+.gesture-more[aria-expanded="true"] .gesture-icon {
+  transform: rotate(180deg);
+}
+
+/* Paragraph style: the chevron dips as if the list were about to drop. */
+.gesture-select .gesture-icon {
+  transition: transform var(--duration-normal) var(--ease-spring);
+}
+
+.gesture-select:hover .gesture-icon {
+  transform: translateY(2px);
+}
+
+/* Attach image: the frame lifts and grows slightly — a nudge, not a spin. */
+.gesture-attach .gesture-icon {
+  transition: transform var(--duration-normal) var(--ease-spring);
+}
+
+.gesture-attach:hover .gesture-icon {
+  transform: translateY(-1px) scale(1.08);
+}
+
+/* Theme toggle: the active icon rotates and grows, with overshoot. */
+.gesture-theme .gesture-icon {
+  display: inline-block;
+  transition: transform var(--duration-normal) var(--ease-spring);
+}
+
+.gesture-theme[aria-checked="true"] .gesture-icon {
+  transform: rotate(20deg) scale(1.1);
+}
+
+/* Search: the magnifier lifts, the shortcut chip pops. */
+.gesture-search:hover .gesture-icon {
+  transform: translateY(-1px);
+}
+
+.gesture-search .gesture-icon {
+  transition: transform var(--duration-normal) var(--ease-smooth);
+}
+
+.gesture-search .gesture-chip {
+  transition: transform var(--duration-normal) var(--ease-spring);
+}
+
+.gesture-search:hover .gesture-chip {
+  transform: scale(1.08);
+}
+
+/*
+ * Primary button slab (§5.8): a solid offset body you press into. Reserved
+ * for primary actions so it stays special.
+ */
+.u-slab {
+  box-shadow: var(--shadow-offset), var(--shadow-rest);
+  transition:
+    transform var(--duration-fast) var(--ease-smooth),
+    box-shadow var(--duration-fast) var(--ease-smooth),
+    background-color var(--duration-fast) var(--ease-smooth);
+}
+
+.u-slab:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.u-slab:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: var(--shadow-rest);
+}
+
+/* Focus is always visible, and always the ring token (§6). */
+.u-focus:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* For controls whose real input is visually hidden (e.g. a file picker). */
+.u-focus-within:focus-within {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+} /* @layer components */
+
+/*
+ * Reduced motion (§5.6): transforms and blurs collapse, opacity survives so
+ * state changes remain perceivable.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+
+  .u-press:active:not(:disabled),
+  .u-lift:hover:not(:disabled),
+  .u-lift:active:not(:disabled),
+  .u-slab:hover:not(:disabled),
+  .u-slab:active:not(:disabled),
+  .gesture-create:hover:not(:disabled) .gesture-icon,
+  .gesture-disclosure[aria-expanded="true"] .bar-top,
+  .gesture-disclosure[aria-expanded="true"] .bar-bottom,
+  .gesture-search:hover .gesture-icon,
+  .gesture-search:hover .gesture-chip,
+  .gesture-attach:hover .gesture-icon,
+  .gesture-select:hover .gesture-icon,
+  .gesture-more[aria-expanded="true"] .gesture-icon,
+  .gesture-zoom:hover:not(:disabled),
+  .gesture-zoom:active:not(:disabled),
+  .gesture-theme[aria-checked="true"] .gesture-icon {
+    transform: none;
+  }
+
+  .u-enter,
+  .u-enter-pop,
+  .u-enter-panel,
+  .u-tooltip {
+    animation: fade-backdrop var(--duration-fast) linear both;
+    filter: none;
+  }
+
+  .u-enter-backdrop {
+    backdrop-filter: none;
+  }
+
+  .u-glow {
+    animation: none;
+    background-image: none;
+    color: inherit;
+  }
+
+  .gesture-annotate::before {
+    transform: scaleY(1);
+    opacity: 0;
+  }
+
+  .gesture-annotate:hover::before,
+  .gesture-annotate[aria-current="true"]::before {
+    opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * Editor surface. Lightweight on purpose — no @tailwindcss/typography.
+ * ------------------------------------------------------------------ */
 .prose-like {
   font-size: 16px;
   line-height: 1.7;
@@ -142,7 +608,7 @@ body {
 
 .prose-like h5 {
   font-size: 1rem;
-  color: var(--color-muted-foreground);
+  color: var(--foreground-muted);
 }
 
 .prose-like ul,
@@ -170,8 +636,8 @@ body {
 .prose-like blockquote {
   margin: 1em 0;
   padding-left: 1em;
-  border-left: 3px solid var(--color-border);
-  color: var(--color-muted-foreground);
+  border-left: 3px solid var(--accent);
+  color: var(--foreground-muted);
 }
 
 .prose-like blockquote p:last-child {
@@ -181,7 +647,7 @@ body {
 .prose-like hr {
   margin: 2em 0;
   border: none;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--border);
 }
 
 .prose-like strong {
@@ -205,9 +671,9 @@ body {
 .prose-like pre {
   margin: 1.25em 0;
   padding: 1em 1.25em;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
   overflow-x: auto;
 }
 
@@ -218,7 +684,7 @@ body {
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
-  color: var(--color-foreground);
+  color: var(--foreground);
 }
 
 /* Image attachments are always full-width blocks. */
@@ -230,7 +696,8 @@ body {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 6px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-rest);
 }
 
 .prose-like .attachment-placeholder {
@@ -238,8 +705,8 @@ body {
   place-items: center;
   width: 100%;
   aspect-ratio: 16 / 9;
-  border: 1px dashed var(--color-border);
-  border-radius: 6px;
-  color: var(--color-muted-foreground);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--foreground-muted);
   font-size: 0.875rem;
 }

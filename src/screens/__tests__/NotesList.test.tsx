@@ -31,8 +31,14 @@ describe("NotesList", () => {
     );
     expect(screen.getByText("Alpha note")).toBeInTheDocument();
     expect(screen.getByText("Beta note")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /beta note/i })).toHaveClass(
-      "border-[var(--color-border)]",
+    // Selection is exposed semantically; the styling hangs off aria-current.
+    expect(screen.getByRole("button", { name: /beta note/i })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: /alpha note/i })).toHaveAttribute(
+      "aria-current",
+      "false",
     );
   });
 

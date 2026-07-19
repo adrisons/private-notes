@@ -9,12 +9,12 @@ export function Unsupported({ reasons }: UnsupportedProps) {
         <h1 className="text-3xl font-semibold tracking-tight">
           This browser isn’t supported yet.
         </h1>
-        <p className="mt-3 text-[var(--color-muted-foreground)]">
+        <p className="mt-3 text-[var(--foreground-muted)]">
           The app needs a Chromium-based browser to read and write a folder on
           your machine and to run a small embedding model locally.
         </p>
       </div>
-      <ul className="space-y-2 text-sm text-[var(--color-foreground)]">
+      <ul className="space-y-2 text-sm text-[var(--foreground)]">
         {reasons.map((r) => (
           <li key={r} className="flex items-start gap-2">
             <span aria-hidden className="mt-0.5">·</span>
@@ -22,7 +22,7 @@ export function Unsupported({ reasons }: UnsupportedProps) {
           </li>
         ))}
       </ul>
-      <p className="text-xs text-[var(--color-muted-foreground)]">
+      <p className="text-xs text-[var(--foreground-muted)]">
         Try opening this page in Chrome, Edge, Brave, Opera, or Arc on a
         desktop computer.
       </p>

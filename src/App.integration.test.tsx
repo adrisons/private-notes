@@ -38,7 +38,9 @@ describe("App integration", () => {
   describe("vault lifecycle", () => {
     it("shows Welcome on cold start then opens the vault from the picker", async () => {
       await openVaultFromWelcomeScreen();
-      expect(screen.getByText("Welcome to private-notes")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /welcome to private-notes/i }),
+      ).toBeInTheDocument();
     });
 
     it("restores the last vault from IndexedDB and skips Welcome", async () => {
@@ -48,7 +50,9 @@ describe("App integration", () => {
           name: /your notes, on your machine/i,
         }),
       ).not.toBeInTheDocument();
-      expect(screen.getByText("Welcome to private-notes")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /welcome to private-notes/i }),
+      ).toBeInTheDocument();
     });
   });
 
@@ -159,7 +163,9 @@ describe("App integration", () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText("My Original (copy)")).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /my original \(copy\)/i }),
+        ).toBeInTheDocument();
         expect(
           screen.getByDisplayValue("My Original (copy)"),
         ).toBeInTheDocument();

@@ -14,19 +14,21 @@ export function Toast({ message, fixHint, onDismiss, className }: ToastProps) {
       role="alert"
       aria-live="assertive"
       className={cn(
-        "fixed bottom-4 left-1/2 z-50 w-[min(100%-2rem,28rem)] -translate-x-1/2",
-        "rounded-xl border border-[var(--color-danger)]/30 bg-[var(--color-background)]",
-        "px-4 py-3 shadow-lg",
+        // Centered with margins, not a transform: the entrance animation owns
+        // `transform` and would otherwise cancel the centering.
+        "u-enter-panel fixed inset-x-4 bottom-4 z-50 mx-auto w-auto max-w-[28rem]",
+        "rounded-[var(--radius-lg)] border border-[var(--danger)]/30 bg-[var(--surface-raised)]",
+        "px-4 py-3 shadow-[var(--shadow-overlay)]",
         className,
       )}
     >
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-[var(--color-foreground)]">
+          <p className="text-sm font-medium text-[var(--foreground)]">
             {message}
           </p>
           {fixHint ? (
-            <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+            <p className="mt-1 text-xs text-[var(--foreground-muted)]">
               {fixHint}
             </p>
           ) : null}
@@ -35,7 +37,7 @@ export function Toast({ message, fixHint, onDismiss, className }: ToastProps) {
           type="button"
           onClick={onDismiss}
           aria-label="Dismiss"
-          className="shrink-0 cursor-pointer rounded-md px-2 py-1 text-xs text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)]"
+          className="u-press u-focus shrink-0 cursor-pointer rounded-[var(--radius-sm)] px-2 py-1 text-xs text-[var(--foreground-muted)] hover:bg-[var(--surface)] hover:text-[var(--foreground)]"
         >
           Dismiss
         </button>

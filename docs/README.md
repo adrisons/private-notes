@@ -11,6 +11,7 @@ Architecture decisions and system design for **private-notes**. User-facing setu
 
 | Doc | Read when you want to… |
 |-----|------------------------|
+| [design.md](./design.md) | Design criteria: color roles, motion curves, interaction states, responsive rules — read before any UI change |
 | [testing.md](./testing.md) | Test layout, doubles, coverage commands, integration harness |
 | [semantic-search-primer.md](./semantic-search-primer.md) | Understand embeddings, cosine similarity, worker vs main thread, pooling |
 

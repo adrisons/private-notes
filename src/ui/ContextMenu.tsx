@@ -37,7 +37,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     <div
       ref={ref}
       role="menu"
-      className="fixed z-50 min-w-40 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] py-1 shadow-lg"
+      className="u-enter-panel fixed z-50 min-w-44 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-raised)] py-1.5 shadow-[var(--shadow-overlay)]"
       style={{ left: x, top: y }}
     >
       {items.map((item) => (
@@ -46,11 +46,11 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
           type="button"
           role="menuitem"
           className={cn(
-            "flex w-full cursor-pointer px-3 py-2 text-left text-sm transition-colors",
-            "hover:bg-[var(--color-muted)] focus-visible:bg-[var(--color-muted)] focus-visible:outline-none",
+            "u-press flex w-full cursor-pointer px-3 py-2.5 text-left text-sm",
+            "focus-visible:outline-none focus-visible:bg-[var(--surface)]",
             item.destructive
-              ? "text-[var(--color-danger)]"
-              : "text-[var(--color-foreground)]",
+              ? "gesture-danger text-[var(--danger)]"
+              : "text-[var(--foreground)] hover:bg-[var(--surface)]",
           )}
           onClick={() => {
             item.onSelect();

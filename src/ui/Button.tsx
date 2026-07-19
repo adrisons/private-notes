@@ -1,7 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "../lib/cn";
 
-type Variant = "primary" | "secondary" | "ghost";
+type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -10,28 +10,33 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const base =
-  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-md font-medium " +
-  "transition-colors focus-visible:outline-none focus-visible:ring-2 " +
-  "focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 " +
-  "focus-visible:ring-offset-[var(--color-background)] " +
-  "disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50";
+  "u-focus inline-flex cursor-pointer items-center justify-center gap-2 " +
+  "rounded-[var(--radius-md)] font-medium " +
+  "disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none";
 
 const variants: Record<Variant, string> = {
+  // The pressable slab — a solid offset body you push into (design.md §5.8).
+  // Reserved for primary actions so it stays special.
   primary:
-    "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] " +
-    "hover:brightness-110 active:brightness-95",
+    "u-slab bg-[var(--accent)] text-[var(--accent-foreground)] " +
+    "hover:bg-[var(--accent-hover)]",
   secondary:
-    "border border-[var(--color-border)] bg-[var(--color-background)] " +
-    "text-[var(--color-foreground)] hover:border-[var(--color-foreground)]/25 " +
-    "hover:bg-[var(--color-muted)] active:bg-[var(--color-border)]",
+    "u-press u-lift border border-[var(--border)] bg-[var(--surface-raised)] " +
+    "text-[var(--foreground)] shadow-[var(--shadow-rest)] " +
+    "hover:border-[var(--border-strong)]",
   ghost:
-    "text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] " +
-    "hover:text-[var(--color-foreground)] active:bg-[var(--color-border)]",
+    "u-press text-[var(--foreground-muted)] hover:bg-[var(--surface-raised)] " +
+    "hover:text-[var(--foreground)]",
+  // Destructive is a ghost button that happens to be red: identical shape and
+  // press response, danger tint on hover only (design.md §5.7).
+  danger: "gesture-danger u-press text-[var(--foreground-muted)]",
 };
 
 const sizes: Record<Size, string> = {
-  sm: "h-8 min-w-8 px-3 text-sm sm:h-9",
-  md: "h-10 min-w-10 px-4 text-sm sm:h-11",
+  // Touch targets stay at 44px below `md`, tighten to 36/40px on pointer
+  // devices (design.md §5.3).
+  sm: "h-9 min-w-9 px-3.5 text-sm max-md:h-11 max-md:min-w-11",
+  md: "h-10 min-w-10 px-4 text-sm max-md:h-11 max-md:min-w-11",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

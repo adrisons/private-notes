@@ -56,39 +56,51 @@ export function NotesList({
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between px-4 py-3">
-        <span className="text-xs font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
+        <span className="text-sm font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">
           Notes
         </span>
-        <Button size="sm" variant="secondary" onClick={onCreate}>
+        {/* Create: the + rotates a quarter turn and the button pops (§5.7). */}
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={onCreate}
+          className="gesture-create"
+        >
+          <span aria-hidden className="gesture-icon text-base leading-none">
+            +
+          </span>
           New
         </Button>
       </div>
       <ul className="flex-1 space-y-1 overflow-y-auto px-3 pt-2 pb-4">
         {sortedNotes.length === 0 ? (
-          <li className="px-2 py-8 text-center text-sm text-[var(--color-muted-foreground)]">
+          <li className="px-2 py-8 text-center text-sm text-[var(--foreground-muted)]">
             No notes yet
           </li>
         ) : (
           sortedNotes.map((n) => (
             <li key={n.id}>
+              {/* Select: a coral hairline wipes in from the left (§5.7). */}
               <button
                 type="button"
+                aria-current={selectedId === n.id}
                 onClick={() => onSelect(n.id)}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   setMenu({ x: e.clientX, y: e.clientY, noteId: n.id });
                 }}
                 className={cn(
-                  "w-full cursor-pointer rounded-md border px-3 py-2.5 text-left transition-colors",
-                  "border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-background)]",
+                  "gesture-annotate u-press w-full cursor-pointer overflow-hidden",
+                  "rounded-[var(--radius-md)] px-3.5 py-3 text-left max-md:min-h-[var(--hit-touch)]",
+                  "hover:bg-[var(--surface-raised)] hover:shadow-[var(--shadow-rest)]",
                   selectedId === n.id &&
-                    "border-[var(--color-border)] bg-[var(--color-background)]",
+                    "bg-[var(--surface-raised)] shadow-[var(--shadow-rest)]",
                 )}
               >
-                <div className="truncate text-sm font-medium text-[var(--color-foreground)]">
+                <div className="truncate text-sm font-medium text-[var(--foreground)]">
                   {n.title || "Untitled"}
                 </div>
-                <div className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+                <div className="mt-1 text-xs text-[var(--foreground-muted)]">
                   {formatRelative(n.updatedAt)}
                 </div>
               </button>

@@ -34,7 +34,7 @@ export function ActionDialog({
       <div className="p-6">
         <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
         {description ? (
-          <div className="mt-3 text-sm leading-relaxed text-[var(--color-muted-foreground)]">
+          <div className="mt-3 text-sm leading-relaxed text-[var(--foreground-muted)]">
             {description}
           </div>
         ) : null}

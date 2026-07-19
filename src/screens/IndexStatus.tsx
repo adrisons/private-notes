@@ -49,16 +49,17 @@ export function IndexStatus({
           onClick={() => setInfoOpen(true)}
           className={
             indexError
-              ? "cursor-pointer text-xs text-[var(--color-danger)] transition-colors hover:underline"
-              : "cursor-pointer text-xs text-[var(--color-muted-foreground)] transition-colors hover:text-[var(--color-foreground)] hover:underline"
+              ? "u-press u-focus cursor-pointer text-xs text-[var(--danger)] hover:underline"
+              : "u-press u-focus cursor-pointer text-xs text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:underline"
           }
           aria-label={`${statusLabel}. Learn about semantic indexing.`}
         >
           {statusLabel}
         </button>
       ) : (
+        // Work in progress glows the label itself — never a spinner (§5.5).
         <span
-          className="text-xs text-[var(--color-muted-foreground)]"
+          className={`text-xs text-[var(--foreground-muted)] ${reindexing || !ready ? "u-glow" : ""}`}
           aria-live="polite"
         >
           {statusLabel}

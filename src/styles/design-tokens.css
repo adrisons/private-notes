@@ -1,0 +1,232 @@
+/*
+ * Design tokens — the machine half of docs/design.md.
+ *
+ * Every value here has a written reason in that document. Components must
+ * consume these variables, never literals: a raw hex, duration, easing,
+ * radius or shadow inside a component is a bug.
+ *
+ * Layout of this file:
+ *   1. Theme-independent primitives (motion, radius, spacing, type).
+ *   2. Light palette on :root — also the explicit `data-theme="light"`.
+ *   3. Dark palette on `data-theme="dark"`.
+ *   4. System fallback for `html:not([data-theme])`.
+ *
+ * Attribute selectors outrank :root, so an explicit choice always wins.
+ */
+
+:root {
+  /* --- Motion curves (design.md §5.1) -------------------------------- */
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1); /* default */
+  --ease-out: cubic-bezier(0.17, 1, 0.32, 1); /* decorative entrances */
+  --ease-spring: cubic-bezier(0.35, 1.55, 0.65, 1); /* pops, overshoot */
+  --ease-in-out: cubic-bezier(0.66, 0, 0.34, 1); /* symmetric moves */
+
+  --duration-fast: 120ms; /* press, hover, focus ring */
+  --duration-normal: 220ms; /* dropdowns, tooltips, chips */
+  --duration-slow: 320ms; /* panels, drawers, layout shifts */
+
+  /* --- Radius (design.md §7) ---------------------------------------- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  /* --- Hit targets (design.md §5.3) --------------------------------- */
+  --hit-min: 40px;
+  --hit-touch: 44px;
+
+  /* --- Layout ------------------------------------------------------- */
+  --sidebar-width: 288px;
+  --header-height: 56px;
+  --measure: 46rem; /* editor line length */
+}
+
+/* ---------------------------------------------------------------------
+ * Light — warm off-white paper. Surfaces rise toward white.
+ * ------------------------------------------------------------------ */
+:root,
+html[data-theme="light"] {
+  color-scheme: light;
+
+  --canvas: #fbfaf8;
+  --surface: #f4f1ec;
+  --surface-raised: #ffffff;
+  --surface-sunken: #efebe4;
+
+  --foreground: #1f1b19;
+  --foreground-muted: #6b625b;
+  --foreground-subtle: #9a918a;
+
+  --border: #e7e1d8;
+  --border-strong: #d8d0c4;
+
+  --accent: #d2542f;
+  --accent-hover: #b8441f;
+  --accent-foreground: #fffaf7;
+  --accent-soft: #fbe9e1; /* tinted background */
+  --accent-soft-foreground: #9c3a18;
+
+  --ring: #d2542f;
+
+  --danger: #b3261e;
+  --danger-soft: #fbe6e4;
+  --success: #1f7a4d;
+  --warning: #96631a;
+
+  /* Chips — tinted backgrounds, readable foregrounds (design.md §4.3) */
+  --chip-blue-bg: #e5edfb;
+  --chip-blue-fg: #1e4b8f;
+  --chip-green-bg: #e4f2e8;
+  --chip-green-fg: #1f6b41;
+  --chip-amber-bg: #fbeedb;
+  --chip-amber-fg: #855012;
+  --chip-red-bg: #fbe6e4;
+  --chip-red-fg: #9b2c22;
+  --chip-purple-bg: #eee9fa;
+  --chip-purple-fg: #58399c;
+
+  /* Stacked elevation — hairline ring + contact + ambient (design.md §7) */
+  --shadow-rest:
+    0 1px 2px rgba(63, 44, 33, 0.05), 0 2px 4px rgba(63, 44, 33, 0.02),
+    0 0 0 0.5px rgba(63, 44, 33, 0.08);
+  --shadow-hover:
+    0 2px 4px rgba(63, 44, 33, 0.07), 0 6px 16px rgba(63, 44, 33, 0.06),
+    0 0 0 0.5px rgba(63, 44, 33, 0.1);
+  --shadow-overlay:
+    0 8px 16px rgba(63, 44, 33, 0.08), 0 24px 48px rgba(63, 44, 33, 0.12),
+    0 0 0 0.5px rgba(63, 44, 33, 0.1);
+  /* Solid offset body for primary buttons — the pressable slab (§5.8) */
+  --shadow-offset: 0 2px 0 0 var(--accent-hover);
+  --shadow-offset-danger: 0 2px 0 0 #8c1a14;
+
+  --backdrop: rgba(40, 28, 22, 0.28);
+  --glow: rgba(255, 255, 255, 0.85); /* text-glow sweep highlight */
+
+  /* Ambient depth wash behind the canvas (design.md §5.8) */
+  --ambient-warm: rgba(210, 84, 47, 0.06);
+  --ambient-cool: rgba(88, 57, 156, 0.045);
+}
+
+/* ---------------------------------------------------------------------
+ * Dark — lifted off black, warm-neutral, surfaces rise lighter.
+ * Explicitly NOT #0a0a0a: adjacent layers must separate without borders.
+ * ------------------------------------------------------------------ */
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --canvas: #1a1718;
+  --surface: #211e20;
+  --surface-raised: #2a2528;
+  --surface-sunken: #151213;
+
+  --foreground: #eeeae8;
+  --foreground-muted: #a9a19d;
+  --foreground-subtle: #7c7470;
+
+  --border: #332d30;
+  --border-strong: #423b3e;
+
+  --accent: #ff8a63;
+  --accent-hover: #e0704a;
+  --accent-foreground: #2a1109;
+  --accent-soft: #3a2119;
+  --accent-soft-foreground: #ffb094;
+
+  --ring: #ff9d7d;
+
+  --danger: #f0776a;
+  --danger-soft: #3b1f1c;
+  --success: #6dc99a;
+  --warning: #dfae6a;
+
+  --chip-blue-bg: #1e2a40;
+  --chip-blue-fg: #a8c6f5;
+  --chip-green-bg: #1c3128;
+  --chip-green-fg: #92d6ae;
+  --chip-amber-bg: #382a17;
+  --chip-amber-fg: #e8bf85;
+  --chip-red-bg: #3b1f1c;
+  --chip-red-fg: #f3a89e;
+  --chip-purple-bg: #2b2440;
+  --chip-purple-fg: #c2b0f0;
+
+  /* On dark, shadow alone does not read — the light hairline carries it. */
+  --shadow-rest:
+    0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.24),
+    0 0 0 0.5px rgba(255, 255, 255, 0.06);
+  --shadow-hover:
+    0 2px 6px rgba(0, 0, 0, 0.45), 0 8px 20px rgba(0, 0, 0, 0.35),
+    0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  --shadow-overlay:
+    0 10px 24px rgba(0, 0, 0, 0.5), 0 28px 56px rgba(0, 0, 0, 0.45),
+    0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  --shadow-offset: 0 2px 0 0 var(--accent-hover);
+  --shadow-offset-danger: 0 2px 0 0 #b9554a;
+
+  --backdrop: rgba(8, 5, 6, 0.55);
+  --glow: rgba(255, 255, 255, 0.5);
+
+  --ambient-warm: rgba(255, 138, 99, 0.05);
+  --ambient-cool: rgba(150, 120, 240, 0.04);
+}
+
+/* Follow the OS only when no explicit choice has been made. */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) {
+    color-scheme: dark;
+
+    --canvas: #1a1718;
+    --surface: #211e20;
+    --surface-raised: #2a2528;
+    --surface-sunken: #151213;
+
+    --foreground: #eeeae8;
+    --foreground-muted: #a9a19d;
+    --foreground-subtle: #7c7470;
+
+    --border: #332d30;
+    --border-strong: #423b3e;
+
+    --accent: #ff8a63;
+    --accent-hover: #e0704a;
+    --accent-foreground: #2a1109;
+    --accent-soft: #3a2119;
+    --accent-soft-foreground: #ffb094;
+
+    --ring: #ff9d7d;
+
+    --danger: #f0776a;
+    --danger-soft: #3b1f1c;
+    --success: #6dc99a;
+    --warning: #dfae6a;
+
+    --chip-blue-bg: #1e2a40;
+    --chip-blue-fg: #a8c6f5;
+    --chip-green-bg: #1c3128;
+    --chip-green-fg: #92d6ae;
+    --chip-amber-bg: #382a17;
+    --chip-amber-fg: #e8bf85;
+    --chip-red-bg: #3b1f1c;
+    --chip-red-fg: #f3a89e;
+    --chip-purple-bg: #2b2440;
+    --chip-purple-fg: #c2b0f0;
+
+    --shadow-rest:
+      0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.24),
+      0 0 0 0.5px rgba(255, 255, 255, 0.06);
+    --shadow-hover:
+      0 2px 6px rgba(0, 0, 0, 0.45), 0 8px 20px rgba(0, 0, 0, 0.35),
+      0 0 0 0.5px rgba(255, 255, 255, 0.1);
+    --shadow-overlay:
+      0 10px 24px rgba(0, 0, 0, 0.5), 0 28px 56px rgba(0, 0, 0, 0.45),
+      0 0 0 0.5px rgba(255, 255, 255, 0.1);
+    --shadow-offset: 0 2px 0 0 var(--accent-hover);
+    --shadow-offset-danger: 0 2px 0 0 #b9554a;
+
+    --backdrop: rgba(8, 5, 6, 0.55);
+    --glow: rgba(255, 255, 255, 0.5);
+
+    --ambient-warm: rgba(255, 138, 99, 0.05);
+    --ambient-cool: rgba(150, 120, 240, 0.04);
+  }
+}

@@ -140,12 +140,12 @@ export function CommandPalette({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={searchReady ? "Search or jump to…" : "Loading search…"}
-          className="w-full bg-transparent px-4 py-3.5 text-base outline-none placeholder:text-[var(--color-muted-foreground)]"
+          className="w-full bg-transparent px-4 py-3.5 text-base outline-none placeholder:text-[var(--foreground-muted)]"
           aria-label="Search notes"
         />
-        <ul className="max-h-[50vh] overflow-y-auto border-t border-[var(--color-border)]">
+        <ul className="max-h-[50vh] overflow-y-auto border-t border-[var(--border)]">
           {items.length === 0 ? (
-            <li className="px-4 py-6 text-center text-sm text-[var(--color-muted-foreground)]">
+            <li className="px-4 py-6 text-center text-sm text-[var(--foreground-muted)]">
               {searchReady ? "No matches." : "Indexing…"}
             </li>
           ) : (
@@ -153,8 +153,8 @@ export function CommandPalette({
               const isActive = i === active;
               const cls = `flex w-full cursor-pointer items-start gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
                 isActive
-                  ? "bg-[var(--color-muted)] text-[var(--color-foreground)]"
-                  : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]"
+                  ? "bg-[var(--surface)] text-[var(--foreground)]"
+                  : "text-[var(--foreground-muted)] hover:bg-[var(--surface)] hover:text-[var(--foreground)]"
               }`;
               if (item.kind === "create") {
                 return (
@@ -192,7 +192,7 @@ export function CommandPalette({
             })
           )}
         </ul>
-        <div className="border-t border-[var(--color-border)] px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
+        <div className="border-t border-[var(--border)] px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-[var(--foreground-muted)]">
           ↑↓ navigate · Enter to open · Esc to close
         </div>
       </div>

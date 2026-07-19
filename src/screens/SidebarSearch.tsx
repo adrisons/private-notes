@@ -16,7 +16,7 @@ function SearchIcon() {
   return (
     <svg
       aria-hidden
-      className="h-4 w-4 shrink-0 text-[var(--color-muted-foreground)]"
+      className="gesture-icon h-4 w-4 shrink-0 text-[var(--foreground-muted)]"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -40,18 +40,19 @@ export function SidebarSearch({
   onReindex,
 }: SidebarSearchProps) {
   return (
-    <div className="border-b border-[var(--color-border)] px-4 py-4">
+    <div className="border-b border-[var(--border)] px-4 py-4">
+      {/* Search: the magnifier lifts, the ⌘K chip pops (design.md §5.7). */}
       <button
         type="button"
         onClick={onOpenCommandPalette}
-        className="flex h-10 w-full cursor-pointer items-center gap-2.5 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-left text-sm text-[var(--color-muted-foreground)] transition-colors hover:border-[var(--color-foreground)]/20 hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]"
+        className="gesture-search u-press u-lift u-focus flex h-11 w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-raised)] px-3 text-left text-sm text-[var(--foreground-muted)] shadow-[var(--shadow-rest)] hover:border-[var(--border-strong)] hover:text-[var(--foreground)]"
         aria-label={`Search notes (${formatModKeyShortcut("K")})`}
       >
         <SearchIcon />
-        <span className="flex-1 truncate">
+        <span className={`flex-1 truncate ${ready ? "" : "u-glow"}`}>
           {ready ? "Search…" : "Loading search…"}
         </span>
-        <Kbd>{formatModKeyShortcut("K")}</Kbd>
+        <Kbd className="gesture-chip">{formatModKeyShortcut("K")}</Kbd>
       </button>
       <div className="mt-3">
         <IndexStatus
