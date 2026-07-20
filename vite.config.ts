@@ -86,5 +86,10 @@ export default defineConfig({
       forks: { execArgv: ["--no-webstorage"] },
       threads: { execArgv: ["--no-webstorage"] },
     },
+    // Performance/load benchmarks (`pnpm bench`). Kept out of the unit run;
+    // `*.bench.ts` files never match the default `test.include` globs.
+    benchmark: {
+      include: ["src/**/*.bench.ts"],
+    },
   },
 });

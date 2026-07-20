@@ -12,6 +12,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
+    "bench": "vitest bench --run",
+    "gen:vault": "node scripts/generate-vault.mjs",
     "lint": "eslint .",
     "typecheck": "tsc -b --noEmit"
   },
