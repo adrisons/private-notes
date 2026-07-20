@@ -25,22 +25,6 @@ export function serializeSpaceIds(ids: readonly SpaceId[]): string | undefined {
   return custom.join(SEP);
 }
 
-/**
- * Convert v2 `spaceId` + optional `spaceIds` into a v3 `spaceIds` string.
- * Used only during vault migration — not at runtime after v3.
- */
-export function migrateLegacySpaceField(
-  spaceIds?: string | null,
-  legacySpaceId?: string | null,
-): string | undefined {
-  const parsed = parseSpaceIds(spaceIds);
-  if (parsed.length > 0) return serializeSpaceIds(parsed);
-  if (!legacySpaceId) return undefined;
-  const legacy = tryParseSpaceId(legacySpaceId);
-  if (!legacy || isGeneralSpaceId(legacy)) return undefined;
-  return serializeSpaceIds([legacy]);
-}
-
 export function noteBelongsToSpace(
   noteSpaceIds: readonly SpaceId[],
   filterSpaceId: SpaceId,

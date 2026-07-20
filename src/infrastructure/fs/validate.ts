@@ -28,13 +28,13 @@ function isSpaceRecord(v: unknown): v is SpaceRecord {
     !isString(v.id) ||
     !isString(v.name) ||
     !isString(v.colorId) ||
-    !isSpaceColorId(v.colorId)
+    !isSpaceColorId(v.colorId) ||
+    !isString(v.createdAt) ||
+    !isString(v.updatedAt)
   ) {
     return false;
   }
   if (v.description !== undefined && !isString(v.description)) return false;
-  if (v.createdAt !== undefined && !isString(v.createdAt)) return false;
-  if (v.updatedAt !== undefined && !isString(v.updatedAt)) return false;
   return true;
 }
 

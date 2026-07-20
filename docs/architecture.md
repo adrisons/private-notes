@@ -45,7 +45,7 @@ Details: [ADR-002](./adr/002-note-storage-format.md), [ADR-004](./adr/004-semant
 
 | Store | Constant | File | On mismatch |
 |-------|----------|------|-------------|
-| Vault | `SCHEMA_VERSION` | `.private-notes/manifest.json` | Refuse open if newer than app ([ADR-008](./adr/008-schema-compatibility.md)) |
+| Vault | `SCHEMA_VERSION` | `.private-notes/manifest.json` | Refuse open if newer than app; migrate on open if older ([ADR-008](./adr/008-schema-compatibility.md)) |
 | Semantic index | `SEMANTIC_SCHEMA_VERSION` | `.semantic-index/manifest.json` | Wipe index and re-embed |
 
 ## Module map

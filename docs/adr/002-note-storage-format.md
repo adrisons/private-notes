@@ -27,7 +27,7 @@
 9. **Note assignment:** optional `spaceIds` in frontmatter and index — a **comma-separated** list of custom space ULIDs in one quoted string (keeps the hand-written YAML subset string-only). Because the separator is part of the format, a space id may not contain a comma or whitespace; `spaceId()` enforces this, and unreadable entries are skipped on parse rather than failing the note.
 10. **Multi-space:** a note may belong to several custom spaces simultaneously. Empty/missing `spaceIds` means General only.
 11. **Delete space:** strip the id from every note's `spaceIds` first, then remove the entry from `spaces.json` (notes fall back toward General when no custom ids remain). The note rewrite is the multi-file half, so doing it first leaves a failure retryable instead of stranding notes that point at an invisible space. The two aggregates are orchestrated by the `delete-space` use-case, never by a repository.
-12. **Schema versions:** v1 → notes only; v2 → `spaces.json` + singular `spaceId` (migrated away on open); v3 → `spaceIds` + optional space `description`; v4 → `createdAt` / `updatedAt` on custom spaces (backfilled on open for pre-v4 records — historical creation time is not recoverable). Migration runs on vault open ([ADR-008](./008-schema-compatibility.md)).
+12. **Schema version:** vault schema is **v1** — notes, `spaces.json`, comma-separated `spaceIds`, optional space `description`, and required `createdAt` / `updatedAt` on custom spaces. Future bumps use `migrateVaultIfNeeded` on vault open ([ADR-008](./008-schema-compatibility.md)).
 
 ## Consequences
 
@@ -63,7 +63,7 @@ flowchart LR
 
 ## References
 
-- [ADR-008](./008-schema-compatibility.md) — schema versioning and migration
+- [ADR-008](./008-schema-compatibility.md) — schema versioning policy
 - [CommonMark](https://commonmark.org/)
 - [YAML specification](https://yaml.org/spec/) (we only use a constrained subset by hand)
 - Code: `src/infrastructure/notes/`, `src/infrastructure/spaces/`, `src/domain/note/frontmatter.ts`, `src/infrastructure/fs/schema.ts`

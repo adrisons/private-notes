@@ -55,7 +55,6 @@ export {
 export {
   parseSpaceIds,
   serializeSpaceIds,
-  migrateLegacySpaceField,
   noteBelongsToSpace,
   addSpaceId,
   removeSpaceId,

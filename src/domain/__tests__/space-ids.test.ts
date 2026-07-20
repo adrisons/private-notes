@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  migrateLegacySpaceField,
   parseSpaceIds,
   serializeSpaceIds,
 } from "../space/space-ids";
@@ -41,19 +40,5 @@ describe("parseSpaceIds", () => {
     const ids = parseSpaceIds("work,personal");
     expect(serializeSpaceIds(ids)).toBe("work,personal");
     expect(serializeSpaceIds([GENERAL_SPACE_ID])).toBeUndefined();
-  });
-});
-
-describe("migrateLegacySpaceField", () => {
-  it("prefers v3 spaceIds when present", () => {
-    expect(migrateLegacySpaceField("work,personal", "old")).toBe(
-      "work,personal",
-    );
-  });
-
-  it("promotes a v2 spaceId, ignoring General and malformed values", () => {
-    expect(migrateLegacySpaceField(undefined, "work")).toBe("work");
-    expect(migrateLegacySpaceField(undefined, "general")).toBeUndefined();
-    expect(migrateLegacySpaceField(undefined, "a,b")).toBeUndefined();
   });
 });

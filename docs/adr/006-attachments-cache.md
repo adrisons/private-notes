@@ -24,7 +24,7 @@
    - `invalidate(path)` revokes a single cached blob after GC deletes the file on disk (`App.tsx`).
 6. **Editor integration:** Markdown stores the relative path; `AttachmentImage` calls `resolveSrc` → cache → `URL.createObjectURL`.
 
-`SCHEMA_VERSION` stays at `1` — attachment layout and refs are governed by this ADR, not the vault manifest schema.
+Attachment layout and `attachment-refs.json` are part of vault schema v1 ([ADR-002](./002-note-storage-format.md)); they do not carry a separate version field.
 
 ## Consequences
 

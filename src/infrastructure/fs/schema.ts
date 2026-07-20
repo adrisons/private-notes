@@ -4,7 +4,7 @@
  * See docs/adr/008-schema-compatibility.md
  */
 export const APP_SIGNATURE = "private-notes" as const;
-export const SCHEMA_VERSION = 4 as const;
+export const SCHEMA_VERSION = 1 as const;
 
 export const PATHS = {
   meta: ".private-notes",
