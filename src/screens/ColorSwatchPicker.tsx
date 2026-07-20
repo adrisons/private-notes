@@ -1,5 +1,8 @@
 import { cn } from "../lib/cn";
-import { SPACE_COLOR_IDS, type SpaceColorId } from "../domain";
+import {
+  SPACE_COLOR_IDS,
+  type SpaceColorId,
+} from "../application/view-models";
 
 interface ColorSwatchPickerProps {
   value: SpaceColorId;

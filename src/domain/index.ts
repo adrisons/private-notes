@@ -31,17 +31,27 @@ export {
 export {
   GENERAL_SPACE_ID,
   isGeneralSpaceId,
-  resolveSpaceId,
   spaceId,
   type SpaceId,
 } from "./space/space-id";
 export {
   GENERAL_SPACE,
   GENERAL_SPACE_DESCRIPTION,
-  isReservedSpaceName,
-  type Space,
 } from "./space/general-space";
-export { type CustomSpace, isCustomSpaceId } from "./space/space";
+export { SpaceValidationError } from "./space/space-error";
+export {
+  applySpacePatch,
+  assertValidSpaceName,
+  createSpaceDraft,
+  FALLBACK_SPACE_NAME,
+  isCustomSpaceId,
+  isReservedSpaceName,
+  RESERVED_SPACE_NAME_MESSAGE,
+  type CustomSpace,
+  type Space,
+  type SpaceDraft,
+  type SpacePatch,
+} from "./space/space";
 export {
   parseSpaceIds,
   serializeSpaceIds,

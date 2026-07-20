@@ -77,6 +77,32 @@ describe("SpaceDetailView", () => {
     });
   });
 
+  it("sends null when the description is emptied, so the field is cleared", async () => {
+    const user = userEvent.setup();
+    const onUpdateSpace = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <SpaceDetailView
+        space={workSpace}
+        notes={notes}
+        spaceItems={[workSpace]}
+        onOpenNote={vi.fn()}
+        onUpdateSpace={onUpdateSpace}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    await user.clear(
+      screen.getByRole("textbox", { name: /space description/i }),
+    );
+    await vi.advanceTimersByTimeAsync(600);
+
+    expect(onUpdateSpace).toHaveBeenCalledWith(
+      workSpace.id,
+      expect.objectContaining({ description: null }),
+    );
+  });
+
   it("renders General without a chip badge", () => {
     render(
       <SpaceDetailView

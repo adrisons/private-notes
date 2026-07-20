@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  noteId as toNoteId,
   type CustomSpace,
-  type SpaceColorId,
+  type SpaceDraft,
   type SpaceId,
-  type NoteId,
+  type SpacePatch,
 } from "../../domain";
 import type { VaultSession } from "../vault-session";
+import { createSpace as createSpaceUseCase } from "../use-cases/create-space";
+import { updateSpace as updateSpaceUseCase } from "../use-cases/update-space";
+import { deleteSpaces as deleteSpacesUseCase } from "../use-cases/delete-space";
+import { assignNoteSpaces } from "../use-cases/assign-note-spaces";
 import {
   buildSpaceListItems,
   type NoteListItem,
@@ -21,16 +26,10 @@ export interface UseSpacesOptions {
 
 export interface UseSpacesResult {
   spaceItems: SpaceListItem[];
-  createSpace: (input: {
-    name: string;
-    colorId: SpaceColorId;
-    description?: string;
-  }) => Promise<SpaceId | null>;
-  updateSpace: (
-    id: SpaceId,
-    patch: { name?: string; colorId?: SpaceColorId; description?: string },
-  ) => Promise<void>;
-  deleteSpace: (id: SpaceId) => Promise<void>;
+  createSpace: (input: SpaceDraft) => Promise<SpaceId | null>;
+  updateSpace: (id: SpaceId, patch: SpacePatch) => Promise<void>;
+  /** Deletes one or many in a single pass — one refresh, not one per space. */
+  deleteSpaces: (ids: readonly SpaceId[]) => Promise<void>;
   setNoteSpaces: (noteId: string, spaceIds: SpaceId[]) => Promise<void>;
 }
 
@@ -64,14 +63,10 @@ export function useSpaces({
   );
 
   const createSpace = useCallback(
-    async (input: {
-      name: string;
-      colorId: SpaceColorId;
-      description?: string;
-    }) => {
+    async (input: SpaceDraft) => {
       if (!session) return null;
       try {
-        const created = await session.createSpace(input);
+        const created = await createSpaceUseCase(session, input);
         await refreshSpaces();
         return created.id;
       } catch (error) {
@@ -83,13 +78,10 @@ export function useSpaces({
   );
 
   const updateSpace = useCallback(
-    async (
-      id: SpaceId,
-      patch: { name?: string; colorId?: SpaceColorId; description?: string },
-    ) => {
+    async (id: SpaceId, patch: SpacePatch) => {
       if (!session) return;
       try {
-        await session.updateSpace(id, patch);
+        await updateSpaceUseCase(session, id, patch);
         await refreshSpaces();
       } catch (error) {
         onError(error);
@@ -98,13 +90,17 @@ export function useSpaces({
     [session, refreshSpaces, onError],
   );
 
-  const deleteSpace = useCallback(
-    async (id: SpaceId) => {
+  const deleteSpaces = useCallback(
+    async (ids: readonly SpaceId[]) => {
       if (!session) return;
       try {
-        await session.deleteSpace(id);
+        const { deleted, notesChanged } = await deleteSpacesUseCase(
+          session,
+          ids,
+        );
+        if (deleted.length === 0 && !notesChanged) return;
         await refreshSpaces();
-        await refreshSummaries();
+        if (notesChanged) await refreshSummaries();
       } catch (error) {
         onError(error);
       }
@@ -116,7 +112,7 @@ export function useSpaces({
     async (noteId: string, spaceIds: SpaceId[]) => {
       if (!session) return;
       try {
-        await session.assignNoteSpaces(noteId as NoteId, spaceIds);
+        await assignNoteSpaces(session, toNoteId(noteId), spaceIds);
         await refreshSummaries();
       } catch (error) {
         onError(error);
@@ -129,7 +125,7 @@ export function useSpaces({
     spaceItems,
     createSpace,
     updateSpace,
-    deleteSpace,
+    deleteSpaces,
     setNoteSpaces,
   };
 }

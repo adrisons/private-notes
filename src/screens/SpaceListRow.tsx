@@ -1,6 +1,6 @@
 import { forwardRef, type CSSProperties } from "react";
 import { cn } from "../lib/cn";
-import type { SpaceColorId } from "../domain";
+import { spaceDotStyle } from "../ui/space-colors";
 import type { SpaceListItem } from "../application/view-models";
 
 export const SPACE_LIST_ROW_HEIGHT = 72;
@@ -10,13 +10,6 @@ const DESCRIPTION_LIMIT = 96;
 function truncateDescription(text: string): string {
   if (text.length <= DESCRIPTION_LIMIT) return text;
   return `${text.slice(0, DESCRIPTION_LIMIT - 1).trimEnd()}…`;
-}
-
-function dotStyle(colorId: SpaceColorId | null): CSSProperties {
-  if (colorId === null) {
-    return { backgroundColor: "var(--surface-sunken)" };
-  }
-  return { backgroundColor: `var(--chip-${colorId}-fg)` };
 }
 
 export interface SpaceListRowProps {
@@ -122,7 +115,7 @@ export const SpaceListRow = forwardRef<HTMLButtonElement, SpaceListRowProps>(
             <span
               aria-hidden
               className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-[var(--radius-full)]"
-              style={dotStyle(space.colorId)}
+              style={spaceDotStyle(space.colorId)}
             />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">

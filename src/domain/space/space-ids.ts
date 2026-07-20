@@ -1,15 +1,21 @@
-import { isGeneralSpaceId, spaceId, type SpaceId } from "./space-id";
+import { isGeneralSpaceId, tryParseSpaceId, type SpaceId } from "./space-id";
 
 const SEP = ",";
 
-/** Parse comma-separated custom space ids from frontmatter or index. */
+/**
+ * Parse comma-separated custom space ids from frontmatter or index. Unreadable
+ * entries are skipped rather than thrown on — the field may have been written
+ * by another editor (ADR-002).
+ */
 export function parseSpaceIds(raw?: string | null): SpaceId[] {
   if (!raw || raw.trim().length === 0) return [];
-  return raw
-    .split(SEP)
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0 && !isGeneralSpaceId(spaceId(part)))
-    .map((part) => spaceId(part));
+  const ids: SpaceId[] = [];
+  for (const part of raw.split(SEP)) {
+    const id = tryParseSpaceId(part);
+    if (!id || isGeneralSpaceId(id) || ids.includes(id)) continue;
+    ids.push(id);
+  }
+  return ids;
 }
 
 /** Serialize custom space ids for frontmatter/index; omits General. */
@@ -30,8 +36,8 @@ export function migrateLegacySpaceField(
   const parsed = parseSpaceIds(spaceIds);
   if (parsed.length > 0) return serializeSpaceIds(parsed);
   if (!legacySpaceId) return undefined;
-  const legacy = spaceId(legacySpaceId);
-  if (isGeneralSpaceId(legacy)) return undefined;
+  const legacy = tryParseSpaceId(legacySpaceId);
+  if (!legacy || isGeneralSpaceId(legacy)) return undefined;
   return serializeSpaceIds([legacy]);
 }
 

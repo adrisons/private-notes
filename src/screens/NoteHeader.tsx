@@ -1,7 +1,10 @@
 import { useLayoutEffect, useRef } from "react";
 import { Button } from "../ui/Button";
-import type { SpaceColorId, SpaceId } from "../domain";
-import type { SpaceListItem } from "../application/view-models";
+import type {
+  SpaceColorId,
+  SpaceId,
+  SpaceListItem,
+} from "../application/view-models";
 import { SpaceTagsEditor } from "./SpaceTagsEditor";
 
 interface NoteHeaderProps {

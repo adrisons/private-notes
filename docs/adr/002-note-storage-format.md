@@ -24,9 +24,9 @@
 
 7. **Built-in General space:** id `"general"`, name `"General"`. Notes with no custom spaces belong here; General is never persisted on notes.
 8. **Custom spaces:** `.private-notes/spaces.json` holds `{ version, spaces: [{ id, name, colorId, description? }] }`. IDs are ULIDs; `colorId` is one of `blue | green | amber | red | purple` (CSS chip tokens in `design-tokens.css`).
-9. **Note assignment:** optional `spaceIds` in frontmatter and index — a **comma-separated** list of custom space ULIDs in one quoted string (keeps the hand-written YAML subset string-only).
+9. **Note assignment:** optional `spaceIds` in frontmatter and index — a **comma-separated** list of custom space ULIDs in one quoted string (keeps the hand-written YAML subset string-only). Because the separator is part of the format, a space id may not contain a comma or whitespace; `spaceId()` enforces this, and unreadable entries are skipped on parse rather than failing the note.
 10. **Multi-space:** a note may belong to several custom spaces simultaneously. Empty/missing `spaceIds` means General only.
-11. **Delete space:** remove from `spaces.json`; strip that id from every note's `spaceIds` (notes fall back toward General when no custom ids remain).
+11. **Delete space:** strip the id from every note's `spaceIds` first, then remove the entry from `spaces.json` (notes fall back toward General when no custom ids remain). The note rewrite is the multi-file half, so doing it first leaves a failure retryable instead of stranding notes that point at an invisible space. The two aggregates are orchestrated by the `delete-space` use-case, never by a repository.
 12. **Schema versions:** v1 → notes only; v2 → `spaces.json` + singular `spaceId` (migrated away on open); v3 → `spaceIds` + optional space `description`. Migration runs on vault open ([ADR-008](./008-schema-compatibility.md)).
 
 ## Consequences
@@ -41,7 +41,7 @@
 
 - Index and files can theoretically diverge if edited externally without updating `index.json`.
 - Deleting a space rewrites every affected note's frontmatter.
-- External editors can set unknown space ids; UI falls back until the user reassigns.
+- External editors can set unknown space ids. The UI renders the raw id on a neutral chip until the user reassigns — deliberately *not* labelled "General", so a dangling reference stays visible instead of hiding behind a valid-looking name.
 
 ### Neutral
 

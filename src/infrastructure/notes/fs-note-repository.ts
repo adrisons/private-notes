@@ -1,4 +1,5 @@
 import {
+  clearSpaceFromNotes,
   createNote,
   deleteNote,
   duplicateNote,
@@ -10,7 +11,7 @@ import {
   noteFromRecord,
   summaryFromRecord,
 } from "./note-mappers";
-import { type NoteId } from "../../domain";
+import { noteId, type NoteId, type SpaceId } from "../../domain";
 import type {
   CreateNoteInput,
   NoteRepository,
@@ -68,5 +69,10 @@ export class FsNoteRepository implements NoteRepository {
     const read = await readNote(this.io(), record.id);
     if (!read) return null;
     return noteFromRecord(read.record, read.parsed.body);
+  }
+
+  async clearSpace(spaceId: SpaceId): Promise<NoteId[]> {
+    const updated = await clearSpaceFromNotes(this.io(), spaceId);
+    return updated.map(noteId);
   }
 }

@@ -25,4 +25,6 @@ export interface NoteRepository {
   update(id: NoteId, patch: UpdateNoteInput): Promise<SaveNoteResult>;
   delete(id: NoteId): Promise<string[]>;
   duplicate(id: NoteId): Promise<Note | null>;
+  /** Detach a space from every note that carries it; returns the notes changed. */
+  clearSpace(spaceId: SpaceId): Promise<NoteId[]>;
 }

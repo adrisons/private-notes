@@ -9,11 +9,15 @@ import {
 } from "../ui/VirtualList";
 import { useTouchActionsEnabled } from "../lib/touch-actions";
 import { formatRelative } from "../lib/format-relative";
-import { resolveNoteSpaceChips } from "../application/view-models";
 import { NoteListRow } from "./NoteListRow";
 import { SpaceListRow, SPACE_LIST_ROW_HEIGHT } from "./SpaceListRow";
-import type { NoteListItem, SpaceListItem } from "../application/view-models";
-import { isGeneralSpaceId, type SpaceId } from "../domain";
+import {
+  isGeneralSpaceId,
+  resolveNoteSpaceChips,
+  type NoteListItem,
+  type SpaceId,
+  type SpaceListItem,
+} from "../application/view-models";
 import { cn } from "../lib/cn";
 
 export type SidebarMode = "notes" | "spaces";

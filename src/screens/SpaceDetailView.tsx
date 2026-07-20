@@ -10,17 +10,17 @@ import { Button } from "../ui/Button";
 import { VirtualList, NOTE_LIST_ROW_HEIGHT } from "../ui/VirtualList";
 import { formatRelative } from "../lib/format-relative";
 import { useDebouncedCallback } from "../lib/useDebouncedCallback";
+import type { NoteListItem, SpaceListItem } from "../application/view-models";
 import {
   GENERAL_SPACE_DESCRIPTION,
   isGeneralSpaceId,
   isReservedSpaceName,
+  noteBelongsToSpace,
+  resolveNoteSpaceChips,
+  RESERVED_SPACE_NAME_MESSAGE,
   type SpaceColorId,
   type SpaceId,
-} from "../domain";
-import type { NoteListItem, SpaceListItem } from "../application/view-models";
-import {
-  noteMatchesSpaceFilter,
-  resolveNoteSpaceChips,
+  type SpacePatch,
 } from "../application/view-models";
 import { ColorSwatchPicker } from "./ColorSwatchPicker";
 import { NoteListRow } from "./NoteListRow";
@@ -32,10 +32,7 @@ interface SpaceDetailViewProps {
   notes: NoteListItem[];
   spaceItems: SpaceListItem[];
   onOpenNote: (id: string) => void;
-  onUpdateSpace: (
-    id: SpaceId,
-    patch: { name?: string; colorId?: SpaceColorId; description?: string },
-  ) => Promise<void>;
+  onUpdateSpace: (id: SpaceId, patch: SpacePatch) => Promise<void>;
   onDelete: () => void;
 }
 
@@ -86,11 +83,7 @@ export function SpaceDetailView({
   }, [name, custom]);
 
   const debouncedSave = useDebouncedCallback(
-    async (id: SpaceId, patch: {
-      name: string;
-      colorId: SpaceColorId;
-      description?: string;
-    }) => {
+    async (id: SpaceId, patch: SpacePatch) => {
       inFlightRef.current += 1;
       setIsSaving(true);
       try {
@@ -118,7 +111,8 @@ export function SpaceDetailView({
       debouncedSave(space.id, {
         name: trimmedName,
         colorId: next.colorId,
-        description: next.description.trim() || undefined,
+        // `null` clears the stored description; `undefined` would leave it as-is.
+        description: next.description.trim() || null,
       });
     },
     [custom, debouncedSave, space.id],
@@ -141,7 +135,7 @@ export function SpaceDetailView({
   const spaceNotes = useMemo(
     () =>
       [...notes]
-        .filter((note) => noteMatchesSpaceFilter(note.spaceIds, space.id))
+        .filter((note) => noteBelongsToSpace(note.spaceIds, space.id))
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
     [notes, space.id],
   );
@@ -202,7 +196,7 @@ export function SpaceDetailView({
             />
             {reservedName ? (
               <p className="text-xs text-[var(--foreground-muted)]">
-                “General” is reserved for the built-in space.
+                {RESERVED_SPACE_NAME_MESSAGE}
               </p>
             ) : null}
 

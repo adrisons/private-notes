@@ -9,7 +9,7 @@ import type {
   SpaceRepository,
   UpdateSpaceInput,
 } from "../../application/ports/space-repository";
-import { clearSpaceFromNotes } from "../notes/storage";
+import type { SpaceRecord } from "../fs/schema";
 import {
   createSpaceRecord,
   deleteSpaceRecord,
@@ -17,12 +17,7 @@ import {
   updateSpaceRecord,
 } from "./storage";
 
-function toCustomSpace(record: {
-  id: string;
-  name: string;
-  colorId: string;
-  description?: string;
-}): CustomSpace {
+function toCustomSpace(record: SpaceRecord): CustomSpace {
   return {
     id: spaceId(record.id),
     name: record.name,
@@ -38,7 +33,7 @@ export class FsSpaceRepository implements SpaceRepository {
     this.root = root;
   }
 
-  private io() {
+  private io(): { root: FileSystemDirectoryHandle } {
     return { root: this.root };
   }
 
@@ -52,13 +47,15 @@ export class FsSpaceRepository implements SpaceRepository {
     return toCustomSpace(record);
   }
 
-  async update(id: SpaceId, patch: UpdateSpaceInput): Promise<CustomSpace | null> {
+  async update(
+    id: SpaceId,
+    patch: UpdateSpaceInput,
+  ): Promise<CustomSpace | null> {
     const record = await updateSpaceRecord(this.io(), id, patch);
     return record ? toCustomSpace(record) : null;
   }
 
   async delete(id: SpaceId): Promise<boolean> {
-    await clearSpaceFromNotes(this.io(), id);
     return deleteSpaceRecord(this.io(), id);
   }
 }

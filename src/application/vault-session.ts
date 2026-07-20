@@ -1,6 +1,11 @@
-import type { Note, NoteId, NoteSummary, SpaceColorId, SpaceId } from "../domain";
+import type { CustomSpace, Note, NoteId, NoteSummary, SpaceId } from "../domain";
 import type { NoteRepository, CreateNoteInput } from "./ports/note-repository";
-import type { SpaceRepository } from "./ports/space-repository";
+import type { NoteRecord } from "./ports/note-record";
+import type {
+  CreateSpaceInput,
+  SpaceRepository,
+  UpdateSpaceInput,
+} from "./ports/space-repository";
 import type { AttachmentStore } from "./ports/attachment-store";
 import type { OpenNoteState } from "./view-models";
 import { toOpenNoteState } from "./view-models";
@@ -22,7 +27,7 @@ export interface VaultSessionDeps {
 export class VaultSession {
   readonly root: FileSystemDirectoryHandle;
   private readonly notes: NoteRepository;
-  readonly spaces: SpaceRepository;
+  private readonly spaces: SpaceRepository;
   readonly attachments: AttachmentStore;
 
   private constructor(deps: VaultSessionDeps) {
@@ -40,7 +45,7 @@ export class VaultSession {
     return this.notes.list();
   }
 
-  listNoteRecords() {
+  listNoteRecords(): Promise<NoteRecord[]> {
     return this.notes.listRecords();
   }
 
@@ -84,27 +89,28 @@ export class VaultSession {
     return toOpenNoteState(note, note.updatedAt);
   }
 
-  listSpaces() {
+  listSpaces(): Promise<CustomSpace[]> {
     return this.spaces.list();
   }
 
-  createSpace(input: {
-    name: string;
-    colorId: SpaceColorId;
-    description?: string;
-  }) {
+  createSpace(input: CreateSpaceInput): Promise<CustomSpace> {
     return this.spaces.create(input);
   }
 
   updateSpace(
     id: SpaceId,
-    patch: { name?: string; colorId?: SpaceColorId; description?: string },
-  ) {
+    patch: UpdateSpaceInput,
+  ): Promise<CustomSpace | null> {
     return this.spaces.update(id, patch);
   }
 
-  deleteSpace(id: SpaceId) {
+  deleteSpace(id: SpaceId): Promise<boolean> {
     return this.spaces.delete(id);
+  }
+
+  /** Note-side half of deleting a space; orchestrated by the delete-space use-case. */
+  clearSpaceFromNotes(id: SpaceId): Promise<NoteId[]> {
+    return this.notes.clearSpace(id);
   }
 
   async deleteNote(id: NoteId): Promise<string[]> {

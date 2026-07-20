@@ -148,7 +148,7 @@ src/application/**      ports, use-cases, VaultSession, view-models, errors, hoo
         └── hooks reach infrastructure only via application/composition/
 src/infrastructure/**   all vault I/O (FSA, notes, attachments, search, markdown)
 src/lib/**              shared kernel only (cn, theme, platform, compatibility, validate, useDebouncedCallback)
-src/ui/**               primitives, may import from src/lib/cn
+src/ui/**               primitives; import src/lib/cn and types from application/view-models
 src/screens/**          compositions; import ui/, application/view-models, lib/cn, lib/platform
 src/editor/**           TipTap-specific UI + extensions (markdown via infrastructure/markdown)
 src/workers/**          runs off the main thread; no React, no DOM
@@ -156,8 +156,15 @@ src/App.tsx             thin composition root: hooks + screens (see ADR-009)
 ```
 
 `domain/` and `lib/*` modules must remain framework-agnostic and unit-testable
-without a DOM whenever possible. Screens must not import `src/infrastructure/`
-or persistence types. ESLint `no-restricted-imports` enforces this (see ADR-009).
+without a DOM whenever possible. Screens and primitives must not import
+`src/domain/`, `src/infrastructure/`, or persistence types — space and note
+vocabulary is re-exported from `application/view-models` for them. ESLint
+`no-restricted-imports` enforces this (see ADR-009).
+
+When adding a layer rule, list **both** `**/folder` and `**/folder/**` in the
+group: a bare `**/folder/**` glob does not match a barrel import like
+`../domain`, and the boundary silently stops being enforced. `eslint.config.js`
+has a `layerGroup()` helper that expands both forms.
 
 ### 5.2 Folder layout on disk
 

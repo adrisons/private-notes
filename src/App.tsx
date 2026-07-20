@@ -20,7 +20,11 @@ import { useCurrentNote } from "./application/hooks/useCurrentNote";
 import { useSemanticIndex } from "./application/hooks/useSemanticIndex";
 import { useAttachments } from "./application/hooks/useAttachments";
 import { useSpaces } from "./application/hooks/useSpaces";
-import type { SpaceColorId, SpaceId } from "./domain";
+import {
+  FALLBACK_SPACE_NAME,
+  type SpaceColorId,
+  type SpaceId,
+} from "./application/view-models";
 
 const Editor = lazy(() =>
   import("./editor/Editor").then((m) => ({ default: m.Editor })),
@@ -99,7 +103,7 @@ export function App() {
   const handleCreateSpace = useCallback(async () => {
     note.flushPersist();
     const id = await spaces.createSpace({
-      name: "Untitled",
+      name: FALLBACK_SPACE_NAME,
       colorId: "blue" satisfies SpaceColorId,
     });
     if (id) {
@@ -151,9 +155,7 @@ export function App() {
 
   const handleDeleteSpaces = useCallback(
     async (ids: SpaceId[]) => {
-      for (const id of ids) {
-        await spaces.deleteSpace(id);
-      }
+      await spaces.deleteSpaces(ids);
       if (selectedSpaceId && ids.includes(selectedSpaceId)) {
         setSelectedSpaceId(null);
       }

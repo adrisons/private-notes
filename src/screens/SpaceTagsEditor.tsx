@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SpaceChip } from "../ui/SpaceChip";
+import { spaceChipStyle } from "../ui/space-colors";
 import { cn } from "../lib/cn";
 import {
   addSpaceId,
-  GENERAL_SPACE,
   isGeneralSpaceId,
   isReservedSpaceName,
   removeSpaceId,
+  resolveNoteSpaceChips,
   type SpaceColorId,
   type SpaceId,
-} from "../domain";
-import type { SpaceListItem } from "../application/view-models";
+  type SpaceListItem,
+} from "../application/view-models";
 
 interface SpaceTagsEditorProps {
   spaces: SpaceListItem[];
@@ -34,19 +35,6 @@ function normalizeQuery(value: string): string {
   return value.trim().toLowerCase();
 }
 
-function chipStyle(colorId: SpaceColorId | null): CSSProperties {
-  if (colorId === null) {
-    return {
-      backgroundColor: "var(--surface-sunken)",
-      color: "var(--foreground-muted)",
-    };
-  }
-  return {
-    backgroundColor: `var(--chip-${colorId}-bg)`,
-    color: `var(--chip-${colorId}-fg)`,
-  };
-}
-
 function TagChip({
   name,
   colorId,
@@ -59,7 +47,7 @@ function TagChip({
   return (
     <span
       className="inline-flex max-w-full shrink-0 items-center gap-0.5 rounded-[var(--radius-sm)] py-0.5 pl-2 pr-1 text-xs font-medium"
-      style={chipStyle(colorId)}
+      style={spaceChipStyle(colorId)}
     >
       <span className="truncate">{name}</span>
       {onRemove ? (
@@ -91,27 +79,14 @@ export function SpaceTagsEditor({
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const displayChips = useMemo((): DisplayChip[] => {
-    if (value.length === 0) {
-      return [
-        {
-          id: GENERAL_SPACE.id,
-          name: GENERAL_SPACE.name,
-          colorId: null,
-          removable: false,
-        },
-      ];
-    }
-    return value.map((id) => {
-      const space = spaces.find((item) => item.id === id);
-      return {
-        id,
-        name: space?.name ?? id,
-        colorId: space?.colorId ?? null,
-        removable: !isGeneralSpaceId(id),
-      };
-    });
-  }, [value, spaces]);
+  const displayChips = useMemo(
+    (): DisplayChip[] =>
+      resolveNoteSpaceChips(value, spaces).map((chip) => ({
+        ...chip,
+        removable: !isGeneralSpaceId(chip.id),
+      })),
+    [value, spaces],
+  );
 
   const assignedIds = useMemo(() => new Set(value), [value]);
 

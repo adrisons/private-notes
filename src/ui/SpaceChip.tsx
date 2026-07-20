@@ -1,6 +1,7 @@
 import { cn } from "../lib/cn";
 import type { CSSProperties } from "react";
-import type { SpaceColorId } from "../domain";
+import type { SpaceColorId } from "../application/view-models";
+import { spaceChipStyle } from "./space-colors";
 
 export interface SpaceChipProps {
   name: string;
@@ -9,19 +10,6 @@ export interface SpaceChipProps {
   className?: string;
   style?: CSSProperties;
   title?: string;
-}
-
-function chipStyle(colorId: SpaceColorId | null): CSSProperties {
-  if (colorId === null) {
-    return {
-      backgroundColor: "var(--surface-sunken)",
-      color: "var(--foreground-muted)",
-    };
-  }
-  return {
-    backgroundColor: `var(--chip-${colorId}-bg)`,
-    color: `var(--chip-${colorId}-fg)`,
-  };
 }
 
 /** Muted badge for a note space — uses design-token chip colors. */
@@ -41,7 +29,7 @@ export function SpaceChip({
         size === "sm" ? "px-1.5 py-0.5 text-[10px] leading-4" : "px-2 py-0.5 text-xs",
         className,
       )}
-      style={{ ...chipStyle(colorId), ...style }}
+      style={{ ...spaceChipStyle(colorId), ...style }}
     >
       {name}
     </span>

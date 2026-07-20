@@ -1,27 +1,15 @@
-import type { SpaceColorId } from "./space-color";
-import { GENERAL_SPACE_ID, type SpaceId } from "./space-id";
+import { GENERAL_SPACE_ID } from "./space-id";
+import type { Space } from "./space";
 
-/** Neutral chip styling — not a persisted `--chip-*` color. */
-export const GENERAL_SPACE_COLOR: SpaceColorId = "blue";
+/** Separate from `GENERAL_SPACE` so the name rules can import it without a cycle. */
+export const GENERAL_SPACE_NAME = "General";
 
-export interface Space {
-  readonly id: SpaceId;
-  name: string;
-  /** `null` means the built-in General styling (neutral tokens in UI). */
-  colorId: SpaceColorId | null;
-}
-
-export const GENERAL_SPACE: Space = {
+export const GENERAL_SPACE: Space = Object.freeze({
   id: GENERAL_SPACE_ID,
-  name: "General",
+  name: GENERAL_SPACE_NAME,
   colorId: null,
-};
+});
 
 /** Shown in the spaces overview — General is built-in, not stored on disk. */
 export const GENERAL_SPACE_DESCRIPTION =
   "Notes without another space live here.";
-
-/** Custom spaces cannot reuse the built-in General name. */
-export function isReservedSpaceName(name: string): boolean {
-  return name.trim().toLowerCase() === GENERAL_SPACE.name.toLowerCase();
-}

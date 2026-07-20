@@ -3,12 +3,35 @@ import {
   GENERAL_SPACE,
   GENERAL_SPACE_DESCRIPTION,
   GENERAL_SPACE_ID,
-  noteBelongsToSpace,
+  isGeneralSpaceId,
   type CustomSpace,
 } from "../domain";
 import type { SearchHit } from "./ports/search-hit";
 
+/**
+ * Presentation vocabulary for spaces. Screens and primitives read space
+ * concepts from here so they never reach into `src/domain` themselves
+ * (AGENTS §5.1).
+ */
+export {
+  addSpaceId,
+  FALLBACK_SPACE_NAME,
+  GENERAL_SPACE_DESCRIPTION,
+  GENERAL_SPACE_ID,
+  isGeneralSpaceId,
+  isReservedSpaceName,
+  noteBelongsToSpace,
+  removeSpaceId,
+  RESERVED_SPACE_NAME_MESSAGE,
+  SPACE_COLOR_IDS,
+  type SpaceColorId,
+  type SpaceDraft,
+  type SpaceId,
+  type SpacePatch,
+} from "../domain";
+
 export interface SpaceChipDisplay {
+  id: SpaceId;
   name: string;
   colorId: SpaceColorId | null;
 }
@@ -165,15 +188,27 @@ export function buildSpaceListItems(
   return [general, ...custom];
 }
 
+const generalChip: SpaceChipDisplay = {
+  id: GENERAL_SPACE_ID,
+  name: GENERAL_SPACE.name,
+  colorId: null,
+};
+
+/**
+ * A note can carry an id no longer present in `spaces.json` — an external
+ * editor wrote it, or a delete was interrupted. Show the raw id on a neutral
+ * chip rather than mislabelling it "General", which would hide the dangling
+ * reference behind a legitimate-looking name.
+ */
 export function resolveSpaceDisplay(
   spaceId: SpaceId,
   spaces: SpaceListItem[],
 ): SpaceChipDisplay {
   const match = spaces.find((space) => space.id === spaceId);
   if (match) {
-    return { name: match.name, colorId: match.colorId };
+    return { id: match.id, name: match.name, colorId: match.colorId };
   }
-  return { name: GENERAL_SPACE.name, colorId: null };
+  return { id: spaceId, name: spaceId, colorId: null };
 }
 
 export function resolveNoteSpaceChips(
@@ -183,17 +218,10 @@ export function resolveNoteSpaceChips(
 ): SpaceChipDisplay[] {
   const chips =
     spaceIds.length === 0
-      ? [{ name: GENERAL_SPACE.name, colorId: null }]
+      ? [generalChip]
       : spaceIds.map((id) => resolveSpaceDisplay(id, spaces));
   if (options?.omitGeneral) {
-    return chips.filter((chip) => chip.name !== GENERAL_SPACE.name);
+    return chips.filter((chip) => !isGeneralSpaceId(chip.id));
   }
   return chips;
-}
-
-export function noteMatchesSpaceFilter(
-  noteSpaceIds: SpaceId[],
-  filterSpaceId: SpaceId,
-): boolean {
-  return noteBelongsToSpace(noteSpaceIds, filterSpaceId);
 }

@@ -3,7 +3,6 @@ import { PATHS, SCHEMA_VERSION, type SpacesIndex } from "../fs/schema";
 import { parseSpacesIndex } from "../fs/validate";
 import { withIndexLock } from "../fs/locks";
 import { parseJson } from "../../lib/validate";
-import { isReservedSpaceName } from "../../domain";
 import { ulid } from "../notes/id";
 
 export function buildEmptySpacesIndex(): SpacesIndex {
@@ -44,7 +43,11 @@ export async function listSpaceRecords(
   return index.spaces;
 }
 
-export interface CreateSpaceInput {
+/**
+ * Attributes arrive already normalized and validated by the domain (see the
+ * `create-space` use-case) — this layer only mints the id and writes.
+ */
+export interface CreateSpaceRecordInput {
   name: string;
   colorId: string;
   description?: string;
@@ -52,20 +55,14 @@ export interface CreateSpaceInput {
 
 export async function createSpaceRecord(
   io: SpacesStorageContext,
-  input: CreateSpaceInput,
+  input: CreateSpaceRecordInput,
 ): Promise<SpacesIndex["spaces"][number]> {
-  const name = input.name.trim() || "Untitled";
-  if (isReservedSpaceName(name)) {
-    throw new Error("General is reserved for the built-in space.");
-  }
   const id = (io.newId ?? ulid)();
   const record = {
     id,
-    name,
+    name: input.name,
     colorId: input.colorId,
-    ...(input.description?.trim()
-      ? { description: input.description.trim() }
-      : null),
+    ...(input.description ? { description: input.description } : null),
   };
   await withIndexLock(async () => {
     const index = await readSpacesIndex(io.root);
@@ -75,16 +72,17 @@ export async function createSpaceRecord(
   return record;
 }
 
-export interface UpdateSpaceInput {
+/** `description: null` clears the field; omitting the key leaves it untouched. */
+export interface UpdateSpaceRecordInput {
   name?: string;
   colorId?: string;
-  description?: string;
+  description?: string | null;
 }
 
 export async function updateSpaceRecord(
   io: SpacesStorageContext,
   id: string,
-  patch: UpdateSpaceInput,
+  patch: UpdateSpaceRecordInput,
 ): Promise<SpacesIndex["spaces"][number] | null> {
   let updated: SpacesIndex["spaces"][number] | null = null;
   await withIndexLock(async () => {
@@ -92,23 +90,17 @@ export async function updateSpaceRecord(
     const idx = index.spaces.findIndex((space) => space.id === id);
     if (idx < 0) return;
     const current = index.spaces[idx]!;
-    const nextName =
-      patch.name !== undefined ? patch.name.trim() || "Untitled" : current.name;
-    if (patch.name !== undefined && isReservedSpaceName(nextName)) {
-      throw new Error("General is reserved for the built-in space.");
-    }
-    updated = {
+    const next = {
       ...current,
-      ...(patch.name !== undefined ? { name: nextName } : null),
+      ...(patch.name !== undefined ? { name: patch.name } : null),
       ...(patch.colorId !== undefined ? { colorId: patch.colorId } : null),
-      ...(patch.description !== undefined
-        ? patch.description.trim()
-          ? { description: patch.description.trim() }
-          : { description: undefined }
-        : null),
     };
-    if (updated.description === undefined) delete updated.description;
-    index.spaces[idx] = updated;
+    if (patch.description !== undefined) {
+      if (patch.description === null) delete next.description;
+      else next.description = patch.description;
+    }
+    updated = next;
+    index.spaces[idx] = next;
     await writeSpacesIndex(io.root, index);
   });
   return updated;

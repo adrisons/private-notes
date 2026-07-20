@@ -1,10 +1,9 @@
 import {
   noteId,
-  noteToSummary,
   parseSpaceIds,
   serializeSpaceIds,
   type Note,
-  type NoteId,
+  type NoteSummary,
 } from "../../domain";
 import type { NoteRecord } from "../fs/schema";
 
@@ -33,25 +32,11 @@ export function noteToRecord(note: Note): NoteRecord {
   return record;
 }
 
-export function summaryFromRecord(record: NoteRecord) {
+export function summaryFromRecord(record: NoteRecord): NoteSummary {
   return {
     id: noteId(record.id),
     title: record.title,
     updatedAt: record.updatedAt,
     spaceIds: parseSpaceIds(record.spaceIds),
   };
-}
-
-export { noteToSummary };
-
-export function recordFromNote(note: Note): NoteRecord {
-  return noteToRecord(note);
-}
-
-export function summaryFromNote(note: Note) {
-  return noteToSummary(note);
-}
-
-export function noteIdFromRecord(record: NoteRecord): NoteId {
-  return record.id as NoteId;
 }
