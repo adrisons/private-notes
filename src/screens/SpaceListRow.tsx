@@ -7,14 +7,8 @@ import {
 import { spaceDotStyle } from "../ui/space-colors";
 import type { SpaceListItem } from "../application/view-models";
 
-export const SPACE_LIST_ROW_HEIGHT = 72;
-
-const DESCRIPTION_LIMIT = 96;
-
-function truncateDescription(text: string): string {
-  if (text.length <= DESCRIPTION_LIMIT) return text;
-  return `${text.slice(0, DESCRIPTION_LIMIT - 1).trimEnd()}…`;
-}
+/** Title + up to two description lines (see SpaceListRow layout). */
+export const SPACE_LIST_ROW_HEIGHT = 96;
 
 export interface SpaceListRowProps {
   space: SpaceListItem;
@@ -95,7 +89,7 @@ export const SpaceListRow = forwardRef<HTMLButtonElement, SpaceListRowProps>(
               </div>
               {space.description ? (
                 <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-[var(--foreground-muted)]">
-                  {truncateDescription(space.description)}
+                  {space.description}
                 </p>
               ) : null}
             </div>

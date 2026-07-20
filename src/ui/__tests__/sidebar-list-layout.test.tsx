@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { NotesList } from "../../screens/NotesList";
+import { SIDEBAR_LIST_INSET_CLASS, SIDEBAR_LIST_SWAP_CLASS } from "../sidebar-list-layout";
 import { GENERAL_SPACE_ID, spaceId } from "../../domain";
 
 const workId = spaceId("01WORK000000000000000000");
@@ -57,5 +58,22 @@ describe("sidebar list layout", () => {
     const list = screen.getByRole("list", { name: "Spaces" });
     const wrapper = list.parentElement;
     expect(wrapper?.className).toContain("px-4");
+  });
+
+  it("uses the same swap animation shell for notes and spaces lists", () => {
+    const { unmount } = render(<NotesList {...notesListProps} mode="notes" />);
+    const notesSwap = screen.getByRole("list", { name: "Notes" }).parentElement
+      ?.parentElement;
+    expect(notesSwap?.className).toBe(SIDEBAR_LIST_SWAP_CLASS);
+    expect(screen.getByRole("list", { name: "Notes" }).parentElement?.className).toBe(
+      SIDEBAR_LIST_INSET_CLASS,
+    );
+    unmount();
+
+    render(<NotesList {...notesListProps} mode="spaces" />);
+    const spacesSwap = screen.getByRole("list", { name: "Spaces" }).parentElement
+      ?.parentElement;
+    expect(spacesSwap?.className).toBe(SIDEBAR_LIST_SWAP_CLASS);
+    expect(notesSwap?.className).toBe(spacesSwap?.className);
   });
 });

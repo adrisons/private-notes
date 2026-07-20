@@ -19,6 +19,9 @@ import { cn } from "../lib/cn";
 /** Below this count every row stays in the DOM (keyboard + swipe stay simple). */
 export const VIRTUAL_LIST_THRESHOLD = 50;
 
+/** Virtualize every non-empty list (e.g. sidebar spaces, space detail notes). */
+export const ALWAYS_VIRTUALIZE_THRESHOLD = 0;
+
 export const DEFAULT_ROW_GAP = 8;
 
 export const NOTE_LIST_ROW_HEIGHT = 72;
@@ -39,6 +42,8 @@ export interface VirtualListProps<T> {
   listClassName?: string;
   /** When external, the nearest overflow ancestor owns scrolling (e.g. the sidebar). */
   scrollMode?: VirtualListScrollMode;
+  /** Item count above which rows are windowed. Defaults to {@link VIRTUAL_LIST_THRESHOLD}. */
+  virtualizeThreshold?: number;
   onKeyDown?: KeyboardEventHandler<HTMLUListElement>;
   listRef?: Ref<HTMLUListElement>;
   ariaMultiselectable?: boolean;
@@ -78,6 +83,7 @@ function VirtualListInner<T>(
     className,
     listClassName,
     scrollMode = "internal",
+    virtualizeThreshold = VIRTUAL_LIST_THRESHOLD,
     onKeyDown,
     listRef,
     ariaMultiselectable,
@@ -93,7 +99,7 @@ function VirtualListInner<T>(
   const [viewportHeight, setViewportHeight] = useState(0);
 
   const stride = itemHeight + gap;
-  const virtualize = items.length > VIRTUAL_LIST_THRESHOLD;
+  const virtualize = items.length > virtualizeThreshold;
   const externalScroll = virtualize && scrollMode === "external";
 
   const assignListRef = useCallback(
@@ -230,6 +236,17 @@ function VirtualListInner<T>(
   );
 
   if (!virtualize) {
+    if (scrollMode === "internal") {
+      return (
+        <div
+          ref={rootRef}
+          data-virtual-list-scroll=""
+          className={cn("u-scrollbar min-h-0 overflow-y-auto", className)}
+        >
+          {list}
+        </div>
+      );
+    }
     return (
       <div ref={rootRef} className={className}>
         {list}

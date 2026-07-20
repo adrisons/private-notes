@@ -52,13 +52,46 @@ export function CondensedSpaceChips({ chips }: CondensedSpaceChipsProps) {
   }, [chips]);
 
   useLayoutEffect(() => {
-    remeasure();
     const container = containerRef.current;
-    if (!container || typeof ResizeObserver === "undefined") return;
+    if (!container) return;
 
-    const observer = new ResizeObserver(remeasure);
-    observer.observe(container);
-    return () => observer.disconnect();
+    let observer: ResizeObserver | undefined;
+    let cancelled = false;
+
+    const attachObserver = () => {
+      if (cancelled || typeof ResizeObserver === "undefined") return;
+      observer = new ResizeObserver(remeasure);
+      observer.observe(container);
+    };
+
+    remeasure();
+
+    const swapRoot = container.closest(".u-sidebar-list-swap");
+    if (swapRoot instanceof HTMLElement) {
+      const { animationName, animationPlayState } = getComputedStyle(swapRoot);
+      const swapPlaying =
+        animationName.includes("sidebar-list-swap") &&
+        animationPlayState === "running";
+
+      if (swapPlaying) {
+        const onAnimationEnd = (event: AnimationEvent) => {
+          if (event.animationName !== "sidebar-list-swap") return;
+          attachObserver();
+        };
+        swapRoot.addEventListener("animationend", onAnimationEnd, { once: true });
+        return () => {
+          cancelled = true;
+          swapRoot.removeEventListener("animationend", onAnimationEnd);
+          observer?.disconnect();
+        };
+      }
+    }
+
+    attachObserver();
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+    };
   }, [remeasure]);
 
   if (chips.length === 0) return null;

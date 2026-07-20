@@ -256,7 +256,7 @@ export function App() {
       }
     >
       {selectedSpace ? (
-        <div key={selectedSpace.id} className="flex h-full min-h-0 flex-col">
+        <div key={selectedSpace.id} className="u-content-swap flex h-full min-h-0 flex-col overflow-y-auto">
           <SpaceDetailView
             space={selectedSpace}
             notes={vault.noteItems}

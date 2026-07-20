@@ -212,6 +212,18 @@ body::before {
   animation: sidebar-list-swap var(--duration-normal) var(--ease-spring) both;
 }
 
+/*
+ * Note rows carry u-press/u-lift transform transitions. While the list shell
+ * animates transform, those transitions compound and read as a harsh upward snap.
+ */
+.u-sidebar-list-swap .u-press {
+  transition:
+    box-shadow var(--duration-fast) var(--ease-smooth),
+    background-color var(--duration-fast) var(--ease-smooth),
+    border-color var(--duration-fast) var(--ease-smooth),
+    color var(--duration-fast) var(--ease-smooth);
+}
+
 /* Sidebar mode toggle: the grid icon rotates with an organic spring. */
 .gesture-sidebar-mode .gesture-icon {
   transition: transform var(--duration-slow) var(--ease-spring);

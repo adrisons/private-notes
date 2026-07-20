@@ -187,7 +187,7 @@ export function CommandPalette({
 
   const itemButtonClass = (isActive: boolean) =>
     cn(
-      "u-press u-focus flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left text-sm",
+      "u-press u-focus-inset flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left text-sm",
       "transition-[color,background-color] duration-[var(--duration-fast)] ease-[var(--ease-smooth)]",
       isActive
         ? "bg-[var(--surface)] text-[var(--foreground)]"
@@ -228,7 +228,7 @@ export function CommandPalette({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={searchReady ? "Search or jump to…" : "Loading search…"}
-          className="rounded-none px-4 py-3.5 placeholder:text-[var(--foreground-muted)]"
+          className="rounded-t-[var(--radius-lg)] px-4 py-3.5 placeholder:text-[var(--foreground-muted)]"
           aria-label="Search notes"
           aria-controls="command-palette-results"
           aria-activedescendant={

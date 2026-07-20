@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { Button } from "../ui/Button";
-import { VirtualList, NOTE_LIST_ROW_HEIGHT } from "../ui/VirtualList";
+import { VirtualList, NOTE_LIST_ROW_HEIGHT, ALWAYS_VIRTUALIZE_THRESHOLD } from "../ui/VirtualList";
 import { cn } from "../lib/cn";
 import { formatRelative } from "../lib/format-relative";
 import { inlineOutlineFieldClass } from "../lib/inline-outline-field";
@@ -57,6 +57,7 @@ export function SpaceDetailView({
   const [isSaving, setIsSaving] = useState(false);
 
   const titleRef = useRef<HTMLTextAreaElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const inFlightRef = useRef(0);
 
   useEffect(() => {
@@ -69,20 +70,26 @@ export function SpaceDetailView({
   }, [space.id]);
 
   useLayoutEffect(() => {
-    const el = titleRef.current;
-    if (!el) return;
+    const elements = [titleRef.current, descriptionRef.current].filter(
+      (el): el is HTMLTextAreaElement => el != null,
+    );
+    if (elements.length === 0) return;
 
-    const fit = () => {
+    const fit = (el: HTMLTextAreaElement) => {
       el.style.height = "auto";
       el.style.height = `${el.scrollHeight}px`;
     };
 
-    fit();
+    for (const el of elements) fit(el);
     if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(fit);
-    observer.observe(el);
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        fit(entry.target as HTMLTextAreaElement);
+      }
+    });
+    for (const el of elements) observer.observe(el);
     return () => observer.disconnect();
-  }, [name, custom]);
+  }, [name, description, custom]);
 
   const debouncedSave = useDebouncedCallback(
     async (id: SpaceId, patch: SpacePatch) => {
@@ -155,8 +162,7 @@ export function SpaceDetailView({
       : "";
 
   return (
-    <div className="u-content-swap flex h-full min-h-0 flex-col">
-      <div className="u-content-column flex min-h-0 flex-1 flex-col py-8 sm:py-10">
+    <div className="u-content-column py-8 sm:py-10">
         <div className="flex flex-wrap items-center justify-end gap-3">
           {custom ? (
             <>
@@ -219,6 +225,7 @@ export function SpaceDetailView({
             </div>
 
             <textarea
+              ref={descriptionRef}
               value={description}
               onChange={(event) => {
                 const nextDescription = event.target.value;
@@ -231,10 +238,10 @@ export function SpaceDetailView({
               }}
               placeholder="Optional context for this space…"
               aria-label="Space description"
-              rows={2}
+              rows={1}
               className={cn(
                 inlineOutlineFieldClass,
-                "u-focus w-full resize-none text-sm leading-relaxed text-[var(--foreground-muted)] placeholder:text-[var(--foreground-subtle)]",
+                "u-focus w-full resize-none overflow-hidden break-words text-sm leading-relaxed text-[var(--foreground-muted)] placeholder:text-[var(--foreground-subtle)]",
               )}
             />
           </div>
@@ -257,7 +264,9 @@ export function SpaceDetailView({
           items={spaceNotes}
           itemHeight={NOTE_LIST_ROW_HEIGHT}
           ariaLabel={`Notes in ${space.name}`}
-          className="mt-8 min-h-0 flex-1"
+          scrollMode="external"
+          virtualizeThreshold={ALWAYS_VIRTUALIZE_THRESHOLD}
+          className="mt-8"
           listClassName="pt-2 pb-4"
           getItemKey={(note) => note.id}
           emptyState={
@@ -286,7 +295,6 @@ export function SpaceDetailView({
             />
           )}
         />
-      </div>
     </div>
   );
 }

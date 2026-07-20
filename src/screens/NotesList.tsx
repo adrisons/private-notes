@@ -5,11 +5,12 @@ import { ContextMenu } from "../ui/ContextMenu";
 import {
   VirtualList,
   NOTE_LIST_ROW_HEIGHT,
+  ALWAYS_VIRTUALIZE_THRESHOLD,
   type VirtualListHandle,
 } from "../ui/VirtualList";
 import {
-  SIDEBAR_LIST_GAP_CLASS,
   SIDEBAR_LIST_INSET_CLASS,
+  SIDEBAR_LIST_SWAP_CLASS,
 } from "../ui/sidebar-list-layout";
 import { useTouchActionsEnabled } from "../lib/touch-actions";
 import { formatRelative } from "../lib/format-relative";
@@ -448,7 +449,7 @@ export function NotesList({
           )}
         </div>
       </div>
-      <div key={mode} className="u-sidebar-list-swap flex flex-col">
+      <div key={mode} className={SIDEBAR_LIST_SWAP_CLASS}>
         {isNotesMode ? (
           <VirtualList
             ref={virtualListRef}
@@ -456,8 +457,8 @@ export function NotesList({
             itemHeight={NOTE_LIST_ROW_HEIGHT}
             ariaLabel={listAriaLabel}
             scrollMode="external"
+            virtualizeThreshold={ALWAYS_VIRTUALIZE_THRESHOLD}
             className={SIDEBAR_LIST_INSET_CLASS}
-            listClassName={SIDEBAR_LIST_GAP_CLASS}
             listRef={listRef}
             ariaMultiselectable={selectionMode || undefined}
             onKeyDown={handleListKeyDown}
@@ -507,8 +508,8 @@ export function NotesList({
             itemHeight={SPACE_LIST_ROW_HEIGHT}
             ariaLabel={listAriaLabel}
             scrollMode="external"
+            virtualizeThreshold={ALWAYS_VIRTUALIZE_THRESHOLD}
             className={SIDEBAR_LIST_INSET_CLASS}
-            listClassName={SIDEBAR_LIST_GAP_CLASS}
             listRef={listRef}
             ariaMultiselectable={selectionMode || undefined}
             onKeyDown={handleListKeyDown}
