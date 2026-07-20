@@ -22,3 +22,31 @@ export {
   WELCOME_NOTE_BODY,
   WELCOME_NOTE_TITLE,
 } from "./vault/welcome-note";
+export {
+  SPACE_COLOR_IDS,
+  isSpaceColorId,
+  parseSpaceColorId,
+  type SpaceColorId,
+} from "./space/space-color";
+export {
+  GENERAL_SPACE_ID,
+  isGeneralSpaceId,
+  resolveSpaceId,
+  spaceId,
+  type SpaceId,
+} from "./space/space-id";
+export {
+  GENERAL_SPACE,
+  GENERAL_SPACE_DESCRIPTION,
+  isReservedSpaceName,
+  type Space,
+} from "./space/general-space";
+export { type CustomSpace, isCustomSpaceId } from "./space/space";
+export {
+  parseSpaceIds,
+  serializeSpaceIds,
+  migrateLegacySpaceField,
+  noteBelongsToSpace,
+  addSpaceId,
+  removeSpaceId,
+} from "./space/space-ids";

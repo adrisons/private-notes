@@ -3,17 +3,30 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CommandPalette } from "../CommandPalette";
 import type { NoteListItem, SearchResultItem } from "../../application/view-models";
+import { GENERAL_SPACE_ID } from "../../domain";
 
 const notes: NoteListItem[] = [
   {
     id: "n1",
     title: "Cooking pasta",
     updatedAt: "2026-05-17T12:00:00Z",
+    spaceIds: [],
   },
   {
     id: "n2",
     title: "Rocket science",
     updatedAt: "2026-05-16T12:00:00Z",
+    spaceIds: [],
+  },
+];
+
+const spaceItems = [
+  {
+    id: GENERAL_SPACE_ID,
+    name: "General",
+    colorId: null,
+    description: null,
+    noteCount: 2,
   },
 ];
 
@@ -38,6 +51,7 @@ function renderPalette(
       open
       onClose={vi.fn()}
       notes={notes}
+      spaceItems={spaceItems}
       searchReady={overrides.searchReady ?? true}
       onSearch={onSearch}
       onOpenNote={onOpenNote}

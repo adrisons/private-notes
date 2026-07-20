@@ -1,8 +1,9 @@
-import { forwardRef, type MouseEvent } from "react";
+import { forwardRef, type CSSProperties, type MouseEvent } from "react";
 import { Button } from "../ui/Button";
+import { CondensedSpaceChips } from "../ui/CondensedSpaceChips";
 import { cn } from "../lib/cn";
 import { useSwipeReveal } from "../lib/use-swipe-reveal";
-import type { NoteListItem } from "../application/view-models";
+import type { NoteListItem, SpaceChipDisplay } from "../application/view-models";
 
 /** Two touch icon buttons, gap, and trailing padding — must match `.u-swipe-actions`. */
 export const NOTE_SWIPE_ACTIONS_WIDTH = 104;
@@ -43,6 +44,7 @@ function DeleteIcon() {
 
 export interface NoteListRowProps {
   note: NoteListItem;
+  spaceChips: SpaceChipDisplay[];
   selected: boolean;
   checked: boolean;
   selectionMode: boolean;
@@ -57,12 +59,15 @@ export interface NoteListRowProps {
   onDelete: () => void;
   onDuplicate: () => void;
   formatRelative: (iso: string) => string;
+  style?: CSSProperties;
+  className?: string;
 }
 
 export const NoteListRow = forwardRef<HTMLButtonElement, NoteListRowProps>(
   function NoteListRow(
     {
       note,
+      spaceChips,
       selected,
       checked,
       selectionMode,
@@ -77,6 +82,8 @@ export const NoteListRow = forwardRef<HTMLButtonElement, NoteListRowProps>(
       onDelete,
       onDuplicate,
       formatRelative,
+      style,
+      className,
     },
     ref,
   ) {
@@ -99,7 +106,10 @@ export const NoteListRow = forwardRef<HTMLButtonElement, NoteListRowProps>(
     };
 
     return (
-      <li className="u-swipe-row rounded-[var(--radius-md)]">
+      <li
+        style={style}
+        className={cn("u-swipe-row rounded-[var(--radius-md)]", className)}
+      >
         <div
           className="u-swipe-actions u-touch-only items-center justify-end gap-1 pr-3"
           style={{ width: NOTE_SWIPE_ACTIONS_WIDTH }}
@@ -203,8 +213,15 @@ export const NoteListRow = forwardRef<HTMLButtonElement, NoteListRowProps>(
               <div className="truncate text-sm font-medium text-[var(--foreground)]">
                 {note.title || "Untitled"}
               </div>
-              <div className="mt-1 text-xs text-[var(--foreground-muted)]">
-                {formatRelative(note.updatedAt)}
+              <div className="mt-1 flex items-center gap-2">
+                {spaceChips.length > 0 ? (
+                  <CondensedSpaceChips chips={spaceChips} />
+                ) : (
+                  <span className="min-w-0 flex-1" aria-hidden />
+                )}
+                <span className="shrink-0 whitespace-nowrap text-xs text-[var(--foreground-muted)]">
+                  {formatRelative(note.updatedAt)}
+                </span>
               </div>
             </div>
           </div>

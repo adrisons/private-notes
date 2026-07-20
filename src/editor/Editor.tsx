@@ -2,6 +2,7 @@ import { useEditor, EditorContent, type Editor as TiptapEditor } from "@tiptap/r
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import { AttachmentImage } from "./extensions/AttachmentImage";
+import { ArrowSubstitutions } from "./extensions/ArrowSubstitutions";
 import { FencedCodeBlock } from "./extensions/FencedCodeBlock";
 import { useEffect, useMemo, useRef } from "react";
 import { markdownToHtml } from "../infrastructure/markdown/parse";
@@ -17,6 +18,8 @@ import {
 import { insertAttachmentImages } from "./insert-attachment-images";
 
 interface EditorProps {
+  /** Drives autofocus when the open note changes. */
+  noteId: string;
   /** Initial markdown content. Re-applied when this value changes. */
   value: string;
   onChange?: (markdown: string) => void;
@@ -33,6 +36,7 @@ interface EditorProps {
 }
 
 export function Editor({
+  noteId,
   value,
   onChange,
   onUploadImage,
@@ -49,6 +53,7 @@ export function Editor({
         heading: { levels: [1, 2, 3, 4, 5] },
       }),
       FencedCodeBlock,
+      ArrowSubstitutions,
       Underline,
       AttachmentImage.configure({
         resolveSrc: resolveImageSrc ?? (async (s: string) => s),
@@ -123,6 +128,16 @@ export function Editor({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [html, editor]);
+
+  // AppShell focuses the main landmark when the note changes; defer so the
+  // caret lands in the editor surface instead.
+  useEffect(() => {
+    if (!editor) return;
+    const timeout = window.setTimeout(() => {
+      editor.commands.focus("start");
+    }, 0);
+    return () => clearTimeout(timeout);
+  }, [editor, noteId]);
 
   const insertImage = async (file: File) => {
     if (!editor || !onUploadImage) return;

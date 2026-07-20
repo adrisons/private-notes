@@ -1,3 +1,4 @@
+import type { SpaceId } from "../space/space-id";
 import type { NoteId } from "./note-id";
 import type { NoteSummary } from "./note-summary";
 
@@ -10,6 +11,8 @@ export interface Note {
   readonly path: string;
   readonly createdAt: string;
   updatedAt: string;
+  /** Custom spaces only; empty means General. */
+  spaceIds: SpaceId[];
 }
 
 export function noteToSummary(note: Note): NoteSummary {
@@ -17,5 +20,6 @@ export function noteToSummary(note: Note): NoteSummary {
     id: note.id,
     title: note.title,
     updatedAt: note.updatedAt,
+    spaceIds: note.spaceIds,
   };
 }

@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import type { NoteId } from "../../domain";
+import type { NoteId, SpaceId } from "../../domain";
 import type { NoteRecord } from "../ports/note-record";
 import type { VaultSession } from "../vault-session";
 import type { OpenNoteState } from "../view-models";
@@ -30,6 +30,7 @@ export interface UseCurrentNoteResult {
   duplicateNote: (id: string) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   deleteNotes: (ids: string[]) => Promise<void>;
+  onSpacesChange: (spaceIds: SpaceId[]) => Promise<void>;
 }
 
 export function useCurrentNote({
@@ -145,6 +146,23 @@ export function useCurrentNote({
     [session, current, setCurrent, refreshSummaries, onError],
   );
 
+  const onSpacesChange = useCallback(
+    async (spaceIds: SpaceId[]) => {
+      if (!session || !current) return;
+      try {
+        const state = await session.assignNoteSpaces(
+          current.id as NoteId,
+          spaceIds,
+        );
+        if (state) setCurrent(state);
+        await refreshSummaries();
+      } catch (error) {
+        onError(error);
+      }
+    },
+    [session, current, setCurrent, refreshSummaries, onError],
+  );
+
   return {
     flushPersist: autosave.flush,
     isSaving: autosave.isSaving,
@@ -155,5 +173,6 @@ export function useCurrentNote({
     duplicateNote: handleDuplicateNote,
     deleteNote: handleDeleteNote,
     deleteNotes: handleDeleteNotes,
+    onSpacesChange,
   };
 }

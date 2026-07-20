@@ -1,7 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { GENERAL_SPACE_ID, type SpaceId } from "../../domain";
 import { NoteHeader } from "../NoteHeader";
+
+const spaces = [
+  {
+    id: GENERAL_SPACE_ID,
+    name: "General",
+    colorId: null,
+    description: null,
+    noteCount: 1,
+  },
+];
+
+const headerProps = {
+  spaceIds: [] as SpaceId[],
+  spaces,
+  onSpacesChange: vi.fn(),
+  onCreateSpace: vi.fn(async () => null),
+  onDelete: vi.fn(),
+};
 
 /**
  * The title is a textarea so long titles wrap instead of scrolling sideways
@@ -12,8 +31,8 @@ describe("NoteHeader", () => {
     render(
       <NoteHeader
         title="Welcome"
+        {...headerProps}
         onTitleChange={onTitleChange}
-        onDelete={vi.fn()}
         savedAt={null}
       />,
     );
@@ -44,8 +63,8 @@ describe("NoteHeader", () => {
     const { rerender } = render(
       <NoteHeader
         title="Welcome"
+        {...headerProps}
         onTitleChange={vi.fn()}
-        onDelete={vi.fn()}
         savedAt={null}
         isSaving
       />,
@@ -55,8 +74,8 @@ describe("NoteHeader", () => {
     rerender(
       <NoteHeader
         title="Welcome"
+        {...headerProps}
         onTitleChange={vi.fn()}
-        onDelete={vi.fn()}
         savedAt="2026-05-17T12:00:00Z"
         isSaving={false}
       />,

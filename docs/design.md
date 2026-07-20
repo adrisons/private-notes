@@ -133,12 +133,12 @@ whole scale is lifted off pure black. Each adjacent surface step must be
 visually distinguishable without a border. Foreground text is soft, never pure
 white, to cut halation. Exact values: `design-tokens.css`.
 
-### 3.3 Chip colors *(future)*
+### 3.3 Chip colors
 
 A small set of muted chip tokens — `--chip-{blue,green,amber,red,purple}-{bg,fg}`
-— for tags, inline badges, and search-match highlights. Chips are **tinted
+— for tags, inline badges, search-match highlights, and **note spaces**. Chips are **tinted
 backgrounds with a readable foreground**, never saturated fills. Tokens exist;
-no component consumes them yet.
+`SpaceChip` consumes them for space labels in the sidebar, command palette, and spaces overview.
 
 ### 3.4 Contrast rules
 

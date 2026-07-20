@@ -1,4 +1,4 @@
-import type { Note, NoteId, NoteSummary } from "../../domain";
+import type { Note, NoteId, NoteSummary, SpaceId } from "../../domain";
 import type { NoteRecord } from "./note-record";
 
 export interface CreateNoteInput {
@@ -9,6 +9,7 @@ export interface CreateNoteInput {
 export interface UpdateNoteInput {
   title?: string;
   body?: string;
+  spaceIds?: SpaceId[];
 }
 
 export interface SaveNoteResult {

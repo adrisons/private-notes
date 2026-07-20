@@ -7,17 +7,30 @@ import { CommandPalette } from "../CommandPalette";
 import { ConfirmDialog } from "../../ui/ConfirmDialog";
 import { VaultIndicator } from "../VaultIndicator";
 import type { NoteListItem } from "../../application/view-models";
+import { GENERAL_SPACE_ID } from "../../domain";
 
 const notes: NoteListItem[] = [
   {
     id: "a",
     title: "Alpha note",
     updatedAt: "2026-05-17T12:00:00Z",
+    spaceIds: [],
   },
   {
     id: "b",
     title: "Beta note",
     updatedAt: "2026-05-16T12:00:00Z",
+    spaceIds: [],
+  },
+];
+
+const spaceItems = [
+  {
+    id: GENERAL_SPACE_ID,
+    name: "General",
+    colorId: null,
+    description: null,
+    noteCount: 2,
   },
 ];
 
@@ -31,12 +44,19 @@ describe("accessibility", () => {
     const { container } = render(
       <NotesList
         notes={notes}
-        selectedId="a"
-        onSelect={vi.fn()}
-        onCreate={vi.fn()}
-        onDelete={vi.fn()}
-        onBulkDelete={vi.fn()}
-        onDuplicate={vi.fn()}
+        spaceItems={spaceItems}
+        mode="notes"
+        onToggleMode={vi.fn()}
+        selectedNoteId="a"
+        selectedSpaceId={null}
+        onSelectNote={vi.fn()}
+        onSelectSpace={vi.fn()}
+        onCreateNote={vi.fn()}
+        onCreateSpace={vi.fn()}
+        onDeleteNote={vi.fn()}
+        onBulkDeleteNotes={vi.fn()}
+        onDeleteSpaces={vi.fn()}
+        onDuplicateNote={vi.fn()}
       />,
     );
     expect(await axe(container)).toHaveNoViolations();
@@ -48,6 +68,7 @@ describe("accessibility", () => {
         open
         onClose={vi.fn()}
         notes={notes}
+        spaceItems={spaceItems}
         searchReady
         onSearch={vi.fn(async () => [])}
         onOpenNote={vi.fn()}

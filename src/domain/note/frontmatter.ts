@@ -3,15 +3,21 @@
  * top-level keys with string values, fenced between `---` lines.
  *
  * We do NOT depend on a YAML library — the values we read and write are
- * always strings (id, title, ISO dates), and supporting just that subset keeps
- * the file format predictable for tools like `cat` or `grep`.
+ * always strings (id, title, ISO dates, comma-separated space ids), and
+ * supporting just that subset keeps the file format predictable for tools
+ * like `cat` or `grep`.
  */
+
+
+import { parseSpaceIds, serializeSpaceIds } from "../space/space-ids";
 
 export interface NoteFrontmatter {
   id: string;
   title: string;
   createdAt: string;
   updatedAt: string;
+  /** Comma-separated custom space ids. Omitted when the note is General-only. */
+  spaceIds?: string;
 }
 
 export interface ParsedNote {
@@ -50,11 +56,12 @@ export function serializeNote(
     `title: ${quote(frontmatter.title)}`,
     `createdAt: ${quote(frontmatter.createdAt)}`,
     `updatedAt: ${quote(frontmatter.updatedAt)}`,
-    DELIMITER,
-    "",
-    body.replace(/\s+$/, ""),
-    "",
   ];
+  const serialized = serializeSpaceIds(parseSpaceIds(frontmatter.spaceIds));
+  if (serialized) {
+    lines.push(`spaceIds: ${quote(serialized)}`);
+  }
+  lines.push(DELIMITER, "", body.replace(/\s+$/, ""), "");
   return lines.join("\n");
 }
 
@@ -71,7 +78,6 @@ export function parseNote(text: string): ParsedNote {
     throw new FrontmatterError("Missing frontmatter closing delimiter.");
   }
   const header = rest.slice(0, closeIdx);
-  // Strip the surrounding blank line(s) the serializer adds around the body.
   const after = rest
     .slice(closeIdx + DELIMITER.length + 1)
     .replace(/^\n+/, "")
@@ -91,7 +97,8 @@ export function parseNote(text: string): ParsedNote {
       key === "id" ||
       key === "title" ||
       key === "createdAt" ||
-      key === "updatedAt"
+      key === "updatedAt" ||
+      key === "spaceIds"
     ) {
       data[key] = value;
     }

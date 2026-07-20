@@ -2,6 +2,7 @@ import { registerBackgroundError } from "../errors";
 import {
   createAttachmentStore as createInfraAttachmentStore,
   createNoteRepository as createInfraNoteRepository,
+  createSpaceRepository as createInfraSpaceRepository,
   createSemanticSearch as createInfraSemanticSearch,
 } from "../../infrastructure/composition/default-deps";
 
@@ -12,6 +13,10 @@ export {
 
 export function createNoteRepository(root: FileSystemDirectoryHandle) {
   return createInfraNoteRepository(root);
+}
+
+export function createSpaceRepository(root: FileSystemDirectoryHandle) {
+  return createInfraSpaceRepository(root);
 }
 
 export function createAttachmentStore(root: FileSystemDirectoryHandle) {

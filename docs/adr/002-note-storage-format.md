@@ -2,21 +2,32 @@
 
 - **Status:** Accepted
 - **Date:** 2026-05-19
+- **Updated:** 2026-07-19
 
 ## Context
 
 - Notes must remain **portable and human-readable** outside the app.
 - We need fast listing and metadata without scanning the whole tree on every UI update.
-- Frontmatter should stay simple — no full YAML parser dependency for four string fields.
+- Frontmatter should stay simple — no full YAML parser dependency; only flat string fields.
+- Users need to group notes into named, colored **spaces** (tags) without leaving the local-first model.
 
 ## Decision
 
-1. **Each note is a `.md` file** with a small YAML frontmatter block (`id`, `title`, `createdAt`, `updatedAt`) parsed/serialized manually in `frontmatter.ts`.
+1. **Each note is a `.md` file** with a small YAML frontmatter block parsed/serialized manually in `frontmatter.ts`. Required keys: `id`, `title`, `createdAt`, `updatedAt`.
 2. **Paths are stable:** `notes/YYYY/MM/<slug>-<id>.md`. Title changes update frontmatter and index only — the file path does not move (`path.ts`).
 3. **Central index:** `.private-notes/index.json` holds `NoteRecord[]` for listing; the filesystem is the source of truth for body content.
 4. **Vault manifest:** `.private-notes/manifest.json` with app signature `private-notes` and `SCHEMA_VERSION` ([ADR-008](./008-schema-compatibility.md)).
 5. **Safe delete:** remove entry from index first, then delete the file; drop attachment refs and garbage-collect orphan blobs ([ADR-006](./006-attachments-cache.md)).
-6. **IDs:** opaque string ids (see `src/lib/notes/id.ts`) embedded in the filename.
+6. **IDs:** opaque string ids (ULIDs) embedded in the filename.
+
+### Spaces
+
+7. **Built-in General space:** id `"general"`, name `"General"`. Notes with no custom spaces belong here; General is never persisted on notes.
+8. **Custom spaces:** `.private-notes/spaces.json` holds `{ version, spaces: [{ id, name, colorId, description? }] }`. IDs are ULIDs; `colorId` is one of `blue | green | amber | red | purple` (CSS chip tokens in `design-tokens.css`).
+9. **Note assignment:** optional `spaceIds` in frontmatter and index — a **comma-separated** list of custom space ULIDs in one quoted string (keeps the hand-written YAML subset string-only).
+10. **Multi-space:** a note may belong to several custom spaces simultaneously. Empty/missing `spaceIds` means General only.
+11. **Delete space:** remove from `spaces.json`; strip that id from every note's `spaceIds` (notes fall back toward General when no custom ids remain).
+12. **Schema versions:** v1 → notes only; v2 → `spaces.json` + singular `spaceId` (migrated away on open); v3 → `spaceIds` + optional space `description`. Migration runs on vault open ([ADR-008](./008-schema-compatibility.md)).
 
 ## Consequences
 
@@ -24,28 +35,35 @@
 
 - Users can edit notes in any editor; only frontmatter conventions matter.
 - Index makes the sidebar O(n) over records, not O(files) walks.
+- Spaces are vault-local, portable, and human-readable in frontmatter.
 
 ### Negative
 
 - Index and files can theoretically diverge if edited externally without updating `index.json`.
-- No rich YAML types (tags, nested metadata) without a format change.
+- Deleting a space rewrites every affected note's frontmatter.
+- External editors can set unknown space ids; UI falls back until the user reassigns.
 
 ### Neutral
 
 - Markdown body excludes frontmatter; semantic indexing hashes the body only.
+- Chip colors stay in CSS tokens — only color ids are persisted.
 
 ## Diagram
 
 ```mermaid
 flowchart LR
-  Index[".private-notes/index.json"]
+  SpacesJson["spaces.json"]
+  Index["index.json"]
   NoteFile["notes/YYYY/MM/slug-id.md"]
-  Index -->|path| NoteFile
-  NoteFile -->|frontmatter + body| App[App / Editor]
+  SpacesJson --> CustomSpace["Custom space"]
+  NoteFile -->|spaceIds optional| Note
+  Index -->|spaceIds optional| Note
+  Note -->|absent| General["General built-in"]
 ```
 
 ## References
 
+- [ADR-008](./008-schema-compatibility.md) — schema versioning and migration
 - [CommonMark](https://commonmark.org/)
 - [YAML specification](https://yaml.org/spec/) (we only use a constrained subset by hand)
-- Code: `src/lib/notes/storage.ts`, `frontmatter.ts`, `path.ts`, `src/lib/fs/types.ts`
+- Code: `src/infrastructure/notes/`, `src/infrastructure/spaces/`, `src/domain/note/frontmatter.ts`, `src/infrastructure/fs/schema.ts`

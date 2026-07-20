@@ -5,4 +5,5 @@ export interface NoteRecord {
   path: string;
   createdAt: string;
   updatedAt: string;
+  spaceIds?: string;
 }

@@ -26,6 +26,23 @@ describe("serializeNote / parseNote", () => {
     expect(parsed.frontmatter.title).toBe('She said "hi"');
   });
 
+  it("round-trips optional spaceIds", () => {
+    const text = serializeNote(
+      { ...baseFrontmatter, spaceIds: "01SPACE123,01SPACE456" },
+      "Body",
+    );
+    const parsed = parseNote(text);
+    expect(parsed.frontmatter.spaceIds).toBe("01SPACE123,01SPACE456");
+  });
+
+  it("omits General from serialized frontmatter", () => {
+    const text = serializeNote(
+      { ...baseFrontmatter, spaceIds: "general" },
+      "Body",
+    );
+    expect(text).not.toContain("spaceIds:");
+  });
+
   it("preserves multi-paragraph bodies", () => {
     const body = "Line A\n\nLine B\n\nLine C";
     const parsed = parseNote(serializeNote(baseFrontmatter, body));

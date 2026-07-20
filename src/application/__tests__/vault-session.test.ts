@@ -3,6 +3,7 @@ import { createNote, updateNote } from "../../infrastructure/notes/storage";
 import { openVault, defaultInfrastructure } from "../use-cases/open-vault";
 import { WELCOME_NOTE_TITLE } from "../../domain";
 import { FsNoteRepository } from "../../infrastructure/notes/fs-note-repository";
+import { FsSpaceRepository } from "../../infrastructure/spaces/fs-space-repository";
 import { FsAttachmentStore } from "../../infrastructure/attachments/fs-attachment-store";
 import { VaultSession } from "../vault-session";
 import type { VaultGateway } from "../ports/vault-gateway";
@@ -56,7 +57,7 @@ describe("VaultSession", () => {
 
     const notes = new FsNoteRepository(io.root);
     const attachments = new FsAttachmentStore(io.root);
-    const session = VaultSession.create({ root: io.root, notes, attachments });
+    const session = VaultSession.create({ root: io.root, notes, spaces: new FsSpaceRepository(io.root), attachments });
     const startup = await session.resolveStartup();
 
     expect(startup.summaries).toHaveLength(2);
@@ -80,7 +81,7 @@ describe("VaultSession", () => {
 
     const notes = new FsNoteRepository(io.root);
     const attachments = new FsAttachmentStore(io.root);
-    const session = VaultSession.create({ root: io.root, notes, attachments });
+    const session = VaultSession.create({ root: io.root, notes, spaces: new FsSpaceRepository(io.root), attachments });
     const startup = await session.resolveStartup();
 
     expect(startup.current?.id).toBe(first.id);
@@ -93,7 +94,7 @@ describe("VaultSession", () => {
     const io = await setupTestVault();
     const attachments = new FsAttachmentStore(io.root);
     const notes = new FsNoteRepository(io.root);
-    const session = VaultSession.create({ root: io.root, notes, attachments });
+    const session = VaultSession.create({ root: io.root, notes, spaces: new FsSpaceRepository(io.root), attachments });
     const invalidate = vi.spyOn(attachments, "invalidate");
 
     const { path } = await attachments.store(fakeFile("pic.png", "image/png", [1]));

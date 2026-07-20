@@ -4,6 +4,7 @@ import { parseNoteIndex } from "../fs/validate";
 import { withIndexLock } from "../fs/locks";
 import { fileExists, listFilesRecursive, readText, writeText } from "../fs/handle";
 import { parseJson } from "../../lib/validate";
+import { parseSpaceIds, serializeSpaceIds } from "../../domain";
 import { parseNote } from "../../domain/note/frontmatter";
 import {
   computeReconcileDiff,
@@ -51,15 +52,20 @@ function recordFromFile(
     title: string;
     createdAt: string;
     updatedAt: string;
+    spaceIds?: string;
   },
 ): NoteRecord {
-  return {
+  const spaceIds = parseSpaceIds(frontmatter.spaceIds);
+  const record: NoteRecord = {
     id: frontmatter.id,
     title: frontmatter.title,
     path,
     createdAt: frontmatter.createdAt,
     updatedAt: frontmatter.updatedAt,
   };
+  const serialized = serializeSpaceIds(spaceIds);
+  if (serialized) record.spaceIds = serialized;
+  return record;
 }
 
 export async function reconcileVault(

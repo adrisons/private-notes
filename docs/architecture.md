@@ -30,6 +30,7 @@ flowchart TB
   .private-notes/          # app metadata (ADR-002, ADR-008)
     manifest.json
     index.json
+    spaces.json            # custom space definitions (ADR-002 § Spaces)
     attachment-refs.json   # note ids per attachment path (ADR-006)
   .semantic-index/         # vector index (ADR-004)
     manifest.json
@@ -57,6 +58,7 @@ Details: [ADR-002](./adr/002-note-storage-format.md), [ADR-004](./adr/004-semant
 | Shared kernel | `src/lib/` (`cn`, `theme`, `compatibility`, `validate`, …) | [009](./adr/009-layered-application-architecture.md) |
 | Boot, vault open, picker | `src/infrastructure/fs/` | [001](./adr/001-local-first-vault.md) |
 | Note CRUD, storage I/O | `src/infrastructure/notes/`; domain frontmatter in `src/domain/note/` | [002](./adr/002-note-storage-format.md) |
+| Spaces registry + note tags | `src/infrastructure/spaces/`, `src/domain/space/` | [002](./adr/002-note-storage-format.md) |
 | Embedder, chunking, worker | `src/infrastructure/search/`, `src/workers/` | [003](./adr/003-semantic-search-embeddings.md) |
 | Index I/O, search, reindex | `src/infrastructure/search/` | [004](./adr/004-semantic-index-persistence.md) |
 | Editor UI | `src/editor/` | [005](./adr/005-markdown-editor.md) |

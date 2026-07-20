@@ -125,7 +125,8 @@ export function AppShell({
             <div className="md:contents">
               <aside
                 aria-label="Notes and search"
-                className="max-h-[70dvh] min-h-0 overflow-y-auto border-b border-[var(--border-strong)] bg-[var(--surface)] shadow-[var(--shadow-overlay)] md:h-full md:max-h-none md:border-r md:border-b-0 md:shadow-none"
+                data-virtual-list-scroll=""
+                className="flex max-h-[70dvh] min-h-0 flex-col overflow-y-auto border-b border-[var(--border-strong)] bg-[var(--surface)] shadow-[var(--shadow-overlay)] md:h-full md:max-h-none md:border-r md:border-b-0 md:shadow-none"
               >
                 {sidebar}
               </aside>
@@ -138,7 +139,7 @@ export function AppShell({
           ref={mainRef}
           tabIndex={-1}
           aria-label="Note content"
-          className="min-h-0 overflow-y-auto outline-none"
+          className="flex min-h-0 flex-col overflow-hidden outline-none"
         >
           {children}
         </main>

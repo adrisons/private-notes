@@ -11,6 +11,8 @@ import {
   validateManifestJson,
 } from "./manifest";
 import { buildEmptyAttachmentRefs } from "../attachments/refs";
+import { buildEmptySpacesIndex } from "../spaces/storage";
+import { migrateVaultIfNeeded } from "./migrate";
 import { PATHS, type Manifest, type ValidationResult } from "./schema";
 
 /**
@@ -62,6 +64,11 @@ export async function initializeVault(
     PATHS.attachmentRefs,
     JSON.stringify(buildEmptyAttachmentRefs(), null, 2),
   );
+  await writeText(
+    root,
+    PATHS.spaces,
+    JSON.stringify(buildEmptySpacesIndex(), null, 2),
+  );
   return manifest;
 }
 
@@ -74,7 +81,8 @@ export async function openOrInitialize(
 ): Promise<{ manifest: Manifest; initialized: boolean }> {
   const result = await inspectFolder(root);
   if (result.kind === "compatible") {
-    return { manifest: result.manifest, initialized: false };
+    const manifest = await migrateVaultIfNeeded(root, result.manifest);
+    return { manifest, initialized: false };
   }
   if (result.kind === "empty") {
     const manifest = await initializeVault(root);

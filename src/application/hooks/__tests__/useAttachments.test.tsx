@@ -3,6 +3,7 @@ import { renderHook, act } from "@testing-library/react";
 import { noteId } from "../../../domain";
 import { FsAttachmentStore } from "../../../infrastructure/attachments/fs-attachment-store";
 import { FsNoteRepository } from "../../../infrastructure/notes/fs-note-repository";
+import { FsSpaceRepository } from "../../../infrastructure/spaces/fs-space-repository";
 import { VaultSession } from "../../vault-session";
 import { createNote } from "../../../infrastructure/notes/storage";
 import { fakeFile, setupTestVault } from "../../../test/vaultFixtures";
@@ -14,6 +15,7 @@ async function sessionWithNote() {
   const session = VaultSession.create({
     root: io.root,
     notes: new FsNoteRepository(io.root),
+    spaces: new FsSpaceRepository(io.root),
     attachments: new FsAttachmentStore(io.root),
   });
   return { session, noteId: record.id };

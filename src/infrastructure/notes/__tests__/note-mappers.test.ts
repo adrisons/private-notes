@@ -34,6 +34,7 @@ describe("note mappers", () => {
       id: noteId("01HNOTE123"),
       title: "Hello",
       updatedAt: "2026-05-18T10:00:00.000Z",
+      spaceIds: [],
     });
     const note = noteFromRecord(sampleRecord, "x");
     expect(noteToSummary(note)).toEqual(summaryFromRecord(sampleRecord));

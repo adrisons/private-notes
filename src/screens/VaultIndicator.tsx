@@ -1,4 +1,4 @@
-import { Button } from "../ui/Button";
+import { Tooltip } from "../ui/Tooltip";
 
 interface VaultIndicatorProps {
   /** Folder name from the File System Access handle (not a full OS path). */
@@ -23,32 +23,28 @@ function FolderIcon() {
   );
 }
 
-/** Sidebar header showing the open vault folder and a control to pick another. */
+/** Sidebar header showing the open vault folder; tap the location to pick another. */
 export function VaultIndicator({ name, onChange }: VaultIndicatorProps) {
   const label = name.trim() || "Untitled folder";
 
   return (
     <div className="border-b border-[var(--border)] px-4 py-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium uppercase tracking-wider text-[var(--foreground-muted)]">
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="shrink-0 text-xs font-medium uppercase tracking-wider text-[var(--foreground-muted)]">
           Vault
         </span>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={onChange}
-          aria-label="Change folder"
-        >
-          Change
-        </Button>
+        <Tooltip label="Change folder">
+          <button
+            type="button"
+            onClick={onChange}
+            aria-label="Change folder"
+            className="u-press u-focus flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-[var(--radius-md)] px-1.5 py-1 text-left text-sm text-[var(--foreground)] hover:bg-[var(--surface-raised)]"
+          >
+            <FolderIcon />
+            <span className="truncate">{label}</span>
+          </button>
+        </Tooltip>
       </div>
-      <p
-        className="mt-1.5 flex min-w-0 items-center gap-2 text-sm text-[var(--foreground)]"
-        aria-label={`Open folder: ${label}`}
-      >
-        <FolderIcon />
-        <span className="truncate">{label}</span>
-      </p>
     </div>
   );
 }

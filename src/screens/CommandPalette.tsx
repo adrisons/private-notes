@@ -1,17 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog } from "../ui/Dialog";
 import { Input } from "../ui/Input";
+import { SpaceChip } from "../ui/SpaceChip";
 import { cn } from "../lib/cn";
 import {
   dedupeSearchResultsByNote,
+  resolveNoteSpaceChips,
   type NoteListItem,
   type SearchResultItem,
+  type SpaceListItem,
 } from "../application/view-models";
 
 interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
   notes: NoteListItem[];
+  spaceItems: SpaceListItem[];
   searchReady: boolean;
   onSearch: (query: string) => Promise<SearchResultItem[]>;
   onOpenNote: (id: string) => void;
@@ -86,6 +90,7 @@ export function CommandPalette({
   open,
   onClose,
   notes,
+  spaceItems,
   searchReady,
   onSearch,
   onOpenNote,
@@ -121,6 +126,11 @@ export function CommandPalette({
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [open, query, searchReady, onSearch]);
+
+  const noteById = useMemo(
+    () => new Map(notes.map((note) => [note.id, note])),
+    [notes],
+  );
 
   const noteTitleById = useMemo(
     () => new Map(notes.map((note) => [note.id, note.title])),
@@ -262,6 +272,12 @@ export function CommandPalette({
                 item.kind === "note"
                   ? item.record.title || "Untitled"
                   : noteTitleById.get(item.noteId) || "Untitled";
+              const noteId =
+                item.kind === "note" ? item.record.id : item.noteId;
+              const note = noteById.get(noteId);
+              const chips = note
+                ? resolveNoteSpaceChips(note.spaceIds, spaceItems)
+                : [];
               const icon =
                 item.kind === "note" ? <ClockIcon /> : <MatchIcon />;
               return (
@@ -276,7 +292,18 @@ export function CommandPalette({
                     className={itemButtonClass(isActive)}
                   >
                     {icon}
-                    <span className="truncate">{title}</span>
+                    <span className="min-w-0 flex-1 truncate">{title}</span>
+                    {chips.length > 0 ? (
+                      <span className="hidden shrink-0 items-center gap-1 sm:inline-flex">
+                        {chips.map((chip) => (
+                          <SpaceChip
+                            key={chip.name}
+                            name={chip.name}
+                            colorId={chip.colorId}
+                          />
+                        ))}
+                      </span>
+                    ) : null}
                   </button>
                 </li>
               );

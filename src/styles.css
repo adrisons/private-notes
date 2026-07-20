@@ -129,6 +129,17 @@ body::before {
   }
 }
 
+@keyframes sidebar-list-swap {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* Tooltips fade in, lift 4px and clear a 2px blur (§5). */
 @keyframes enter-tooltip {
   from {
@@ -183,6 +194,27 @@ body::before {
  */
 .u-content-swap {
   animation: content-swap-in var(--duration-normal) var(--ease-out) both;
+}
+
+.u-sidebar-list-swap {
+  animation: sidebar-list-swap var(--duration-normal) var(--ease-spring) both;
+}
+
+/* Sidebar mode toggle: the grid icon rotates with an organic spring. */
+.gesture-sidebar-mode .gesture-icon {
+  transition: transform var(--duration-slow) var(--ease-spring);
+}
+
+.gesture-sidebar-mode[data-mode="spaces"] .gesture-icon {
+  transform: rotate(180deg);
+}
+
+.gesture-sidebar-mode:active .gesture-icon {
+  transform: rotate(90deg);
+}
+
+.gesture-sidebar-mode[data-mode="spaces"]:active .gesture-icon {
+  transform: rotate(270deg);
 }
 
 /*
@@ -629,8 +661,14 @@ html[data-theme-transition] *::after {
     filter: none;
   }
 
-  .u-content-swap {
+  .u-content-swap,
+  .u-sidebar-list-swap {
     animation: fade-backdrop var(--duration-fast) linear both;
+    transform: none;
+  }
+
+  .gesture-sidebar-mode[data-mode="spaces"] .gesture-icon,
+  .gesture-sidebar-mode:active .gesture-icon {
     transform: none;
   }
 

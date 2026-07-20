@@ -1,9 +1,20 @@
 import { useLayoutEffect, useRef } from "react";
 import { Button } from "../ui/Button";
+import type { SpaceColorId, SpaceId } from "../domain";
+import type { SpaceListItem } from "../application/view-models";
+import { SpaceTagsEditor } from "./SpaceTagsEditor";
 
 interface NoteHeaderProps {
   title: string;
+  spaceIds: SpaceId[];
+  spaces: SpaceListItem[];
   onTitleChange: (value: string) => void;
+  onSpacesChange: (spaceIds: SpaceId[]) => void;
+  onCreateSpace: (input: {
+    name: string;
+    colorId: SpaceColorId;
+    description?: string;
+  }) => Promise<SpaceId | null>;
   onDelete: () => void;
   savedAt: string | null;
   isSaving?: boolean;
@@ -11,7 +22,11 @@ interface NoteHeaderProps {
 
 export function NoteHeader({
   title,
+  spaceIds,
+  spaces,
   onTitleChange,
+  onSpacesChange,
+  onCreateSpace,
   onDelete,
   savedAt,
   isSaving = false,
@@ -51,15 +66,14 @@ export function NoteHeader({
     // Full width of its container: the title is the page, not a card in it.
     // Left padding matches the toolbar and the editor body so the three line up.
     <div className="w-full px-5 pt-8 sm:px-6 sm:pt-10">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <span
           aria-live="polite"
           aria-atomic="true"
-          className="text-xs font-medium text-[var(--foreground-muted)]"
+          className="mr-auto text-xs font-medium text-[var(--foreground-muted)]"
         >
           {saveStatus}
         </span>
-        {/* Destructive: same shape as any other button, danger tint on hover. */}
         <Button size="sm" variant="danger" onClick={onDelete}>
           Delete
         </Button>
@@ -77,6 +91,16 @@ export function NoteHeader({
         aria-label="Note title"
         className="u-focus mt-4 w-full resize-none overflow-hidden break-words bg-transparent text-3xl font-semibold tracking-tight placeholder:text-[var(--foreground-subtle)]"
       />
+      <div className="relative z-30 mt-3 pb-1">
+        <SpaceTagsEditor
+          spaces={spaces}
+          value={spaceIds}
+          onChange={(ids) => void onSpacesChange(ids)}
+          onCreateSpace={async (name) =>
+            onCreateSpace({ name, colorId: "blue" })
+          }
+        />
+      </div>
     </div>
   );
 }

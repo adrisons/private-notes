@@ -3,11 +3,12 @@ import { AppShell } from "./ui/AppShell";
 import { Logo } from "./ui/Logo";
 import { Toast } from "./ui/Toast";
 import { Welcome } from "./screens/Welcome";
-import { NotesList } from "./screens/NotesList";
+import { NotesList, type SidebarMode } from "./screens/NotesList";
 import { NoteHeader } from "./screens/NoteHeader";
 import { EmptyState } from "./screens/EmptyState";
 import { SidebarSearch } from "./screens/SidebarSearch";
 import { VaultIndicator } from "./screens/VaultIndicator";
+import { SpaceDetailView } from "./screens/SpaceDetailView";
 import { getCompatibility } from "./lib/compatibility";
 import { Unsupported } from "./screens/Unsupported";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
@@ -18,6 +19,8 @@ import { useVaultSession } from "./application/hooks/useVaultSession";
 import { useCurrentNote } from "./application/hooks/useCurrentNote";
 import { useSemanticIndex } from "./application/hooks/useSemanticIndex";
 import { useAttachments } from "./application/hooks/useAttachments";
+import { useSpaces } from "./application/hooks/useSpaces";
+import type { SpaceColorId, SpaceId } from "./domain";
 
 const Editor = lazy(() =>
   import("./editor/Editor").then((m) => ({ default: m.Editor })),
@@ -53,8 +56,61 @@ export function App() {
   });
 
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
+  const [pendingDeleteSpaceIds, setPendingDeleteSpaceIds] = useState<
+    SpaceId[]
+  >([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [sidebarMode, setSidebarMode] = useState<SidebarMode>("notes");
+  const [selectedSpaceId, setSelectedSpaceId] = useState<SpaceId | null>(null);
   const currentNoteId = vault.current?.id ?? null;
+
+  const spaces = useSpaces({
+    session: vault.session,
+    noteItems: vault.noteItems,
+    refreshSummaries: vault.refreshSummaries,
+    onError: showError,
+  });
+
+  const selectedSpace = selectedSpaceId
+    ? spaces.spaceItems.find((space) => space.id === selectedSpaceId) ?? null
+    : null;
+
+  const openNote = useCallback(
+    (id: string) => {
+      setSelectedSpaceId(null);
+      void note.openNoteById(id);
+    },
+    [note],
+  );
+
+  const openSpace = useCallback(
+    (id: SpaceId) => {
+      note.flushPersist();
+      setSelectedSpaceId(id);
+    },
+    [note],
+  );
+
+  const handleCreateNote = useCallback(async () => {
+    setSelectedSpaceId(null);
+    await note.createNote();
+  }, [note]);
+
+  const handleCreateSpace = useCallback(async () => {
+    note.flushPersist();
+    const id = await spaces.createSpace({
+      name: "Untitled",
+      colorId: "blue" satisfies SpaceColorId,
+    });
+    if (id) {
+      vault.setCurrent(null);
+      setSelectedSpaceId(id);
+    }
+  }, [note, spaces, vault]);
+
+  const toggleSidebarMode = useCallback(() => {
+    setSidebarMode((mode) => (mode === "notes" ? "spaces" : "notes"));
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -92,6 +148,18 @@ export function App() {
       await search.pruneOrphans();
     }
   }, [pendingDeleteIds, note, search]);
+
+  const handleDeleteSpaces = useCallback(
+    async (ids: SpaceId[]) => {
+      for (const id of ids) {
+        await spaces.deleteSpace(id);
+      }
+      if (selectedSpaceId && ids.includes(selectedSpaceId)) {
+        setSelectedSpaceId(null);
+      }
+    },
+    [spaces, selectedSpaceId],
+  );
 
   const pendingDeleteTitle =
     pendingDeleteIds.length === 1
@@ -151,8 +219,7 @@ export function App() {
   return (
     <AppShell
       header={headerNode}
-      // Picking a note collapses the mobile panel (docs/design.md §8).
-      collapseKey={currentNoteId}
+      collapseKey={currentNoteId ?? selectedSpaceId}
       sidebar={
         <div className="flex flex-col">
           <VaultIndicator
@@ -169,24 +236,46 @@ export function App() {
           />
           <NotesList
             notes={vault.noteItems}
-            selectedId={vault.current?.id ?? null}
-            onSelect={note.openNoteById}
-            onCreate={note.createNote}
-            onDelete={requestDelete}
-            onBulkDelete={requestBulkDelete}
-            onDuplicate={note.duplicateNote}
+            spaceItems={spaces.spaceItems}
+            mode={sidebarMode}
+            onToggleMode={toggleSidebarMode}
+            selectedNoteId={currentNoteId}
+            selectedSpaceId={selectedSpaceId}
+            onSelectNote={openNote}
+            onSelectSpace={openSpace}
+            onCreateNote={() => void handleCreateNote()}
+            onCreateSpace={() => void handleCreateSpace()}
+            onDeleteNote={requestDelete}
+            onBulkDeleteNotes={requestBulkDelete}
+            onDeleteSpaces={(ids) => void handleDeleteSpaces(ids)}
+            onDuplicateNote={note.duplicateNote}
           />
         </div>
       }
     >
-      {vault.current ? (
+      {selectedSpace ? (
+        <div key={selectedSpace.id} className="flex h-full min-h-0 flex-col">
+          <SpaceDetailView
+            space={selectedSpace}
+            notes={vault.noteItems}
+            spaceItems={spaces.spaceItems}
+            onOpenNote={openNote}
+            onUpdateSpace={spaces.updateSpace}
+            onDelete={() => setPendingDeleteSpaceIds([selectedSpace.id])}
+          />
+        </div>
+      ) : vault.current ? (
         <div
           key={vault.current.id}
-          className="u-content-swap flex h-full flex-col"
+          className="u-content-swap flex h-full min-h-0 flex-col overflow-y-auto"
         >
           <NoteHeader
             title={vault.current.title}
+            spaceIds={vault.current.spaceIds}
+            spaces={spaces.spaceItems}
             onTitleChange={note.onTitleChange}
+            onSpacesChange={note.onSpacesChange}
+            onCreateSpace={spaces.createSpace}
             onDelete={() => requestDelete()}
             savedAt={vault.current.savedAt}
             isSaving={note.isSaving}
@@ -203,6 +292,7 @@ export function App() {
               }
             >
               <Editor
+                noteId={vault.current.id}
                 value={vault.current.body}
                 onChange={note.onBodyChange}
                 onUploadImage={attachments.onUploadImage}
@@ -212,7 +302,7 @@ export function App() {
           </div>
         </div>
       ) : (
-        <EmptyState key="empty" onCreate={note.createNote} />
+        <EmptyState key="empty" onCreate={() => void handleCreateNote()} />
       )}
       {toast ? (
         <Toast
@@ -230,14 +320,31 @@ export function App() {
         onConfirm={handleDelete}
         onCancel={() => setPendingDeleteIds([])}
       />
+      <ConfirmDialog
+        open={pendingDeleteSpaceIds.length > 0}
+        title={
+          pendingDeleteSpaceIds.length === 1
+            ? `Delete “${spaces.spaceItems.find((s) => s.id === pendingDeleteSpaceIds[0])?.name}” space?`
+            : `Delete ${pendingDeleteSpaceIds.length} spaces?`
+        }
+        description="Notes in deleted spaces will move to General."
+        confirmLabel="Delete space"
+        destructive
+        onConfirm={() => {
+          void handleDeleteSpaces(pendingDeleteSpaceIds);
+          setPendingDeleteSpaceIds([]);
+        }}
+        onCancel={() => setPendingDeleteSpaceIds([])}
+      />
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         notes={vault.noteItems}
+        spaceItems={spaces.spaceItems}
         searchReady={search.embedderReady}
         onSearch={search.onSearch}
-        onOpenNote={note.openNoteById}
-        onCreate={note.createNote}
+        onOpenNote={openNote}
+        onCreate={() => void handleCreateNote()}
       />
     </AppShell>
   );

@@ -1,9 +1,9 @@
-import type { Note, NoteId } from "../domain";
+import type { Note, NoteId, NoteSummary, SpaceColorId, SpaceId } from "../domain";
 import type { NoteRepository, CreateNoteInput } from "./ports/note-repository";
+import type { SpaceRepository } from "./ports/space-repository";
 import type { AttachmentStore } from "./ports/attachment-store";
 import type { OpenNoteState } from "./view-models";
 import { toOpenNoteState } from "./view-models";
-import type { NoteSummary } from "../domain";
 import { resolveVaultStartup } from "./use-cases/resolve-startup";
 
 export interface VaultStartup {
@@ -14,6 +14,7 @@ export interface VaultStartup {
 export interface VaultSessionDeps {
   root: FileSystemDirectoryHandle;
   notes: NoteRepository;
+  spaces: SpaceRepository;
   attachments: AttachmentStore;
 }
 
@@ -21,11 +22,13 @@ export interface VaultSessionDeps {
 export class VaultSession {
   readonly root: FileSystemDirectoryHandle;
   private readonly notes: NoteRepository;
+  readonly spaces: SpaceRepository;
   readonly attachments: AttachmentStore;
 
   private constructor(deps: VaultSessionDeps) {
     this.root = deps.root;
     this.notes = deps.notes;
+    this.spaces = deps.spaces;
     this.attachments = deps.attachments;
   }
 
@@ -71,6 +74,37 @@ export class VaultSession {
       gcAttachments,
       note,
     };
+  }
+
+  async assignNoteSpaces(
+    id: NoteId,
+    spaceIds: SpaceId[],
+  ): Promise<OpenNoteState | null> {
+    const { note } = await this.notes.update(id, { spaceIds });
+    return toOpenNoteState(note, note.updatedAt);
+  }
+
+  listSpaces() {
+    return this.spaces.list();
+  }
+
+  createSpace(input: {
+    name: string;
+    colorId: SpaceColorId;
+    description?: string;
+  }) {
+    return this.spaces.create(input);
+  }
+
+  updateSpace(
+    id: SpaceId,
+    patch: { name?: string; colorId?: SpaceColorId; description?: string },
+  ) {
+    return this.spaces.update(id, patch);
+  }
+
+  deleteSpace(id: SpaceId) {
+    return this.spaces.delete(id);
   }
 
   async deleteNote(id: NoteId): Promise<string[]> {

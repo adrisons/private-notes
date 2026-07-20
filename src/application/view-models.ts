@@ -1,11 +1,24 @@
-import type { Note, NoteSummary } from "../domain";
+import type { Note, NoteSummary, SpaceColorId, SpaceId } from "../domain";
+import {
+  GENERAL_SPACE,
+  GENERAL_SPACE_DESCRIPTION,
+  GENERAL_SPACE_ID,
+  noteBelongsToSpace,
+  type CustomSpace,
+} from "../domain";
 import type { SearchHit } from "./ports/search-hit";
+
+export interface SpaceChipDisplay {
+  name: string;
+  colorId: SpaceColorId | null;
+}
 
 /** Sidebar / list row — no persistence fields. */
 export interface NoteListItem {
   id: string;
   title: string;
   updatedAt: string;
+  spaceIds: SpaceId[];
 }
 
 /** Editor chrome + body for the open note. */
@@ -14,6 +27,16 @@ export interface OpenNoteState {
   title: string;
   body: string;
   savedAt: string | null;
+  spaceIds: SpaceId[];
+}
+
+/** Space card in the spaces overview. */
+export interface SpaceListItem {
+  id: SpaceId;
+  name: string;
+  colorId: SpaceColorId | null;
+  description: string | null;
+  noteCount: number;
 }
 
 /** Command palette semantic hit — one row per note. */
@@ -64,6 +87,7 @@ export function toNoteListItem(summary: NoteSummary): NoteListItem {
     id: summary.id,
     title: summary.title,
     updatedAt: summary.updatedAt,
+    spaceIds: summary.spaceIds,
   };
 }
 
@@ -77,6 +101,7 @@ export function toOpenNoteState(note: Note, savedAt: string | null): OpenNoteSta
     title: note.title,
     body: note.body,
     savedAt,
+    spaceIds: note.spaceIds,
   };
 }
 
@@ -101,4 +126,74 @@ export function dedupeSearchResultsByNote(
     seen.add(hit.noteId);
     return true;
   });
+}
+
+export function buildSpaceListItems(
+  customSpaces: CustomSpace[],
+  notes: NoteListItem[],
+): SpaceListItem[] {
+  const counts = new Map<SpaceId, number>();
+  for (const note of notes) {
+    if (note.spaceIds.length === 0) {
+      counts.set(
+        GENERAL_SPACE_ID,
+        (counts.get(GENERAL_SPACE_ID) ?? 0) + 1,
+      );
+    } else {
+      for (const id of note.spaceIds) {
+        counts.set(id, (counts.get(id) ?? 0) + 1);
+      }
+    }
+  }
+
+  const general: SpaceListItem = {
+    id: GENERAL_SPACE_ID,
+    name: GENERAL_SPACE.name,
+    colorId: null,
+    description: GENERAL_SPACE_DESCRIPTION,
+    noteCount: counts.get(GENERAL_SPACE_ID) ?? 0,
+  };
+
+  const custom = customSpaces.map((space) => ({
+    id: space.id,
+    name: space.name,
+    colorId: space.colorId,
+    description: space.description ?? null,
+    noteCount: counts.get(space.id) ?? 0,
+  }));
+
+  return [general, ...custom];
+}
+
+export function resolveSpaceDisplay(
+  spaceId: SpaceId,
+  spaces: SpaceListItem[],
+): SpaceChipDisplay {
+  const match = spaces.find((space) => space.id === spaceId);
+  if (match) {
+    return { name: match.name, colorId: match.colorId };
+  }
+  return { name: GENERAL_SPACE.name, colorId: null };
+}
+
+export function resolveNoteSpaceChips(
+  spaceIds: SpaceId[],
+  spaces: SpaceListItem[],
+  options?: { omitGeneral?: boolean },
+): SpaceChipDisplay[] {
+  const chips =
+    spaceIds.length === 0
+      ? [{ name: GENERAL_SPACE.name, colorId: null }]
+      : spaceIds.map((id) => resolveSpaceDisplay(id, spaces));
+  if (options?.omitGeneral) {
+    return chips.filter((chip) => chip.name !== GENERAL_SPACE.name);
+  }
+  return chips;
+}
+
+export function noteMatchesSpaceFilter(
+  noteSpaceIds: SpaceId[],
+  filterSpaceId: SpaceId,
+): boolean {
+  return noteBelongsToSpace(noteSpaceIds, filterSpaceId);
 }

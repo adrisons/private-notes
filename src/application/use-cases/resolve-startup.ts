@@ -15,6 +15,7 @@ function summaryFromState(state: OpenNoteState): NoteSummary {
     id: noteId(state.id),
     title: state.title,
     updatedAt: state.savedAt ?? new Date().toISOString(),
+    spaceIds: state.spaceIds,
   };
 }
 

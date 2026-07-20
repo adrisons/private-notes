@@ -11,7 +11,8 @@ import {
   dropNoteRefs,
   syncRefsForBodyChange,
 } from "../attachments/refs";
-import { parseNote, serializeNote, type ParsedNote } from "../../domain/note/frontmatter";
+import { parseNote, serializeNote, type NoteFrontmatter, type ParsedNote } from "../../domain/note/frontmatter";
+import { GENERAL_SPACE_ID, parseSpaceIds, serializeSpaceIds, type SpaceId } from "../../domain";
 import { buildNotePath } from "./path";
 import { ulid } from "./id";
 
@@ -24,6 +25,39 @@ interface NoteStorageContext {
 
 const nowDefault = (): Date => new Date();
 const idDefault = (): string => ulid();
+
+function spaceIdsFromSources(
+  record?: NoteRecord,
+  parsed?: NoteFrontmatter,
+): SpaceId[] {
+  return parseSpaceIds(record?.spaceIds ?? parsed?.spaceIds);
+}
+
+function frontmatterFromRecord(
+  record: NoteRecord,
+  _parsed: NoteFrontmatter | undefined,
+  spaceIds: SpaceId[],
+): NoteFrontmatter {
+  const serialized = serializeSpaceIds(spaceIds);
+  return {
+    id: record.id,
+    title: record.title,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+    ...(serialized ? { spaceIds: serialized } : null),
+  };
+}
+
+function recordWithSpaceIds(
+  record: NoteRecord,
+  spaceIds: SpaceId[],
+): NoteRecord {
+  const serialized = serializeSpaceIds(spaceIds);
+  const next: NoteRecord = { ...record };
+  if (serialized) next.spaceIds = serialized;
+  else delete next.spaceIds;
+  return next;
+}
 
 async function readIndex(root: FileSystemDirectoryHandle): Promise<NoteIndex> {
   if (!(await fileExists(root, PATHS.index))) return buildEmptyIndex();
@@ -106,6 +140,7 @@ export async function readNote(
 export interface UpdateInput {
   title?: string;
   body?: string;
+  spaceIds?: SpaceId[];
 }
 
 export async function updateNote(
@@ -121,20 +156,16 @@ export async function updateNote(
   const existing = parseNote(existingText);
   const title = patch.title ?? existing.frontmatter.title;
   const body = patch.body ?? existing.body;
+  const spaceIds =
+    patch.spaceIds ?? spaceIdsFromSources(current, existing.frontmatter);
   const now = (io.now ?? nowDefault)();
   const iso = now.toISOString();
-  const updated: NoteRecord = {
-    ...current,
-    title,
-    updatedAt: iso,
-  };
+  const updated = recordWithSpaceIds(
+    { ...current, title, updatedAt: iso },
+    spaceIds,
+  );
   const newText = serializeNote(
-    {
-      id: current.id,
-      title,
-      createdAt: current.createdAt,
-      updatedAt: iso,
-    },
+    frontmatterFromRecord(updated, existing.frontmatter, spaceIds),
     body,
   );
   await writeText(io.root, current.path, newText);
@@ -168,6 +199,13 @@ export async function duplicateNote(
     body: source.parsed.body,
   });
   await addRefsForBody(io.root, copy.id, source.parsed.body);
+  const sourceSpaceIds = spaceIdsFromSources(
+    source.record,
+    source.parsed.frontmatter,
+  );
+  if (sourceSpaceIds.length > 0) {
+    return updateNote(io, copy.id, { spaceIds: sourceSpaceIds });
+  }
   return copy;
 }
 
@@ -206,4 +244,52 @@ export async function deleteNote(
 export async function listNotes(io: NoteStorageContext): Promise<NoteRecord[]> {
   const index = await readIndex(io.root);
   return [...index.notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+/** Remove a space id from every note that references it. */
+export async function clearSpaceFromNotes(
+  io: NoteStorageContext,
+  targetSpaceId: SpaceId,
+): Promise<string[]> {
+  if (targetSpaceId === GENERAL_SPACE_ID) return [];
+  const index = await readIndex(io.root);
+  const affected = index.notes.filter((note) => {
+    const ids = spaceIdsFromSources(note);
+    return ids.includes(targetSpaceId);
+  });
+  if (affected.length === 0) return [];
+
+  const updatedIds: string[] = [];
+  for (const record of affected) {
+    const existingText = await readText(io.root, record.path);
+    const existing = parseNote(existingText);
+    const nextSpaceIds = spaceIdsFromSources(record, existing.frontmatter).filter(
+      (id) => id !== targetSpaceId,
+    );
+    const updated = recordWithSpaceIds(
+      { ...record, updatedAt: (io.now ?? nowDefault)().toISOString() },
+      nextSpaceIds,
+    );
+    await writeText(
+      io.root,
+      record.path,
+      serializeNote(
+        frontmatterFromRecord(updated, existing.frontmatter, nextSpaceIds),
+        existing.body,
+      ),
+    );
+    updatedIds.push(record.id);
+  }
+
+  await mutateIndex(io.root, (fresh) => {
+    fresh.notes = fresh.notes.map((note) => {
+      const ids = spaceIdsFromSources(note);
+      if (!ids.includes(targetSpaceId)) return note;
+      return recordWithSpaceIds(
+        note,
+        ids.filter((id) => id !== targetSpaceId),
+      );
+    });
+  });
+  return updatedIds;
 }

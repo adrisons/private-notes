@@ -12,6 +12,7 @@ const NOTE = {
   path: "notes/2026/05/n1.md",
   createdAt: "2026-05-17T10:00:00.000Z",
   updatedAt: "2026-05-17T10:00:00.000Z",
+  spaceIds: [],
 };
 
 function buildSession(overrides: Partial<VaultSession> = {}): VaultSession {
@@ -22,6 +23,7 @@ function buildSession(overrides: Partial<VaultSession> = {}): VaultSession {
         title: "Draft",
         body: "Hello",
         savedAt: "2026-05-17T10:00:00.000Z",
+        spaceIds: [],
       },
       note: NOTE,
       gcAttachments: [],
@@ -31,6 +33,7 @@ function buildSession(overrides: Partial<VaultSession> = {}): VaultSession {
       title: "Other",
       body: "Other body",
       savedAt: null,
+      spaceIds: [],
     }),
     createNote: vi.fn(),
     duplicateNote: vi.fn(),
@@ -78,6 +81,7 @@ describe("useCurrentNote", () => {
       title: "Draft",
       body: "Hello",
       savedAt: null,
+      spaceIds: [],
     };
     const { result } = renderCurrentNote(session, current);
 
@@ -101,6 +105,7 @@ describe("useCurrentNote", () => {
       title: "Draft",
       body: "Hello",
       savedAt: null,
+      spaceIds: [],
     };
     const { result } = renderCurrentNote(session, current);
 
@@ -119,6 +124,7 @@ describe("useCurrentNote", () => {
       title: "Draft",
       body: "Hello",
       savedAt: null,
+      spaceIds: [],
     };
     const { result, setCurrent } = renderCurrentNote(session, current);
 
@@ -137,6 +143,7 @@ describe("useCurrentNote", () => {
       title: "Other",
       body: "Other body",
       savedAt: null,
+      spaceIds: [],
     });
   });
 
@@ -147,6 +154,7 @@ describe("useCurrentNote", () => {
       title: "Draft",
       body: "Hello",
       savedAt: null,
+      spaceIds: [],
     };
     const { result, scheduleReindex } = renderCurrentNote(session, current, {
       embedderReady: true,
@@ -173,6 +181,7 @@ describe("useCurrentNote", () => {
       title: "Draft",
       body: "Hello",
       savedAt: null,
+      spaceIds: [],
     };
     const { result, setCurrent, refreshSummaries } = renderCurrentNote(
       session,

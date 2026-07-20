@@ -4,12 +4,13 @@
  * See docs/adr/008-schema-compatibility.md
  */
 export const APP_SIGNATURE = "private-notes" as const;
-export const SCHEMA_VERSION = 1 as const;
+export const SCHEMA_VERSION = 3 as const;
 
 export const PATHS = {
   meta: ".private-notes",
   manifest: ".private-notes/manifest.json",
   index: ".private-notes/index.json",
+  spaces: ".private-notes/spaces.json",
   attachmentRefs: ".private-notes/attachment-refs.json",
   notes: "notes",
   attachments: "attachments",
@@ -28,11 +29,25 @@ export interface NoteRecord {
   path: string;
   createdAt: string;
   updatedAt: string;
+  /** Comma-separated custom space ids; omitted when the note is General-only. */
+  spaceIds?: string;
 }
 
 export interface NoteIndex {
   version: number;
   notes: NoteRecord[];
+}
+
+export interface SpaceRecord {
+  id: string;
+  name: string;
+  colorId: string;
+  description?: string;
+}
+
+export interface SpacesIndex {
+  version: number;
+  spaces: SpaceRecord[];
 }
 
 export type ValidationResult =

@@ -1,4 +1,5 @@
 import { FsNoteRepository } from "../notes/fs-note-repository";
+import { FsSpaceRepository } from "../spaces/fs-space-repository";
 import {
   FsAttachmentStore,
   type FsAttachmentStoreOptions,
@@ -28,6 +29,10 @@ export const defaultInfrastructure: InfrastructureDefaults = {
 
 export function createNoteRepository(root: FileSystemDirectoryHandle) {
   return new FsNoteRepository(root);
+}
+
+export function createSpaceRepository(root: FileSystemDirectoryHandle) {
+  return new FsSpaceRepository(root);
 }
 
 export function createAttachmentStore(
