@@ -16,7 +16,7 @@ function sessionStub(methods: Partial<VaultSession>): VaultSession {
   return methods as unknown as VaultSession;
 }
 
-const NOTE_IO_CASES = [
+const VAULT_IO_CASES = [
   {
     operation: "save-note",
     message: "Could not save your note.",
@@ -70,8 +70,8 @@ describe("error use cases", () => {
     vi.restoreAllMocks();
   });
 
-  it.each(NOTE_IO_CASES)(
-    "$operation wraps I/O failures as NoteIOError",
+  it.each(VAULT_IO_CASES)(
+    "$operation wraps I/O failures as VaultIOError",
     async ({ operation, message, run, mock }) => {
       const session = sessionStub({});
       mock(session);
@@ -83,7 +83,7 @@ describe("error use cases", () => {
     },
   );
 
-  it("open-vault wraps activation failures as NoteIOError", async () => {
+  it("open-vault wraps activation failures as VaultIOError", async () => {
     const handle = {} as FileSystemDirectoryHandle;
     await expect(
       openVault(handle, {

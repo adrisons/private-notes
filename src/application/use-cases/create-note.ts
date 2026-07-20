@@ -1,13 +1,13 @@
 import type { VaultSession } from "../vault-session";
 import type { CreateNoteInput } from "../ports/note-repository";
 import type { OpenNoteState } from "../view-models";
-import { guardNoteIO } from "../errors";
+import { guardVaultIO } from "../errors";
 
 export async function createNote(
   session: VaultSession,
   input: CreateNoteInput = { title: "Untitled", body: "" },
 ): Promise<OpenNoteState> {
-  return guardNoteIO(
+  return guardVaultIO(
     {
       operation: "create-note",
       module: "application/use-cases/create-note.ts",

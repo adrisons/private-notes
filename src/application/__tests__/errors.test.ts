@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   BackgroundTaskError,
-  NoteIOError,
-  guardNoteIO,
+  VaultIOError,
+  guardVaultIO,
   registerBackgroundError,
   reportUserError,
   resetErrorReportingForTests,
@@ -22,9 +22,9 @@ describe("application/errors", () => {
     vi.restoreAllMocks();
   });
 
-  it("wraps note I/O failures as NoteIOError", async () => {
+  it("wraps vault I/O failures as VaultIOError", async () => {
     await expect(
-      guardNoteIO(
+      guardVaultIO(
         {
           operation: "save-note",
           module: "application/use-cases/save-note.ts",
@@ -37,11 +37,11 @@ describe("application/errors", () => {
           throw new Error("disk full");
         },
       ),
-    ).rejects.toBeInstanceOf(NoteIOError);
+    ).rejects.toBeInstanceOf(VaultIOError);
   });
 
   it("reports user errors with friendly payload and technical console log", () => {
-    const error = new NoteIOError(
+    const error = new VaultIOError(
       "Could not save your note.",
       {
         operation: "save-note",
@@ -60,7 +60,7 @@ describe("application/errors", () => {
       fixHint: "Try again.",
     });
     expect(console.error).toHaveBeenCalledWith(
-      "[private-notes] NoteIOError",
+      "[private-notes] VaultIOError",
       expect.objectContaining({
         operation: "save-note",
         module: "application/use-cases/save-note.ts",
@@ -94,7 +94,7 @@ describe("application/errors", () => {
   });
 
   it("extracts user-facing text from typed errors", () => {
-    const error = new NoteIOError(
+    const error = new VaultIOError(
       "Could not open this note.",
       {
         operation: "open-note",

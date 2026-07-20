@@ -46,7 +46,7 @@ export class VaultError extends Error {
   }
 }
 
-export class NoteIOError extends VaultError {
+export class VaultIOError extends VaultError {
   constructor(
     message: string,
     debug: ErrorDebugContext,
@@ -54,7 +54,7 @@ export class NoteIOError extends VaultError {
     cause?: unknown,
   ) {
     super(message, "user", debug, fixHint, cause);
-    this.name = "NoteIOError";
+    this.name = "VaultIOError";
   }
 }
 
@@ -74,7 +74,7 @@ export class BackgroundTaskError extends VaultError {
   }
 }
 
-export type AppError = VaultError | NoteIOError | BackgroundTaskError;
+export type AppError = VaultError | VaultIOError | BackgroundTaskError;
 
 export type Result<T, E extends AppError = AppError> =
   | { ok: true; value: T }
@@ -142,8 +142,8 @@ export function logTechnicalError(
 
 /** Log a user-facing failure and return payload for the toast. */
 export function reportUserError(error: unknown): UserErrorPayload {
-  if (error instanceof NoteIOError) {
-    logTechnicalError("NoteIOError", error);
+  if (error instanceof VaultIOError) {
+    logTechnicalError("VaultIOError", error);
     return { message: error.message, fixHint: error.fixHint };
   }
   if (error instanceof VaultError && error.kind === "user") {
@@ -208,8 +208,8 @@ export function userFixHint(error: unknown): string {
   return "Try again. If it keeps failing, reopen the folder.";
 }
 
-/** Wrap note I/O with a typed NoteIOError for user toasts and debug logs. */
-export async function guardNoteIO<T>(
+/** Wrap vault I/O with a typed VaultIOError for user toasts and debug logs. */
+export async function guardVaultIO<T>(
   debug: ErrorDebugContext,
   userMessage: string,
   fixHint: string,
@@ -218,7 +218,7 @@ export async function guardNoteIO<T>(
   try {
     return await fn();
   } catch (cause) {
-    throw new NoteIOError(userMessage, debug, fixHint, cause);
+    throw new VaultIOError(userMessage, debug, fixHint, cause);
   }
 }
 

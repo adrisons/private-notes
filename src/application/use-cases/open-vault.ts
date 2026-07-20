@@ -5,7 +5,7 @@ import {
   defaultInfrastructure,
 } from "../composition";
 import type { InfrastructureDefaults } from "../composition";
-import { guardNoteIO } from "../errors";
+import { guardVaultIO } from "../errors";
 import { VaultSession, type VaultStartup } from "../vault-session";
 import { resolveVaultStartup } from "./resolve-startup";
 
@@ -25,7 +25,7 @@ export async function openVault(
 ): Promise<OpenVaultResult> {
   const infra = options.infra ?? defaultInfrastructure;
 
-  return guardNoteIO(
+  return guardVaultIO(
     {
       operation: "open-vault",
       module: "application/use-cases/open-vault.ts",

@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { noteId } from "../../domain";
-import { guardNoteIO } from "../errors";
+import { guardVaultIO } from "../errors";
 import type { VaultSession } from "../vault-session";
 
 export interface UseAttachmentsOptions {
@@ -23,7 +23,7 @@ export function useAttachments({
     async (file: File): Promise<string> => {
       if (!session || !currentNoteId) throw new Error("No active note");
       try {
-        return await guardNoteIO(
+        return await guardVaultIO(
           {
             operation: "upload-attachment",
             module: "application/hooks/useAttachments.ts",

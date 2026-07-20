@@ -1,7 +1,7 @@
 import type { Note, NoteId } from "../../domain";
 import type { VaultSession } from "../vault-session";
 import type { OpenNoteState } from "../view-models";
-import { guardNoteIO } from "../errors";
+import { guardVaultIO } from "../errors";
 
 export interface SaveNoteResult {
   state: OpenNoteState;
@@ -16,7 +16,7 @@ export async function saveNote(
   title: string,
   body: string,
 ): Promise<SaveNoteResult> {
-  return guardNoteIO(
+  return guardVaultIO(
     {
       operation: "save-note",
       module: "application/use-cases/save-note.ts",

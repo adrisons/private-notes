@@ -1,17 +1,17 @@
-import { NoteIOError, type ErrorDebugContext } from "../application/errors";
+import { VaultIOError, type ErrorDebugContext } from "../application/errors";
 
-/** Build a NoteIOError for tests with consistent debug metadata. */
-export function noteIOError(
+/** Build a VaultIOError for tests with consistent debug metadata. */
+export function vaultIOError(
   operation: string,
   message: string,
   userFixHint: string,
   cause: unknown = new Error("test failure"),
-): NoteIOError {
+): VaultIOError {
   const debug: ErrorDebugContext = {
     operation,
     module: `application/use-cases/${operation}.ts`,
     trace: `${operation} → test`,
     fixHint: `Inspect ${operation} in tests.`,
   };
-  return new NoteIOError(message, debug, userFixHint, cause);
+  return new VaultIOError(message, debug, userFixHint, cause);
 }

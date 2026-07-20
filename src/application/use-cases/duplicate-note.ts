@@ -1,7 +1,7 @@
 import type { Note, NoteId } from "../../domain";
 import type { VaultSession } from "../vault-session";
 import type { OpenNoteState } from "../view-models";
-import { guardNoteIO } from "../errors";
+import { guardVaultIO } from "../errors";
 
 export interface DuplicateNoteResult {
   state: OpenNoteState;
@@ -13,7 +13,7 @@ export async function duplicateNote(
   session: VaultSession,
   id: NoteId,
 ): Promise<DuplicateNoteResult | null> {
-  return guardNoteIO(
+  return guardVaultIO(
     {
       operation: "duplicate-note",
       module: "application/use-cases/duplicate-note.ts",

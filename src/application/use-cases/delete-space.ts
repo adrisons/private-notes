@@ -1,6 +1,6 @@
 import { isGeneralSpaceId, type SpaceId } from "../../domain";
 import type { VaultSession } from "../vault-session";
-import { guardNoteIO } from "../errors";
+import { guardVaultIO } from "../errors";
 
 export interface DeleteSpacesResult {
   /** Spaces actually removed from `spaces.json`. */
@@ -23,7 +23,7 @@ export async function deleteSpaces(
   const targets = ids.filter((id) => !isGeneralSpaceId(id));
   if (targets.length === 0) return { deleted: [], notesChanged: false };
 
-  return guardNoteIO(
+  return guardVaultIO(
     {
       operation: "delete-space",
       module: "application/use-cases/delete-space.ts",

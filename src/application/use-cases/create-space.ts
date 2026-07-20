@@ -1,6 +1,6 @@
 import { createSpaceDraft, type CustomSpace, type SpaceDraft } from "../../domain";
 import type { VaultSession } from "../vault-session";
-import { guardNoteIO } from "../errors";
+import { guardVaultIO } from "../errors";
 
 /**
  * Validation runs outside the I/O guard so a `SpaceValidationError` keeps its
@@ -11,7 +11,7 @@ export async function createSpace(
   input: SpaceDraft,
 ): Promise<CustomSpace> {
   const draft = createSpaceDraft(input);
-  return guardNoteIO(
+  return guardVaultIO(
     {
       operation: "create-space",
       module: "application/use-cases/create-space.ts",

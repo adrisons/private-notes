@@ -113,13 +113,13 @@ export function expectErrorToast(
   }
 }
 
-/** Assert NoteIOError was logged with the expected operation. */
-export function expectLoggedNoteIOError(
+/** Assert VaultIOError was logged with the expected operation. */
+export function expectLoggedVaultIOError(
   consoleError: MockInstance,
   operation: string,
 ): void {
   expect(consoleError).toHaveBeenCalledWith(
-    "[private-notes] NoteIOError",
+    "[private-notes] VaultIOError",
     expect.objectContaining({ operation }),
     expect.any(Error),
   );

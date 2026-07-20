@@ -88,10 +88,10 @@ The **only** place hooks may reach concrete infrastructure:
 | Class | `kind` | Surface |
 |-------|--------|---------|
 | `VaultError` | `user` \| `background` | base |
-| `NoteIOError` | `user` | toast (`ui/Toast`) + consola técnica |
+| `VaultIOError` | `user` | toast (`ui/Toast`) + consola técnica |
 | `BackgroundTaskError` | `background` | `console.error` estructurado + IndexStatus (reindex) |
 
-Background reindex failures use `registerBackgroundError("reindex", err)` instead of silent `.catch(() => {})`. User-facing note I/O errors surface via `ui/Toast` (through `useAppToast` + `reportUserError`); technical details log to the console with operation, module, trace, and fix hints.
+Background reindex failures use `registerBackgroundError("reindex", err)` instead of silent `.catch(() => {})`. User-facing vault I/O errors surface via `ui/Toast` (through `useAppToast` + `reportUserError`); technical details log to the console with operation, module, trace, and fix hints.
 
 ### Import rules (enforced in ESLint)
 

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "fake-indexeddb/auto";
 import "./test/registerIntegrationMocks";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { noteIOError } from "./test/errorFixtures";
+import { vaultIOError } from "./test/errorFixtures";
 import {
   advanceAutosave,
   cleanupIntegrationTest,
@@ -14,7 +14,7 @@ import {
   createIntegrationTestContext,
   createNoteWithTitle,
   expectErrorToast,
-  expectLoggedNoteIOError,
+  expectLoggedVaultIOError,
   openVaultFromWelcomeScreen,
   sidebarNoteButton,
   stubDirectoryPicker,
@@ -54,7 +54,7 @@ describe("App error handling integration", () => {
 
   describe("Welcome screen", () => {
     it("surfaces open-vault failures on Welcome", async () => {
-      const error = noteIOError(
+      const error = vaultIOError(
         "open-vault",
         "Could not open this folder.",
         "Choose the folder again and grant read/write access when prompted.",
@@ -78,7 +78,7 @@ describe("App error handling integration", () => {
           ),
         ).toBeInTheDocument();
       });
-      expectLoggedNoteIOError(consoleError, "open-vault");
+      expectLoggedVaultIOError(consoleError, "open-vault");
       openSpy.mockRestore();
     });
   });
@@ -87,7 +87,7 @@ describe("App error handling integration", () => {
     it("shows a toast when autosave fails", async () => {
       await openVaultFromWelcomeScreen();
       vi.spyOn(saveNoteModule, "saveNote").mockRejectedValue(
-        noteIOError(
+        vaultIOError(
           "save-note",
           "Could not save your note.",
           "Check that the folder is still accessible, then keep editing — we'll retry on the next change.",
@@ -105,13 +105,13 @@ describe("App error handling integration", () => {
           /folder is still accessible/i,
         );
       });
-      expectLoggedNoteIOError(consoleError, "save-note");
+      expectLoggedVaultIOError(consoleError, "save-note");
     });
 
     it("shows a toast when creating a note fails", async () => {
       const result = await openVaultFromWelcomeScreen();
       vi.spyOn(createNoteModule, "createNote").mockRejectedValue(
-        noteIOError(
+        vaultIOError(
           "create-note",
           "Could not create a new note.",
           "Make sure the notes folder is writable, then try again.",
@@ -136,7 +136,7 @@ describe("App error handling integration", () => {
       });
 
       vi.spyOn(deleteNoteModule, "deleteNote").mockRejectedValue(
-        noteIOError(
+        vaultIOError(
           "delete-note",
           "Could not delete this note.",
           "Make sure the notes folder is writable, then try again.",
@@ -157,7 +157,7 @@ describe("App error handling integration", () => {
       await createNoteWithTitle(result, "Original");
 
       vi.spyOn(duplicateNoteModule, "duplicateNote").mockRejectedValue(
-        noteIOError(
+        vaultIOError(
           "duplicate-note",
           "Could not duplicate this note.",
           "Make sure the notes folder is writable, then try again.",
@@ -186,7 +186,7 @@ describe("App error handling integration", () => {
       });
 
       vi.spyOn(openNoteModule, "openNote").mockRejectedValue(
-        noteIOError(
+        vaultIOError(
           "open-note",
           "Could not open this note.",
           "The note file may be missing or unreadable. Try refreshing the folder.",

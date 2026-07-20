@@ -1,6 +1,6 @@
 import { applySpacePatch, type CustomSpace, type SpaceId, type SpacePatch } from "../../domain";
 import type { VaultSession } from "../vault-session";
-import { guardNoteIO } from "../errors";
+import { guardVaultIO } from "../errors";
 
 export async function updateSpace(
   session: VaultSession,
@@ -8,7 +8,7 @@ export async function updateSpace(
   patch: SpacePatch,
 ): Promise<CustomSpace | null> {
   const validated = applySpacePatch(patch);
-  return guardNoteIO(
+  return guardVaultIO(
     {
       operation: "update-space",
       module: "application/use-cases/update-space.ts",
