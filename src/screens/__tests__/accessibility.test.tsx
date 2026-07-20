@@ -44,6 +44,8 @@ const spaceItems: SpaceListItem[] = [
     colorId: "blue",
     description: "Project notes and planning",
     noteCount: 1,
+    createdAt: "2026-05-17T10:00:00.000Z",
+    updatedAt: "2026-07-20T09:00:00.000Z",
   },
 ];
 
@@ -167,7 +169,8 @@ describe("accessibility", () => {
         onSpacesChange={vi.fn()}
         onCreateSpace={vi.fn().mockResolvedValue(null)}
         onDelete={vi.fn()}
-        savedAt={null}
+        createdAt="2026-05-17T10:00:00.000Z"
+        updatedAt="2026-07-20T09:00:00.000Z"
       />,
     );
     expect(await axe(container)).toHaveNoViolations();

@@ -33,6 +33,8 @@ describe("create-space", () => {
 
     expect(space.name).toBe("Work");
     expect(space.description).toBeUndefined();
+    expect(space.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(space.updatedAt).toBe(space.createdAt);
     session.dispose();
   });
 
@@ -59,6 +61,8 @@ describe("update-space", () => {
     const recolored = await updateSpace(session, space.id, { colorId: "red" });
     expect(recolored?.description).toBe("context");
     expect(recolored?.colorId).toBe("red");
+    expect(recolored?.createdAt).toBe(space.createdAt);
+    expect(recolored?.updatedAt).toBeTruthy();
 
     const cleared = await updateSpace(session, space.id, { description: null });
     expect(cleared?.description).toBeUndefined();

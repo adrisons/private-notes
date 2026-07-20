@@ -15,6 +15,8 @@ export interface Space {
 export interface CustomSpace extends Space {
   readonly colorId: SpaceColorId;
   readonly description?: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
 }
 
 export function isCustomSpaceId(id: SpaceId): boolean {

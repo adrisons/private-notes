@@ -49,6 +49,8 @@ export interface OpenNoteState {
   id: string;
   title: string;
   body: string;
+  createdAt: string;
+  updatedAt: string;
   savedAt: string | null;
   spaceIds: SpaceId[];
 }
@@ -60,6 +62,8 @@ export interface SpaceListItem {
   colorId: SpaceColorId | null;
   description: string | null;
   noteCount: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /** Command palette semantic hit — one row per note. */
@@ -123,6 +127,8 @@ export function toOpenNoteState(note: Note, savedAt: string | null): OpenNoteSta
     id: note.id,
     title: note.title,
     body: note.body,
+    createdAt: note.createdAt,
+    updatedAt: note.updatedAt,
     savedAt,
     spaceIds: note.spaceIds,
   };
@@ -183,6 +189,8 @@ export function buildSpaceListItems(
     colorId: space.colorId,
     description: space.description ?? null,
     noteCount: counts.get(space.id) ?? 0,
+    createdAt: space.createdAt,
+    updatedAt: space.updatedAt,
   }));
 
   return [general, ...custom];

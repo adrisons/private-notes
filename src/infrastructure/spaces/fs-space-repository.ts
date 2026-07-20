@@ -22,6 +22,8 @@ function toCustomSpace(record: SpaceRecord): CustomSpace {
     id: spaceId(record.id),
     name: record.name,
     colorId: parseSpaceColorId(record.colorId),
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
     ...(record.description ? { description: record.description } : null),
   };
 }

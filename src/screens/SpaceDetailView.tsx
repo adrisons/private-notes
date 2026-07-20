@@ -24,6 +24,7 @@ import {
   type SpaceId,
   type SpacePatch,
 } from "../application/view-models";
+import { DetailTimestamps } from "./DetailTimestamps";
 import { ColorSwatchPicker } from "./ColorSwatchPicker";
 import { NoteListRow } from "./NoteListRow";
 
@@ -53,7 +54,6 @@ export function SpaceDetailView({
   const [colorId, setColorId] = useState<SpaceColorId>(
     (space.colorId ?? "blue") as SpaceColorId,
   );
-  const [savedAt, setSavedAt] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const titleRef = useRef<HTMLTextAreaElement>(null);
@@ -64,7 +64,6 @@ export function SpaceDetailView({
     setName(space.name);
     setDescription(space.description ?? "");
     setColorId((space.colorId ?? "blue") as SpaceColorId);
-    setSavedAt(null);
     // Reset draft only when opening a different space, not after each autosave refresh.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
   }, [space.id]);
@@ -97,7 +96,6 @@ export function SpaceDetailView({
       setIsSaving(true);
       try {
         await onUpdateSpace(id, patch);
-        setSavedAt(new Date().toISOString());
       } finally {
         inFlightRef.current -= 1;
         setIsSaving(
@@ -155,30 +153,21 @@ export function SpaceDetailView({
     ? description
     : space.description ?? GENERAL_SPACE_DESCRIPTION;
 
-  const saveStatus = isSaving
-    ? "Saving…"
-    : savedAt
-      ? `Saved ${new Date(savedAt).toLocaleTimeString()}`
-      : "";
-
   return (
     <div className="u-content-column py-8 sm:py-10">
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          {custom ? (
-            <>
-              <span
-                aria-live="polite"
-                aria-atomic="true"
-                className="mr-auto text-xs font-medium text-[var(--foreground-muted)]"
-              >
-                {saveStatus}
-              </span>
-              <Button size="sm" variant="danger" onClick={onDelete}>
-                Delete
-              </Button>
-            </>
-          ) : null}
-        </div>
+        {custom && space.createdAt && space.updatedAt ? (
+          <div className="flex items-start gap-3">
+            <DetailTimestamps
+              createdAt={space.createdAt}
+              updatedAt={space.updatedAt}
+              isSaving={isSaving}
+              className="min-w-0 flex-1"
+            />
+            <Button size="sm" variant="danger" onClick={onDelete} className="shrink-0">
+              Delete
+            </Button>
+          </div>
+        ) : null}
 
         {custom ? (
           <div className="mt-4 space-y-4">

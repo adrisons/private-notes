@@ -71,7 +71,15 @@ describe("useVaultSession", () => {
       session,
       startup: {
         summaries: [{ id: noteId("n1"), title: "Hello", updatedAt: "2026-05-17T10:00:00.000Z" }],
-        current: { id: "n1", title: "Hello", body: "Body", savedAt: null },
+        current: {
+          id: "n1",
+          title: "Hello",
+          body: "Body",
+          createdAt: "2026-05-17T10:00:00.000Z",
+          updatedAt: "2026-05-17T10:00:00.000Z",
+          savedAt: null,
+          spaceIds: [],
+        },
       },
     });
 

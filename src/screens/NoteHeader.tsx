@@ -7,6 +7,7 @@ import type {
   SpaceId,
   SpaceListItem,
 } from "../application/view-models";
+import { DetailTimestamps } from "./DetailTimestamps";
 import { SpaceTagsEditor } from "./SpaceTagsEditor";
 
 interface NoteHeaderProps {
@@ -21,7 +22,8 @@ interface NoteHeaderProps {
     description?: string;
   }) => Promise<SpaceId | null>;
   onDelete: () => void;
-  savedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
   isSaving?: boolean;
 }
 
@@ -33,7 +35,8 @@ export function NoteHeader({
   onSpacesChange,
   onCreateSpace,
   onDelete,
-  savedAt,
+  createdAt,
+  updatedAt,
   isSaving = false,
 }: NoteHeaderProps) {
   const titleRef = useRef<HTMLTextAreaElement>(null);
@@ -61,25 +64,18 @@ export function NoteHeader({
     return () => observer.disconnect();
   }, [title]);
 
-  const saveStatus = isSaving
-    ? "Saving…"
-    : savedAt
-      ? `Saved ${new Date(savedAt).toLocaleTimeString()}`
-      : "";
-
   return (
     // Full width of its container: the title is the page, not a card in it.
     // Left padding matches the toolbar and the editor body so the three line up.
     <div className="u-content-column w-full pt-8 sm:pt-10">
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        <span
-          aria-live="polite"
-          aria-atomic="true"
-          className="mr-auto text-xs font-medium text-[var(--foreground-muted)]"
-        >
-          {saveStatus}
-        </span>
-        <Button size="sm" variant="danger" onClick={onDelete}>
+      <div className="flex items-start gap-3">
+        <DetailTimestamps
+          createdAt={createdAt}
+          updatedAt={updatedAt}
+          isSaving={isSaving}
+          className="min-w-0 flex-1"
+        />
+        <Button size="sm" variant="danger" onClick={onDelete} className="shrink-0">
           Delete
         </Button>
       </div>

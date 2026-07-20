@@ -34,7 +34,10 @@ export async function ensureSpacesFile(
 interface SpacesStorageContext {
   root: FileSystemDirectoryHandle;
   newId?: () => string;
+  now?: () => Date;
 }
+
+const nowDefault = () => new Date();
 
 export async function listSpaceRecords(
   io: SpacesStorageContext,
@@ -58,10 +61,13 @@ export async function createSpaceRecord(
   input: CreateSpaceRecordInput,
 ): Promise<SpacesIndex["spaces"][number]> {
   const id = (io.newId ?? ulid)();
+  const iso = (io.now ?? nowDefault)().toISOString();
   const record = {
     id,
     name: input.name,
     colorId: input.colorId,
+    createdAt: iso,
+    updatedAt: iso,
     ...(input.description ? { description: input.description } : null),
   };
   await withIndexLock(async () => {
@@ -94,6 +100,7 @@ export async function updateSpaceRecord(
       ...current,
       ...(patch.name !== undefined ? { name: patch.name } : null),
       ...(patch.colorId !== undefined ? { colorId: patch.colorId } : null),
+      updatedAt: (io.now ?? nowDefault)().toISOString(),
     };
     if (patch.description !== undefined) {
       if (patch.description === null) delete next.description;

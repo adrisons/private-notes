@@ -279,7 +279,8 @@ export function App() {
             onSpacesChange={note.onSpacesChange}
             onCreateSpace={spaces.createSpace}
             onDelete={() => requestDelete()}
-            savedAt={vault.current.savedAt}
+            createdAt={vault.current.createdAt}
+            updatedAt={vault.current.updatedAt}
             isSaving={note.isSaving}
           />
           <div className="flex-1">

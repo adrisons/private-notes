@@ -33,6 +33,8 @@ function isSpaceRecord(v: unknown): v is SpaceRecord {
     return false;
   }
   if (v.description !== undefined && !isString(v.description)) return false;
+  if (v.createdAt !== undefined && !isString(v.createdAt)) return false;
+  if (v.updatedAt !== undefined && !isString(v.updatedAt)) return false;
   return true;
 }
 

@@ -1,9 +1,9 @@
 import { readText, writeText, fileExists, listFilesRecursive } from "../fs/handle";
 import { PATHS, SCHEMA_VERSION, type Manifest, type NoteRecord } from "../fs/schema";
 import { buildEmptyIndex } from "../fs/manifest";
-import { parseNoteIndex } from "../fs/validate";
+import { parseNoteIndex, parseSpacesIndex } from "../fs/validate";
 import { parseJson } from "../../lib/validate";
-import { ensureSpacesFile } from "../spaces/storage";
+import { ensureSpacesFile, buildEmptySpacesIndex } from "../spaces/storage";
 import { migrateLegacySpaceField } from "../../domain";
 import { parseNote, serializeNote } from "../../domain/note/frontmatter";
 
@@ -104,6 +104,51 @@ async function migrateSpaceFields(root: FileSystemDirectoryHandle): Promise<void
   }
 }
 
+async function migrateSpaceTimestamps(
+  root: FileSystemDirectoryHandle,
+  migrationTime: string,
+): Promise<void> {
+  if (!(await fileExists(root, PATHS.spaces))) return;
+  const text = await readText(root, PATHS.spaces);
+  const index = parseSpacesIndex(parseJson(text, PATHS.spaces), PATHS.spaces);
+  let changed = false;
+  const spaces = index.spaces.map((space) => {
+    if (space.createdAt && space.updatedAt) return space;
+    changed = true;
+    return {
+      ...space,
+      createdAt: space.createdAt ?? migrationTime,
+      updatedAt: space.updatedAt ?? migrationTime,
+    };
+  });
+  if (!changed && index.version >= SCHEMA_VERSION) return;
+  await writeText(
+    root,
+    PATHS.spaces,
+    JSON.stringify({ version: SCHEMA_VERSION, spaces }, null, 2),
+  );
+}
+
+async function bumpSpacesVersion(root: FileSystemDirectoryHandle): Promise<void> {
+  if (!(await fileExists(root, PATHS.spaces))) {
+    await writeText(
+      root,
+      PATHS.spaces,
+      JSON.stringify(buildEmptySpacesIndex(), null, 2),
+    );
+    return;
+  }
+  const text = await readText(root, PATHS.spaces);
+  const index = parseSpacesIndex(parseJson(text, PATHS.spaces), PATHS.spaces);
+  if (index.version < SCHEMA_VERSION) {
+    await writeText(
+      root,
+      PATHS.spaces,
+      JSON.stringify({ ...index, version: SCHEMA_VERSION }, null, 2),
+    );
+  }
+}
+
 async function bumpIndexVersion(root: FileSystemDirectoryHandle): Promise<void> {
   if (!(await fileExists(root, PATHS.index))) {
     await writeText(
@@ -152,6 +197,17 @@ export async function migrateVaultIfNeeded(
   if (current.version === 2) {
     await migrateSpaceFields(root);
     await bumpIndexVersion(root);
+    current = {
+      ...current,
+      version: 3,
+    };
+    await writeText(root, PATHS.manifest, JSON.stringify(current, null, 2));
+  }
+
+  if (current.version === 3) {
+    const migrationTime = new Date().toISOString();
+    await migrateSpaceTimestamps(root, migrationTime);
+    await bumpSpacesVersion(root);
     current = {
       ...current,
       version: SCHEMA_VERSION,

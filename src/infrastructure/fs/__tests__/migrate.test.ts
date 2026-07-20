@@ -60,4 +60,38 @@ Body`,
     expect(parsed.frontmatter.spaceIds).toBe("01SPACE123");
     expect(parsed.body).toBe("Body");
   });
+
+  it("backfills space timestamps when upgrading from v3 to v4", async () => {
+    const root = makeFakeRoot();
+    const manifest = { ...buildManifest(), version: 3 };
+
+    await writeText(root, PATHS.manifest, JSON.stringify(manifest, null, 2));
+    await writeText(
+      root,
+      PATHS.spaces,
+      JSON.stringify(
+        {
+          version: 3,
+          spaces: [
+            {
+              id: "01SPACE123",
+              name: "Work",
+              colorId: "blue",
+              description: "Context",
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+
+    const result = await migrateVaultIfNeeded(root, manifest);
+    expect(result.version).toBe(SCHEMA_VERSION);
+
+    const spaces = JSON.parse(await readText(root, PATHS.spaces));
+    expect(spaces.version).toBe(SCHEMA_VERSION);
+    expect(spaces.spaces[0].createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(spaces.spaces[0].updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
 });

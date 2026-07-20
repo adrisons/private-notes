@@ -4,7 +4,7 @@
  * See docs/adr/008-schema-compatibility.md
  */
 export const APP_SIGNATURE = "private-notes" as const;
-export const SCHEMA_VERSION = 3 as const;
+export const SCHEMA_VERSION = 4 as const;
 
 export const PATHS = {
   meta: ".private-notes",
@@ -43,6 +43,8 @@ export interface SpaceRecord {
   name: string;
   colorId: string;
   description?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SpacesIndex {

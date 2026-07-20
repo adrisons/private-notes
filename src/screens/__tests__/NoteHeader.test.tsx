@@ -20,6 +20,8 @@ const headerProps = {
   onSpacesChange: vi.fn(),
   onCreateSpace: vi.fn(async () => null),
   onDelete: vi.fn(),
+  createdAt: "2026-05-17T10:00:00.000Z",
+  updatedAt: "2026-07-20T09:00:00.000Z",
 };
 
 /**
@@ -33,7 +35,6 @@ describe("NoteHeader", () => {
         title="Welcome"
         {...headerProps}
         onTitleChange={onTitleChange}
-        savedAt={null}
       />,
     );
     return { field: screen.getByLabelText("Note title"), onTitleChange };
@@ -59,27 +60,35 @@ describe("NoteHeader", () => {
     expect(onTitleChange).not.toHaveBeenCalled();
   });
 
-  it("announces saving and saved states", () => {
+  it("shows created and edited timestamps", () => {
+    setup();
+    expect(screen.getByText(/created/i)).toBeInTheDocument();
+    expect(screen.getByText(/edited/i)).toBeInTheDocument();
+  });
+
+  it("shows saving in place of the edited timestamp", () => {
     const { rerender } = render(
       <NoteHeader
         title="Welcome"
         {...headerProps}
         onTitleChange={vi.fn()}
-        savedAt={null}
         isSaving
       />,
     );
     expect(screen.getByText("Saving…")).toBeInTheDocument();
+    expect(screen.queryByText(/edited/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/created/i)).toBeInTheDocument();
 
     rerender(
       <NoteHeader
         title="Welcome"
         {...headerProps}
         onTitleChange={vi.fn()}
-        savedAt="2026-05-17T12:00:00Z"
+        updatedAt="2026-07-21T12:00:00Z"
         isSaving={false}
       />,
     );
-    expect(screen.getByText(/saved/i)).toBeInTheDocument();
+    expect(screen.getByText(/edited/i)).toBeInTheDocument();
+    expect(screen.queryByText(/saved/i)).not.toBeInTheDocument();
   });
 });

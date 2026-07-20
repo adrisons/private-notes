@@ -15,6 +15,11 @@ const NOTE = {
   spaceIds: [],
 };
 
+const NOTE_TIMESTAMPS = {
+  createdAt: "2026-05-17T10:00:00.000Z",
+  updatedAt: "2026-05-17T10:00:00.000Z",
+};
+
 function buildSession(overrides: Partial<VaultSession> = {}): VaultSession {
   return {
     saveNote: vi.fn().mockResolvedValue({
@@ -22,6 +27,7 @@ function buildSession(overrides: Partial<VaultSession> = {}): VaultSession {
         id: "n1",
         title: "Draft",
         body: "Hello",
+        ...NOTE_TIMESTAMPS,
         savedAt: "2026-05-17T10:00:00.000Z",
         spaceIds: [],
       },
@@ -32,6 +38,7 @@ function buildSession(overrides: Partial<VaultSession> = {}): VaultSession {
       id: "n2",
       title: "Other",
       body: "Other body",
+      ...NOTE_TIMESTAMPS,
       savedAt: null,
       spaceIds: [],
     }),
@@ -80,6 +87,7 @@ describe("useCurrentNote", () => {
       id: "n1",
       title: "Draft",
       body: "Hello",
+      ...NOTE_TIMESTAMPS,
       savedAt: null,
       spaceIds: [],
     };
@@ -104,6 +112,7 @@ describe("useCurrentNote", () => {
       id: "n1",
       title: "Draft",
       body: "Hello",
+      ...NOTE_TIMESTAMPS,
       savedAt: null,
       spaceIds: [],
     };
@@ -124,6 +133,7 @@ describe("useCurrentNote", () => {
       id: "n1",
       title: "Draft",
       body: "Hello",
+      ...NOTE_TIMESTAMPS,
       savedAt: null,
       spaceIds: [],
     };
@@ -143,6 +153,7 @@ describe("useCurrentNote", () => {
       id: "n2",
       title: "Other",
       body: "Other body",
+      ...NOTE_TIMESTAMPS,
       savedAt: null,
       spaceIds: [],
     });
@@ -154,6 +165,7 @@ describe("useCurrentNote", () => {
       id: "n1",
       title: "Draft",
       body: "Hello",
+      ...NOTE_TIMESTAMPS,
       savedAt: null,
       spaceIds: [],
     };
@@ -181,6 +193,7 @@ describe("useCurrentNote", () => {
       id: "n1",
       title: "Draft",
       body: "Hello",
+      ...NOTE_TIMESTAMPS,
       savedAt: null,
       spaceIds: [],
     };

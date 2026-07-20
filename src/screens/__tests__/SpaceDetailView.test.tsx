@@ -11,6 +11,8 @@ const workSpace: SpaceListItem = {
   colorId: "red",
   description: "This is the description",
   noteCount: 1,
+  createdAt: "2026-05-17T10:00:00.000Z",
+  updatedAt: "2026-07-20T09:00:00.000Z",
 };
 
 const generalSpace: SpaceListItem = {
@@ -61,6 +63,8 @@ describe("SpaceDetailView", () => {
       screen.getByRole("textbox", { name: /space description/i }),
     ).toHaveValue("This is the description");
     expect(screen.queryByRole("button", { name: /^edit$/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/created/i)).toBeInTheDocument();
+    expect(screen.getByText(/edited/i)).toBeInTheDocument();
 
     await user.clear(screen.getByRole("textbox", { name: /space name/i }));
     await user.type(
@@ -124,9 +128,9 @@ describe("SpaceDetailView", () => {
     );
 
     expect(screen.getByRole("heading", { name: "General" })).toBeInTheDocument();
-    expect(
-      screen.getByText("Notes without another space live here."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Notes without another space live here.")).toBeInTheDocument();
+    expect(screen.queryByText(/created/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/edited/i)).not.toBeInTheDocument();
     expect(screen.queryByText("General", { selector: "span" })).not.toBeInTheDocument();
   });
 });
