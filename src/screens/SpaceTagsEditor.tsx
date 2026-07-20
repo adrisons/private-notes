@@ -172,6 +172,7 @@ export function SpaceTagsEditor({
 
   const showMenu =
     open && query.length > 0 && (suggestions.length > 0 || query.trim().length > 0);
+  const suggestionsId = "space-tags-suggestions";
 
   return (
     <div ref={rootRef} className="relative">
@@ -179,6 +180,7 @@ export function SpaceTagsEditor({
         role="combobox"
         aria-expanded={showMenu}
         aria-haspopup="listbox"
+        aria-controls={showMenu ? suggestionsId : undefined}
         aria-label="Note spaces"
         onClick={() => inputRef.current?.focus()}
         className={cn(
@@ -201,6 +203,12 @@ export function SpaceTagsEditor({
           type="text"
           aria-autocomplete="list"
           aria-label="Add a space"
+          aria-controls={showMenu ? suggestionsId : undefined}
+          aria-activedescendant={
+            showMenu && suggestions.length > 0
+              ? `${suggestionsId}-option-${activeIndex}`
+              : undefined
+          }
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -236,25 +244,32 @@ export function SpaceTagsEditor({
             }
           }}
           placeholder={value.length === 0 ? undefined : "Add space…"}
-          className="u-focus min-w-[6rem] flex-1 border-0 bg-transparent py-1 text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--foreground-subtle)]"
+          className="min-w-[6rem] flex-1 border-0 bg-transparent py-1 text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--foreground-subtle)]"
         />
       </div>
       {showMenu ? (
         <ul
+          id={suggestionsId}
           role="listbox"
           aria-label="Space suggestions"
           className="absolute left-0 top-full z-40 mt-1 min-w-[12rem] overflow-hidden rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-raised)] py-1 shadow-[var(--shadow-overlay)]"
         >
           {suggestions.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-[var(--foreground-muted)]">
-              No matching spaces
+            <li role="presentation">
+              <div className="px-3 py-2 text-sm text-[var(--foreground-muted)]">
+                No matching spaces
+              </div>
             </li>
           ) : (
             suggestions.map((item, index) => {
               const active = index === activeIndex;
               return (
-                <li key={item.kind === "space" ? item.id : `create-${item.name}`}>
+                <li
+                  key={item.kind === "space" ? item.id : `create-${item.name}`}
+                  role="presentation"
+                >
                   <button
+                    id={`${suggestionsId}-option-${index}`}
                     type="button"
                     role="option"
                     aria-selected={active}

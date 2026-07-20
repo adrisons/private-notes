@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SpaceDetailView } from "../SpaceDetailView";
 import { GENERAL_SPACE_ID, spaceId } from "../../domain";
@@ -68,12 +68,16 @@ describe("SpaceDetailView", () => {
       "Work",
     );
 
-    await vi.advanceTimersByTimeAsync(600);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600);
+    });
 
-    expect(onUpdateSpace).toHaveBeenCalledWith(workSpace.id, {
-      name: "Work",
-      colorId: "red",
-      description: "This is the description",
+    await waitFor(() => {
+      expect(onUpdateSpace).toHaveBeenCalledWith(workSpace.id, {
+        name: "Work",
+        colorId: "red",
+        description: "This is the description",
+      });
     });
   });
 
@@ -95,12 +99,16 @@ describe("SpaceDetailView", () => {
     await user.clear(
       screen.getByRole("textbox", { name: /space description/i }),
     );
-    await vi.advanceTimersByTimeAsync(600);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600);
+    });
 
-    expect(onUpdateSpace).toHaveBeenCalledWith(
-      workSpace.id,
-      expect.objectContaining({ description: null }),
-    );
+    await waitFor(() => {
+      expect(onUpdateSpace).toHaveBeenCalledWith(
+        workSpace.id,
+        expect.objectContaining({ description: null }),
+      );
+    });
   });
 
   it("renders General without a chip badge", () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { ComponentProps } from "react";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NotesList } from "../NotesList";
 import { TOUCH_ACTIONS_MEDIA } from "../../lib/touch-actions";
@@ -67,6 +67,18 @@ function renderNotesList(
     onDuplicateNote: vi.fn(),
   };
   return render(<NotesList {...defaults} {...props} />);
+}
+
+async function settleNotesList() {
+  await act(async () => {
+    await Promise.resolve();
+  });
+}
+
+async function focusInAct(element: HTMLElement) {
+  await act(async () => {
+    element.focus();
+  });
 }
 
 function mockTouchActions(enabled: boolean) {
@@ -190,9 +202,10 @@ describe("NotesList", () => {
     const user = userEvent.setup();
     const onSelectNote = vi.fn();
     renderNotesList({ selectedNoteId: "a", onSelectNote });
+    await settleNotesList();
 
     const alpha = screen.getByRole("button", { name: /alpha note/i });
-    alpha.focus();
+    await focusInAct(alpha);
     await user.keyboard("{ArrowDown}");
     expect(screen.getByRole("button", { name: /beta note/i })).toHaveFocus();
     await user.keyboard("{Enter}");
@@ -203,8 +216,9 @@ describe("NotesList", () => {
     const user = userEvent.setup();
     const onDeleteNote = vi.fn();
     renderNotesList({ selectedNoteId: "a", onDeleteNote });
+    await settleNotesList();
 
-    screen.getByRole("button", { name: /alpha note/i }).focus();
+    await focusInAct(screen.getByRole("button", { name: /alpha note/i }));
     await user.keyboard("{Delete}");
     expect(onDeleteNote).toHaveBeenCalledWith("a");
   });
@@ -314,21 +328,22 @@ describe("NotesList", () => {
 
     await user.click(screen.getByRole("button", { name: /^select$/i }));
     const alpha = screen.getByRole("checkbox", { name: /select alpha note/i });
-    alpha.focus();
-    await act(async () => {
-      fireEvent.keyDown(screen.getByRole("list", { name: /^notes$/i }), {
-        key: "Escape",
-      });
+    await focusInAct(alpha);
+    await user.keyboard("{Escape}");
+    await waitFor(() => {
+      expect(screen.getByText("Notes")).toBeInTheDocument();
     });
-    expect(screen.getByText("Notes")).toBeInTheDocument();
   });
 
   it("toggles selection with Space in selection mode", async () => {
     const user = userEvent.setup();
     renderNotesList({ selectedNoteId: "a" });
+    await settleNotesList();
 
     await user.click(screen.getByRole("button", { name: /^select$/i }));
-    screen.getByRole("checkbox", { name: /select alpha note/i }).focus();
+    await focusInAct(
+      screen.getByRole("checkbox", { name: /select alpha note/i }),
+    );
     await user.keyboard(" ");
     expect(screen.getByText("1 selected")).toBeInTheDocument();
   });

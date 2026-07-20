@@ -228,7 +228,7 @@ export function CommandPalette({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={searchReady ? "Search or jump to…" : "Loading search…"}
-          className="rounded-none px-4 py-3.5 placeholder:text-[var(--foreground-muted)] focus-visible:!outline-none focus-visible:!outline-offset-0"
+          className="rounded-none px-4 py-3.5 placeholder:text-[var(--foreground-muted)]"
           aria-label="Search notes"
           aria-controls="command-palette-results"
           aria-activedescendant={

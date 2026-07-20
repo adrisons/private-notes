@@ -170,7 +170,7 @@ export const NoteListRow = forwardRef<HTMLButtonElement, NoteListRowProps>(
             swipeEnabled ? { transform: `translateX(${offset}px)` } : undefined
           }
           className={cn(
-            "u-swipe-panel gesture-annotate u-press u-lift u-focus w-full cursor-pointer overflow-hidden",
+            "u-swipe-panel gesture-annotate u-press u-lift u-focus-inset w-full cursor-pointer",
             "rounded-[var(--radius-md)] px-3.5 py-3 text-left max-md:min-h-[var(--hit-touch)]",
             "hover:bg-[var(--surface-raised)]",
             selectionMode &&

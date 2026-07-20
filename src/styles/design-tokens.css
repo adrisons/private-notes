@@ -25,6 +25,10 @@
   --duration-normal: 220ms; /* dropdowns, tooltips, chips */
   --duration-slow: 320ms; /* panels, drawers, layout shifts */
 
+  /* Focus ring (design.md §5) */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
   /* --- Radius (design.md §7) ---------------------------------------- */
   --radius-sm: 8px;
   --radius-md: 12px;

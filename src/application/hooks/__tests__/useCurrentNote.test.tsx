@@ -109,9 +109,10 @@ describe("useCurrentNote", () => {
     };
     const { result } = renderCurrentNote(session, current);
 
-    act(() => {
+    await act(async () => {
       result.current.onBodyChange("Updated");
       result.current.flushPersist();
+      await Promise.resolve();
     });
 
     expect(session.saveNote).toHaveBeenCalledWith("n1", "Draft", "Updated");

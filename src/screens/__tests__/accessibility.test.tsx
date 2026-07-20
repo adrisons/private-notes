@@ -1,20 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
-import { axe } from "vitest-axe";
+import type { ComponentProps } from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { configureAxe } from "vitest-axe";
 import { Welcome } from "../Welcome";
 import { NotesList } from "../NotesList";
 import { CommandPalette } from "../CommandPalette";
+import { SpaceDetailView } from "../SpaceDetailView";
+import { SpaceTagsEditor } from "../SpaceTagsEditor";
+import { NoteHeader } from "../NoteHeader";
 import { ConfirmDialog } from "../../ui/ConfirmDialog";
 import { VaultIndicator } from "../VaultIndicator";
-import type { NoteListItem } from "../../application/view-models";
-import { GENERAL_SPACE_ID } from "../../domain";
+import type { NoteListItem, SpaceListItem } from "../../application/view-models";
+import { GENERAL_SPACE_ID, spaceId, type SpaceId } from "../../domain";
+
+const workId = spaceId("01WORK000000000000000000");
 
 const notes: NoteListItem[] = [
   {
     id: "a",
     title: "Alpha note",
     updatedAt: "2026-05-17T12:00:00Z",
-    spaceIds: [],
+    spaceIds: [workId],
   },
   {
     id: "b",
@@ -24,15 +30,53 @@ const notes: NoteListItem[] = [
   },
 ];
 
-const spaceItems = [
+const spaceItems: SpaceListItem[] = [
   {
     id: GENERAL_SPACE_ID,
     name: "General",
     colorId: null,
     description: null,
-    noteCount: 2,
+    noteCount: 1,
+  },
+  {
+    id: workId,
+    name: "Work",
+    colorId: "blue",
+    description: "Project notes and planning",
+    noteCount: 1,
   },
 ];
+
+const workSpace = spaceItems[1];
+
+/** jsdom cannot evaluate contrast or pseudo-elements; tokens are checked separately. */
+const axe = configureAxe({
+  rules: {
+    "color-contrast": { enabled: false },
+  },
+});
+
+function notesListProps(
+  overrides: Partial<ComponentProps<typeof NotesList>> = {},
+) {
+  return {
+    notes,
+    spaceItems,
+    mode: "notes" as const,
+    onToggleMode: vi.fn(),
+    selectedNoteId: "a" as string | null,
+    selectedSpaceId: null as SpaceId | null,
+    onSelectNote: vi.fn(),
+    onSelectSpace: vi.fn(),
+    onCreateNote: vi.fn(),
+    onCreateSpace: vi.fn(),
+    onDeleteNote: vi.fn(),
+    onBulkDeleteNotes: vi.fn(),
+    onDeleteSpaces: vi.fn(),
+    onDuplicateNote: vi.fn(),
+    ...overrides,
+  };
+}
 
 describe("accessibility", () => {
   it("Welcome has no axe violations", async () => {
@@ -41,22 +85,89 @@ describe("accessibility", () => {
   });
 
   it("NotesList has no axe violations", async () => {
+    const { container } = render(<NotesList {...notesListProps()} />);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("NotesList in spaces mode has no axe violations", async () => {
     const { container } = render(
       <NotesList
+        {...notesListProps({
+          mode: "spaces",
+          selectedNoteId: null,
+          selectedSpaceId: workId,
+        })}
+      />,
+    );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("SpaceDetailView for a custom space has no axe violations", async () => {
+    const { container } = render(
+      <SpaceDetailView
+        space={workSpace}
         notes={notes}
         spaceItems={spaceItems}
-        mode="notes"
-        onToggleMode={vi.fn()}
-        selectedNoteId="a"
-        selectedSpaceId={null}
-        onSelectNote={vi.fn()}
-        onSelectSpace={vi.fn()}
-        onCreateNote={vi.fn()}
-        onCreateSpace={vi.fn()}
-        onDeleteNote={vi.fn()}
-        onBulkDeleteNotes={vi.fn()}
-        onDeleteSpaces={vi.fn()}
-        onDuplicateNote={vi.fn()}
+        onOpenNote={vi.fn()}
+        onUpdateSpace={vi.fn().mockResolvedValue(undefined)}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("SpaceDetailView for General has no axe violations", async () => {
+    const { container } = render(
+      <SpaceDetailView
+        space={spaceItems[0]}
+        notes={notes}
+        spaceItems={spaceItems}
+        onOpenNote={vi.fn()}
+        onUpdateSpace={vi.fn().mockResolvedValue(undefined)}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("SpaceTagsEditor has no axe violations", async () => {
+    const { container } = render(
+      <SpaceTagsEditor
+        spaces={spaceItems}
+        value={[workId]}
+        onChange={vi.fn()}
+        onCreateSpace={vi.fn().mockResolvedValue(null)}
+      />,
+    );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("SpaceTagsEditor with suggestions open has no axe violations", async () => {
+    const { container } = render(
+      <SpaceTagsEditor
+        spaces={spaceItems}
+        value={[]}
+        onChange={vi.fn()}
+        onCreateSpace={vi.fn().mockResolvedValue(null)}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Add a space"), {
+      target: { value: "Work" },
+    });
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("NoteHeader with spaces has no axe violations", async () => {
+    const { container } = render(
+      <NoteHeader
+        title="Alpha note"
+        spaceIds={[workId]}
+        spaces={spaceItems}
+        onTitleChange={vi.fn()}
+        onSpacesChange={vi.fn()}
+        onCreateSpace={vi.fn().mockResolvedValue(null)}
+        onDelete={vi.fn()}
+        savedAt={null}
       />,
     );
     expect(await axe(container)).toHaveNoViolations();

@@ -580,16 +580,28 @@ html[data-theme-transition] *::after {
   box-shadow: var(--shadow-rest);
 }
 
-/* Focus is always visible, and always the ring token (§6). */
+/*
+ * Focus is always visible, and always the ring token (§6). Outline follows
+ * border-radius in Chromium and does not replace resting box-shadow stacks.
+ */
 .u-focus:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: var(--focus-ring-offset);
 }
 
 /* For controls whose real input is visually hidden (e.g. a file picker). */
 .u-focus-within:focus-within {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * Inset ring for controls inside overflow:hidden rows (note/space list). The
+ * curve matches border-radius and the ring is not clipped by the row.
+ */
+.u-focus-inset:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 var(--focus-ring-width) var(--ring);
 }
 
 /* Skip link: hidden until focused (WCAG 2.4.1). */
@@ -618,6 +630,8 @@ html[data-theme-transition] *::after {
   font-weight: 500;
   text-decoration: none;
   box-shadow: var(--shadow-overlay);
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: var(--focus-ring-offset);
 }
 } /* @layer components */
 
@@ -848,8 +862,8 @@ html[data-theme-transition] *::after {
 
 .prose-like .attachment-figure--selected,
 .prose-like .attachment-figure.ProseMirror-selectednode {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .prose-like .attachment-figure img {

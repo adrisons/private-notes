@@ -71,7 +71,7 @@ export const SpaceListRow = forwardRef<HTMLButtonElement, SpaceListRowProps>(
             if (!selectionMode) onSelect();
           }}
           className={cn(
-            "gesture-annotate u-press u-lift u-focus h-full w-full cursor-pointer overflow-hidden",
+            "gesture-annotate u-press u-lift u-focus-inset h-full w-full cursor-pointer",
             "rounded-[var(--radius-md)] px-3.5 py-3 text-left max-md:min-h-[var(--hit-touch)]",
             "hover:bg-[var(--surface-raised)]",
             selectionMode &&

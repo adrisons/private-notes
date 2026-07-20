@@ -111,6 +111,9 @@ describe("useVaultSession", () => {
   });
 
   it("surfaces picker errors", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     mocks.pick.mockRejectedValue(new Error("Permission denied"));
 
     const { result } = renderHook(() => useVaultSession());
@@ -124,6 +127,7 @@ describe("useVaultSession", () => {
     expect(result.current.error).toBe(
       "Permission denied Try again. If it keeps failing, reopen the folder.",
     );
+    consoleError.mockRestore();
   });
 
   it("refreshSummaries reloads note items from the active session", async () => {
