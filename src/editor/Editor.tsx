@@ -68,7 +68,7 @@ export function Editor({
         // Left-aligned, not centered: the body shares the note header's left
         // edge. `--measure` still caps the line length for readability.
         class:
-          "prose-like u-focus px-5 sm:px-6 py-8 max-w-[var(--measure)] min-h-[60vh]",
+          "prose-like outline-none px-5 sm:px-6 py-8 max-w-[var(--measure)] min-h-[60vh]",
       },
       handleDrop(view, event, _slice, moved) {
         if (moved || !onUploadImageRef.current) return false;

@@ -395,7 +395,8 @@ export function EditorToolbar({ editor, onPickImage }: ToolbarProps) {
           {/*
             Touch devices cannot hover, so the clamp needs an explicit control.
             It lives outside the clipped box: anything inside would be hidden by
-            the very clamp it is meant to open.
+            the very clamp it is meant to open. Narrow desktop windows keep hover
+            and use `.u-clamp-toggle`, not `.u-touch-only`.
           */}
           {clamped ? (
             <Tooltip label={expanded ? "Fewer controls" : "More controls"}>
@@ -409,8 +410,8 @@ export function EditorToolbar({ editor, onPickImage }: ToolbarProps) {
                     ? "Show fewer formatting controls"
                     : "Show more formatting controls"
                 }
-                // Touch-only affordance: pointer devices unroll on hover.
-                className="gesture-more u-touch-only u-press u-focus m-1.5 h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-full)] text-[var(--foreground-muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-soft-foreground)]"
+                // Only when hover cannot unroll the clamp — not on narrow desktop.
+                className="gesture-more u-clamp-toggle u-press u-focus m-1.5 h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-full)] text-[var(--foreground-muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-soft-foreground)]"
               >
                 <ChevronIcon />
               </button>

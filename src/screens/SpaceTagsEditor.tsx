@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { SpaceChip } from "../ui/SpaceChip";
 import { spaceChipStyle } from "../ui/space-colors";
 import { cn } from "../lib/cn";
+import { inlineFieldBorderClass } from "../lib/inline-outline-field";
 import {
   addSpaceId,
   isGeneralSpaceId,
@@ -58,7 +59,7 @@ function TagChip({
             event.stopPropagation();
             onRemove();
           }}
-          className="u-focus inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-[var(--radius-full)] text-[inherit] opacity-70 hover:opacity-100"
+          className="u-focus inline-flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-full)] text-[inherit] opacity-70 hover:opacity-100"
         >
           ×
         </button>
@@ -185,9 +186,9 @@ export function SpaceTagsEditor({
         onClick={() => inputRef.current?.focus()}
         className={cn(
           "u-focus-within flex min-h-11 flex-wrap items-center gap-1.5",
-          "rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-raised)]",
+          "rounded-[var(--radius-md)] bg-[var(--surface-raised)]",
           "px-2 py-1.5 shadow-[var(--shadow-rest)]",
-          "hover:border-[var(--border-strong)]",
+          inlineFieldBorderClass,
         )}
       >
         {displayChips.map((chip) => (

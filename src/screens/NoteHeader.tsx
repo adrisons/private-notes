@@ -1,4 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
+import { inlineOutlineFieldClass } from "../lib/inline-outline-field";
+import { cn } from "../lib/cn";
 import { Button } from "../ui/Button";
 import type {
   SpaceColorId,
@@ -92,7 +94,10 @@ export function NoteHeader({
         }}
         placeholder="Untitled"
         aria-label="Note title"
-        className="u-focus mt-4 w-full resize-none overflow-hidden break-words bg-transparent text-3xl font-semibold tracking-tight placeholder:text-[var(--foreground-subtle)]"
+        className={cn(
+          inlineOutlineFieldClass,
+          "u-focus mt-4 w-full resize-none overflow-hidden break-words text-3xl font-semibold tracking-tight placeholder:text-[var(--foreground-subtle)]",
+        )}
       />
       <div className="relative z-30 mt-3 pb-1">
         <SpaceTagsEditor

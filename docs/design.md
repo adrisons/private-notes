@@ -328,12 +328,15 @@ and note list — into a **top bar with a disclosure control** (`AppShell`):
   a tapped element keeps `:hover` stuck afterwards. Anything that unrolls on
   hover also ships an explicit control with `aria-expanded` — the toolbar's
   expand toggle — and the hover rule itself is wrapped in
-  `@media (hover: hover)` so the two never fight. For the same reason,
-  pointer tooltips only open for `pointerType === "mouse"`.
+  `@media (hover: hover)` so the two never fight. The toggle uses
+  `.u-clamp-toggle` (`(hover: none)` only): a narrow desktop window still has
+  hover, so showing the button there would fight the hover unroll. For the same
+  reason, pointer tooltips only open for `pointerType === "mouse"`.
 - **Touch-only affordances key off capability, not width** (`.u-touch-only`
   = `(hover: none)` or a narrow window). A touch tablet sits above the `md`
-  breakpoint, so a width-only rule would hide the control from exactly the
-  devices that need it.
+  breakpoint, so a width-only rule would hide swipe actions from exactly the
+  devices that need them. The toolbar expand control is the exception — see
+  `.u-clamp-toggle` above.
 - **`:focus-within` belongs to the collapsible region, never to a wrapper
   that also contains its toggle** — the toggle would hold the region open
   against the button that just asked it to close.
@@ -363,6 +366,7 @@ transitions:
 | `.u-glow` | Loading text sweep |
 | `.u-disclosure` | Grid-row expand/collapse (`data-open`) |
 | `.u-clamp-host` / `.u-clamp-row` / `.u-clamp-spacer` | Measured toolbar clamp. The padding belongs to the clipping row, so zoomed controls and focus rings are not cut off |
+| `.u-clamp-toggle` | Toolbar expand button — `(hover: none)` only |
 | `.u-tooltip-anchor` / `.u-tooltip` / `.u-tooltip-shortcut` | Tooltip bubble (see §5) |
 | `.u-touch-only` | Shown only where hover is unavailable, or on narrow windows |
 | `.gesture-*` | Signature gestures (see §4.7) |

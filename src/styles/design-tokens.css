@@ -147,15 +147,15 @@ html[data-theme="dark"] {
   --success: #6dc99a;
   --warning: #dfae6a;
 
-  --chip-blue-bg: #1e2a40;
+  --chip-blue-bg: #2f4568;
   --chip-blue-fg: #a8c6f5;
-  --chip-green-bg: #1c3128;
+  --chip-green-bg: #2b4a3a;
   --chip-green-fg: #92d6ae;
-  --chip-amber-bg: #382a17;
+  --chip-amber-bg: #45341f;
   --chip-amber-fg: #e8bf85;
-  --chip-red-bg: #3b1f1c;
+  --chip-red-bg: #4a2d28;
   --chip-red-fg: #f3a89e;
-  --chip-purple-bg: #2b2440;
+  --chip-purple-bg: #3a3260;
   --chip-purple-fg: #c2b0f0;
 
   /* On dark, shadow alone does not read — the light hairline carries it. */
@@ -209,15 +209,15 @@ html[data-theme="dark"] {
     --success: #6dc99a;
     --warning: #dfae6a;
 
-    --chip-blue-bg: #1e2a40;
+    --chip-blue-bg: #2f4568;
     --chip-blue-fg: #a8c6f5;
-    --chip-green-bg: #1c3128;
+    --chip-green-bg: #2b4a3a;
     --chip-green-fg: #92d6ae;
-    --chip-amber-bg: #382a17;
+    --chip-amber-bg: #45341f;
     --chip-amber-fg: #e8bf85;
-    --chip-red-bg: #3b1f1c;
+    --chip-red-bg: #4a2d28;
     --chip-red-fg: #f3a89e;
-    --chip-purple-bg: #2b2440;
+    --chip-purple-bg: #3a3260;
     --chip-purple-fg: #c2b0f0;
 
     --shadow-rest:

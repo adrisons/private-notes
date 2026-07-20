@@ -428,6 +428,21 @@ html[data-theme-transition] *::after {
 }
 
 /*
+ * Toolbar clamp toggle — only where hover cannot unroll the row. Narrow
+ * desktop windows still have hover; the expand button there fights
+ * @media (hover: hover) and feels broken (design.md §7).
+ */
+.u-clamp-toggle {
+  display: none;
+}
+
+@media (hover: none) {
+  .u-clamp-toggle {
+    display: inline-flex;
+  }
+}
+
+/*
  * Swipe-to-reveal row actions in the note list (design.md §7). The panel
  * slides over coloured action buttons; only rendered on touch/narrow viewports.
  */

@@ -8,7 +8,9 @@ import {
 } from "react";
 import { Button } from "../ui/Button";
 import { VirtualList, NOTE_LIST_ROW_HEIGHT } from "../ui/VirtualList";
+import { cn } from "../lib/cn";
 import { formatRelative } from "../lib/format-relative";
+import { inlineOutlineFieldClass } from "../lib/inline-outline-field";
 import { useDebouncedCallback } from "../lib/useDebouncedCallback";
 import type { NoteListItem, SpaceListItem } from "../application/view-models";
 import {
@@ -192,7 +194,10 @@ export function SpaceDetailView({
               }}
               placeholder="Space name"
               aria-label="Space name"
-              className="u-focus w-full resize-none overflow-hidden break-words bg-transparent text-3xl font-semibold tracking-tight placeholder:text-[var(--foreground-subtle)]"
+              className={cn(
+                inlineOutlineFieldClass,
+                "u-focus w-full resize-none overflow-hidden break-words text-3xl font-semibold tracking-tight placeholder:text-[var(--foreground-subtle)]",
+              )}
             />
             {reservedName ? (
               <p className="text-xs text-[var(--foreground-muted)]">
@@ -227,7 +232,10 @@ export function SpaceDetailView({
               placeholder="Optional context for this space…"
               aria-label="Space description"
               rows={2}
-              className="u-focus w-full resize-none bg-transparent text-sm leading-relaxed text-[var(--foreground-muted)] placeholder:text-[var(--foreground-subtle)]"
+              className={cn(
+                inlineOutlineFieldClass,
+                "u-focus w-full resize-none text-sm leading-relaxed text-[var(--foreground-muted)] placeholder:text-[var(--foreground-subtle)]",
+              )}
             />
           </div>
         ) : (
