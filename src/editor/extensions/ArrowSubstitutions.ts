@@ -16,6 +16,23 @@ const ARROW_TO_SOURCE = Object.fromEntries(
 /** Characters that can extend an arrow digraph — revert rather than leave a lone glyph. */
 const REVERT_TRIGGERS = new Set(["-", "<", ">"]);
 
+function canSubstituteSuffix(text: string, suffix: string): boolean {
+  if (!text.endsWith(suffix)) return false;
+  const index = text.length - suffix.length;
+  if (index === 0) return true;
+  const before = text[index - 1]!;
+  switch (suffix) {
+    case "-->":
+      return before !== "-";
+    case "<--":
+      return before !== "-" && before !== "<";
+    case "<->":
+      return before !== "-" && before !== "<" && before !== ">";
+    default:
+      return true;
+  }
+}
+
 function isInCodeContext($pos: ResolvedPos): boolean {
   if ($pos.parent.type.spec.code) return true;
   return !!(($pos.nodeBefore ?? $pos.nodeAfter)?.marks.some((mark) => mark.type.spec.code));
@@ -24,8 +41,8 @@ function isInCodeContext($pos: ResolvedPos): boolean {
 /**
  * Typographic arrows typed as ASCII digraphs/trigraphs (`-->`, `<--`, `<->`).
  * Skipped automatically inside code blocks and inline code (TipTap input rules).
- * Typing `-`, `<`, or `>` immediately after an arrow expands it back to ASCII
- * so sequences like `----->` are not stuck behind a premature substitution.
+ * Typing `-`, `<`, or `>` immediately after an arrow expands it back to ASCII.
+ * `-->` is not substituted when preceded by `-` (e.g. `--->` stays literal).
  */
 export const ArrowSubstitutions = Extension.create({
   name: "arrowSubstitutions",
@@ -35,12 +52,11 @@ export const ArrowSubstitutions = Extension.create({
       new InputRule({
         find: (text) => {
           for (const { suffix } of ARROW_SUFFIXES) {
-            if (text.endsWith(suffix)) {
-              return {
-                index: text.length - suffix.length,
-                text: suffix,
-              };
-            }
+            if (!canSubstituteSuffix(text, suffix)) continue;
+            return {
+              index: text.length - suffix.length,
+              text: suffix,
+            };
           }
           return null;
         },

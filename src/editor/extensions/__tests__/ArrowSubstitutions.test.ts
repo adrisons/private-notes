@@ -68,6 +68,18 @@ describe("ArrowSubstitutions", () => {
     expect(paragraphText(editor)).toBe("-->");
   });
 
+  it("does not substitute arrow suffixes embedded in longer dash runs", () => {
+    editor = createEditor();
+    // Prefix avoids the standalone `---` horizontal-rule input rule.
+    typeText(editor, "x---->");
+    expect(paragraphText(editor)).toBe("x---->");
+
+    editor.destroy();
+    editor = createEditor();
+    typeText(editor, "x--->");
+    expect(paragraphText(editor)).toBe("x--->");
+  });
+
   it("expands an arrow when a sequence character is typed after it", () => {
     editor = createEditor();
     typeText(editor, "-->-");
