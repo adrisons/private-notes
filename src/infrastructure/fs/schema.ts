@@ -1,3 +1,5 @@
+import type { VaultIncompatibleCode } from "../../lib/validate";
+
 /**
  * Persistent schema for the on-disk vault. Bumping `SCHEMA_VERSION` is a
  * breaking change and requires either a migration or a refusal to open.
@@ -55,4 +57,4 @@ export interface SpacesIndex {
 export type ValidationResult =
   | { kind: "compatible"; manifest: Manifest }
   | { kind: "empty" }
-  | { kind: "incompatible"; reason: string };
+  | { kind: "incompatible"; code: VaultIncompatibleCode; reason: string };

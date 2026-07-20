@@ -8,8 +8,8 @@ import type { SpaceColorId } from "../application/view-models";
 export function spaceChipStyle(colorId: SpaceColorId | null): CSSProperties {
   if (colorId === null) {
     return {
-      backgroundColor: "var(--surface-sunken)",
-      color: "var(--foreground-muted)",
+      backgroundColor: "var(--chip-neutral-bg)",
+      color: "var(--chip-neutral-fg)",
     };
   }
   return {
@@ -22,6 +22,8 @@ export function spaceChipStyle(colorId: SpaceColorId | null): CSSProperties {
 export function spaceDotStyle(colorId: SpaceColorId | null): CSSProperties {
   return {
     backgroundColor:
-      colorId === null ? "var(--surface-sunken)" : `var(--chip-${colorId}-fg)`,
+      colorId === null
+        ? "var(--chip-neutral-fg)"
+        : `var(--chip-${colorId}-fg)`,
   };
 }

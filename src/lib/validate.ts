@@ -14,6 +14,23 @@
  *   invalid data so the entry is simply re-embedded (see ADR-004).
  */
 
+/** Why a folder cannot be opened as a private-notes vault. */
+export type VaultIncompatibleCode =
+  | "newer-app-version"
+  | "not-a-vault"
+  | "corrupt-manifest";
+
+/** Thrown when inspect/open refuses a folder before I/O proceeds. */
+export class VaultIncompatibleError extends Error {
+  readonly code: VaultIncompatibleCode;
+
+  constructor(code: VaultIncompatibleCode, reason: string) {
+    super(reason);
+    this.name = "VaultIncompatibleError";
+    this.code = code;
+  }
+}
+
 /** Thrown when a critical vault file fails validation. */
 export class VaultDataError extends Error {
   /** The vault-relative file that failed, for actionable messages. */

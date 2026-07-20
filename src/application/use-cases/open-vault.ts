@@ -5,7 +5,7 @@ import {
   defaultInfrastructure,
 } from "../composition";
 import type { InfrastructureDefaults } from "../composition";
-import { guardVaultIO } from "../errors";
+import { openVaultUserError, VaultIOError } from "../errors";
 import { VaultSession, type VaultStartup } from "../vault-session";
 import { resolveVaultStartup } from "./resolve-startup";
 
@@ -24,34 +24,33 @@ export async function openVault(
   options: OpenVaultOptions = {},
 ): Promise<OpenVaultResult> {
   const infra = options.infra ?? defaultInfrastructure;
+  const debug = {
+    operation: "open-vault",
+    module: "application/use-cases/open-vault.ts",
+    trace:
+      "openVault → vaultGateway.ensurePermission/open/reconcile → VaultSession.create → resolveVaultStartup",
+    fixHint:
+      "Check fs-vault-gateway.ts, ensureReadWritePermission, and vault layout validation in infrastructure/fs/vault.ts.",
+  };
 
-  return guardVaultIO(
-    {
-      operation: "open-vault",
-      module: "application/use-cases/open-vault.ts",
-      trace:
-        "openVault → vaultGateway.ensurePermission/open/reconcile → VaultSession.create → resolveVaultStartup",
-      fixHint:
-        "Check fs-vault-gateway.ts, ensureReadWritePermission, and vault layout validation in infrastructure/fs/vault.ts.",
-    },
-    "Could not open this folder.",
-    "Choose the folder again and grant read/write access when prompted.",
-    async () => {
-      await infra.vaultGateway.ensurePermission(handle);
-      await infra.vaultGateway.open(handle);
-      await infra.vaultGateway.reconcile(handle);
-      await infra.handleStore.persist(handle);
+  try {
+    await infra.vaultGateway.ensurePermission(handle);
+    await infra.vaultGateway.open(handle);
+    await infra.vaultGateway.reconcile(handle);
+    await infra.handleStore.persist(handle);
 
-      const session = VaultSession.create({
-        root: handle,
-        notes: createNoteRepository(handle),
-        spaces: createSpaceRepository(handle),
-        attachments: createAttachmentStore(handle),
-      });
-      const startup = await resolveVaultStartup(session);
-      return { session, startup };
-    },
-  );
+    const session = VaultSession.create({
+      root: handle,
+      notes: createNoteRepository(handle),
+      spaces: createSpaceRepository(handle),
+      attachments: createAttachmentStore(handle),
+    });
+    const startup = await resolveVaultStartup(session);
+    return { session, startup };
+  } catch (cause) {
+    const { message, fixHint } = openVaultUserError(cause);
+    throw new VaultIOError(message, debug, fixHint, cause);
+  }
 }
 
 export { defaultInfrastructure };

@@ -95,6 +95,9 @@ html[data-theme="light"] {
   --chip-red-fg: #9b2c22;
   --chip-purple-bg: #eee9fa;
   --chip-purple-fg: #58399c;
+  /* Built-in General space — neutral, readable on row surfaces and as a chip */
+  --chip-neutral-bg: #e4ddd4;
+  --chip-neutral-fg: #524a44;
 
   /* Stacked elevation — hairline ring + contact + ambient (design.md §7) */
   --shadow-rest:
@@ -161,6 +164,8 @@ html[data-theme="dark"] {
   --chip-red-fg: #f3a89e;
   --chip-purple-bg: #3a3260;
   --chip-purple-fg: #c2b0f0;
+  --chip-neutral-bg: #45403c;
+  --chip-neutral-fg: #d4ccc6;
 
   /* On dark, shadow alone does not read — the light hairline carries it. */
   --shadow-rest:
@@ -223,6 +228,8 @@ html[data-theme="dark"] {
     --chip-red-fg: #f3a89e;
     --chip-purple-bg: #3a3260;
     --chip-purple-fg: #c2b0f0;
+    --chip-neutral-bg: #45403c;
+    --chip-neutral-fg: #d4ccc6;
 
     --shadow-rest:
       0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.24),

@@ -48,7 +48,10 @@ describe("validateManifestJson", () => {
       version: SCHEMA_VERSION + 1,
       createdAt: "2026-05-17T10:00:00.000Z",
     });
-    expect(result).toMatchObject({ kind: "incompatible" });
+    expect(result).toMatchObject({
+      kind: "incompatible",
+      code: "newer-app-version",
+    });
   });
 
   it("rejects non-objects", () => {

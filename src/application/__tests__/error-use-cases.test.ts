@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { noteId } from "../../domain";
 import type { VaultSession } from "../vault-session";
+import { VaultIncompatibleError } from "../../lib/validate";
 import { BackgroundTaskError, resetErrorReportingForTests } from "../errors";
 import { createNote } from "../use-cases/create-note";
 import { saveNote } from "../use-cases/save-note";
@@ -83,7 +84,7 @@ describe("error use cases", () => {
     },
   );
 
-  it("open-vault wraps activation failures as VaultIOError", async () => {
+  it("open-vault wraps unknown activation failures as VaultIOError", async () => {
     const handle = {} as FileSystemDirectoryHandle;
     await expect(
       openVault(handle, {
@@ -105,6 +106,69 @@ describe("error use cases", () => {
       }),
     ).rejects.toMatchObject({
       message: "Could not open this folder.",
+      debug: { operation: "open-vault" },
+    });
+  });
+
+  it("open-vault surfaces newer schema versions to the user", async () => {
+    const handle = {} as FileSystemDirectoryHandle;
+    await expect(
+      openVault(handle, {
+        infra: {
+          vaultGateway: {
+            ensurePermission: vi.fn().mockResolvedValue(undefined),
+            hasPermission: vi.fn(),
+            open: vi.fn().mockRejectedValue(
+              new VaultIncompatibleError(
+                "newer-app-version",
+                "Vault was written by a newer app version (2).",
+              ),
+            ),
+            reconcile: vi.fn(),
+          },
+          handleStore: {
+            load: vi.fn(),
+            persist: vi.fn(),
+            clear: vi.fn(),
+          },
+          folderPicker: { pick: vi.fn() },
+          semanticSearchFactory: { create: vi.fn() },
+        },
+      }),
+    ).rejects.toMatchObject({
+      message: "This vault was created by a newer version of private-notes.",
+      fixHint: "Update the app, then open this folder again.",
+      debug: { operation: "open-vault" },
+    });
+  });
+
+  it("open-vault surfaces permission denials to the user", async () => {
+    const handle = {} as FileSystemDirectoryHandle;
+    await expect(
+      openVault(handle, {
+        infra: {
+          vaultGateway: {
+            ensurePermission: vi
+              .fn()
+              .mockRejectedValue(
+                new Error("Folder permission was not granted."),
+              ),
+            hasPermission: vi.fn(),
+            open: vi.fn(),
+            reconcile: vi.fn(),
+          },
+          handleStore: {
+            load: vi.fn(),
+            persist: vi.fn(),
+            clear: vi.fn(),
+          },
+          folderPicker: { pick: vi.fn() },
+          semanticSearchFactory: { create: vi.fn() },
+        },
+      }),
+    ).rejects.toMatchObject({
+      message: "Could not access this folder.",
+      fixHint: "Grant read/write access when the browser asks, then choose the folder again.",
       debug: { operation: "open-vault" },
     });
   });

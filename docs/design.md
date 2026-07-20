@@ -135,10 +135,11 @@ white, to cut halation. Exact values: `design-tokens.css`.
 
 ### 3.3 Chip colors
 
-A small set of muted chip tokens — `--chip-{blue,green,amber,red,purple}-{bg,fg}`
+A small set of muted chip tokens — `--chip-{blue,green,amber,red,purple,neutral}-{bg,fg}`
 — for tags, inline badges, search-match highlights, and **note spaces**. Chips are **tinted
 backgrounds with a readable foreground**, never saturated fills. Tokens exist;
 `SpaceChip` consumes them for space labels in the sidebar, command palette, and spaces overview.
+`neutral` is reserved for the built-in General space.
 
 ### 3.4 Contrast rules
 

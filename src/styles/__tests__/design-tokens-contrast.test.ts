@@ -47,4 +47,25 @@ describe("design token contrast", () => {
       AA_NORMAL,
     );
   });
+
+  it("keeps General space chip and dot readable (WCAG AA)", () => {
+    expect(contrastRatio("#524a44", "#e4ddd4")).toBeGreaterThanOrEqual(
+      AA_NORMAL,
+    );
+    expect(contrastRatio("#524a44", "#fbe9e1")).toBeGreaterThanOrEqual(
+      AA_NORMAL,
+    );
+    expect(contrastRatio("#524a44", "#ffffff")).toBeGreaterThanOrEqual(
+      AA_NORMAL,
+    );
+    expect(contrastRatio("#d4ccc6", "#45403c")).toBeGreaterThanOrEqual(
+      AA_NORMAL,
+    );
+    expect(contrastRatio("#d4ccc6", "#3a2119")).toBeGreaterThanOrEqual(
+      AA_NORMAL,
+    );
+    expect(contrastRatio("#d4ccc6", "#36322f")).toBeGreaterThanOrEqual(
+      AA_NORMAL,
+    );
+  });
 });

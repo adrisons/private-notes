@@ -1,5 +1,11 @@
 /** Typed application errors with user vs background classification. */
 
+import {
+  VaultDataError,
+  VaultIncompatibleError,
+  type VaultIncompatibleCode,
+} from "../lib/validate";
+
 export type AppErrorKind = "user" | "background";
 
 export type BackgroundTask = "reindex" | "attachment-cache" | "attachment-refs";
@@ -19,6 +25,57 @@ export interface ErrorDebugContext {
 export interface UserErrorPayload {
   message: string;
   fixHint: string;
+}
+
+const OPEN_VAULT_USER_ERRORS: Record<
+  VaultIncompatibleCode | "corrupt-data" | "permission-denied" | "generic",
+  UserErrorPayload
+> = {
+  "newer-app-version": {
+    message: "This vault was created by a newer version of private-notes.",
+    fixHint: "Update the app, then open this folder again.",
+  },
+  "not-a-vault": {
+    message: "This folder is not a private-notes vault.",
+    fixHint: "Choose an empty folder or one that already contains your notes.",
+  },
+  "corrupt-manifest": {
+    message: "The vault metadata in this folder looks damaged.",
+    fixHint:
+      "Check `.private-notes/manifest.json`, restore from a backup if you have one, or choose a different folder.",
+  },
+  "corrupt-data": {
+    message: "A vault file in this folder looks damaged.",
+    fixHint:
+      "Check `.private-notes/` in the folder, restore from a backup if you have one, or choose a different folder.",
+  },
+  "permission-denied": {
+    message: "Could not access this folder.",
+    fixHint:
+      "Grant read/write access when the browser asks, then choose the folder again.",
+  },
+  generic: {
+    message: "Could not open this folder.",
+    fixHint:
+      "Try again. If it keeps failing, choose the folder again and grant read/write access when prompted.",
+  },
+};
+
+/** Map open-vault infrastructure failures to user-facing copy. */
+export function openVaultUserError(cause: unknown): UserErrorPayload {
+  if (cause instanceof VaultIncompatibleError) {
+    return OPEN_VAULT_USER_ERRORS[cause.code];
+  }
+  if (cause instanceof VaultDataError) {
+    return OPEN_VAULT_USER_ERRORS["corrupt-data"];
+  }
+  if (
+    cause instanceof Error &&
+    cause.message === "Folder permission was not granted."
+  ) {
+    return OPEN_VAULT_USER_ERRORS["permission-denied"];
+  }
+  return OPEN_VAULT_USER_ERRORS.generic;
 }
 
 export class VaultError extends Error {

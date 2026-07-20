@@ -7,7 +7,7 @@ interface WelcomeProps {
 
 export function Welcome({ onPickFolder, disabledReason }: WelcomeProps) {
   return (
-    <section className="u-enter mx-auto flex h-full max-w-xl flex-col items-start justify-center gap-6 px-6">
+    <section className="u-enter mx-auto flex min-h-0 flex-1 max-w-xl flex-col items-start justify-center gap-6 px-6 py-16 sm:py-20">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">
           Your notes, on your machine.

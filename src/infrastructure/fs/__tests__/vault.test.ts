@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { VaultIncompatibleError } from "../../../lib/validate";
 import { makeFakeRoot } from "../../../test/fakeFs";
 import {
   inspectFolder,
@@ -6,7 +7,7 @@ import {
   openOrInitialize,
 } from "../vault";
 import { readText, writeText } from "../handle";
-import { PATHS } from "../schema";
+import { PATHS, APP_SIGNATURE, SCHEMA_VERSION } from "../schema";
 
 describe("inspectFolder", () => {
   it("returns empty for a fresh folder", async () => {
@@ -62,6 +63,28 @@ describe("openOrInitialize", () => {
   it("throws on incompatible folders", async () => {
     const root = makeFakeRoot();
     await writeText(root, "stray.txt", "x");
-    await expect(openOrInitialize(root)).rejects.toThrow();
+    await expect(openOrInitialize(root)).rejects.toMatchObject({
+      name: "VaultIncompatibleError",
+      code: "not-a-vault",
+    });
+  });
+
+  it("throws when the manifest schema is newer than this app", async () => {
+    const root = makeFakeRoot();
+    await writeText(
+      root,
+      PATHS.manifest,
+      JSON.stringify({
+        app: APP_SIGNATURE,
+        version: SCHEMA_VERSION + 1,
+        createdAt: "2026-05-17T10:00:00.000Z",
+      }),
+    );
+    await expect(openOrInitialize(root)).rejects.toBeInstanceOf(
+      VaultIncompatibleError,
+    );
+    await expect(openOrInitialize(root)).rejects.toMatchObject({
+      code: "newer-app-version",
+    });
   });
 });

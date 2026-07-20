@@ -1,3 +1,4 @@
+import { VaultIncompatibleError } from "../../lib/validate";
 import {
   fileExists,
   getDirectory,
@@ -30,6 +31,7 @@ export async function inspectFolder(
     } catch (err) {
       return {
         kind: "incompatible",
+        code: "corrupt-manifest",
         reason: `Manifest could not be read: ${(err as Error).message}`,
       };
     }
@@ -39,9 +41,16 @@ export async function inspectFolder(
   }
   return {
     kind: "incompatible",
+    code: "not-a-vault",
     reason:
       "Folder is not empty and is not a private-notes vault. Choose a different folder.",
   };
+}
+
+function throwIncompatible(
+  result: Extract<ValidationResult, { kind: "incompatible" }>,
+): never {
+  throw new VaultIncompatibleError(result.code, result.reason);
 }
 
 /** Writes a fresh manifest, index, and required subdirectories. */
@@ -88,5 +97,5 @@ export async function openOrInitialize(
     const manifest = await initializeVault(root);
     return { manifest, initialized: true };
   }
-  throw new Error(result.reason);
+  throwIncompatible(result);
 }

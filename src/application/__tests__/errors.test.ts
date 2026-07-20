@@ -3,6 +3,7 @@ import {
   BackgroundTaskError,
   VaultIOError,
   guardVaultIO,
+  openVaultUserError,
   registerBackgroundError,
   reportUserError,
   resetErrorReportingForTests,
@@ -10,6 +11,7 @@ import {
   userFacingMessage,
   userFixHint,
 } from "../errors";
+import { VaultDataError, VaultIncompatibleError } from "../../lib/validate";
 
 describe("application/errors", () => {
   beforeEach(() => {
@@ -91,6 +93,36 @@ describe("application/errors", () => {
     expect(listener).toHaveBeenCalledTimes(1);
     expect(listener.mock.calls[0]?.[0]).toBeInstanceOf(BackgroundTaskError);
     expect(console.error).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps open-vault failures to user-facing copy", () => {
+    expect(
+      openVaultUserError(
+        new VaultIncompatibleError(
+          "newer-app-version",
+          "Vault was written by a newer app version (2).",
+        ),
+      ),
+    ).toEqual({
+      message: "This vault was created by a newer version of private-notes.",
+      fixHint: "Update the app, then open this folder again.",
+    });
+
+    expect(
+      openVaultUserError(new VaultDataError("not valid JSON", "index.json")),
+    ).toEqual({
+      message: "A vault file in this folder looks damaged.",
+      fixHint:
+        "Check `.private-notes/` in the folder, restore from a backup if you have one, or choose a different folder.",
+    });
+
+    expect(
+      openVaultUserError(new Error("Folder permission was not granted.")),
+    ).toEqual({
+      message: "Could not access this folder.",
+      fixHint:
+        "Grant read/write access when the browser asks, then choose the folder again.",
+    });
   });
 
   it("extracts user-facing text from typed errors", () => {

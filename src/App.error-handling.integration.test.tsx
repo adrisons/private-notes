@@ -56,8 +56,8 @@ describe("App error handling integration", () => {
     it("surfaces open-vault failures on Welcome", async () => {
       const error = vaultIOError(
         "open-vault",
-        "Could not open this folder.",
-        "Choose the folder again and grant read/write access when prompted.",
+        "Could not access this folder.",
+        "Grant read/write access when the browser asks, then choose the folder again.",
       );
       const openSpy = vi
         .spyOn(openVaultModule, "openVault")
@@ -70,12 +70,10 @@ describe("App error handling integration", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/could not open this folder\./i),
+          screen.getByText(/could not access this folder\./i),
         ).toBeInTheDocument();
         expect(
-          screen.getByText(
-            /choose the folder again and grant read\/write access/i,
-          ),
+          screen.getByText(/grant read\/write access when the browser asks/i),
         ).toBeInTheDocument();
       });
       expectLoggedVaultIOError(consoleError, "open-vault");

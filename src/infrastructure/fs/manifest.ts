@@ -25,26 +25,40 @@ export function buildEmptyIndex(): NoteIndex {
  */
 export function validateManifestJson(raw: unknown): ValidationResult {
   if (!raw || typeof raw !== "object") {
-    return { kind: "incompatible", reason: "Manifest is not a JSON object." };
+    return {
+      kind: "incompatible",
+      code: "corrupt-manifest",
+      reason: "Manifest is not a JSON object.",
+    };
   }
   const m = raw as Partial<Manifest>;
   if (m.app !== APP_SIGNATURE) {
     return {
       kind: "incompatible",
+      code: "not-a-vault",
       reason: `Unexpected app signature: ${String(m.app)}`,
     };
   }
   if (typeof m.version !== "number") {
-    return { kind: "incompatible", reason: "Missing manifest version." };
+    return {
+      kind: "incompatible",
+      code: "corrupt-manifest",
+      reason: "Missing manifest version.",
+    };
   }
   if (m.version > SCHEMA_VERSION) {
     return {
       kind: "incompatible",
+      code: "newer-app-version",
       reason: `Vault was written by a newer app version (${m.version}).`,
     };
   }
   if (typeof m.createdAt !== "string") {
-    return { kind: "incompatible", reason: "Missing createdAt timestamp." };
+    return {
+      kind: "incompatible",
+      code: "corrupt-manifest",
+      reason: "Missing createdAt timestamp.",
+    };
   }
   return {
     kind: "compatible",

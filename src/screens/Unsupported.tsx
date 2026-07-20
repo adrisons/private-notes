@@ -4,7 +4,7 @@ interface UnsupportedProps {
 
 export function Unsupported({ reasons }: UnsupportedProps) {
   return (
-    <section className="mx-auto flex h-full max-w-xl flex-col items-start justify-center gap-6 px-6">
+    <section className="mx-auto flex min-h-0 flex-1 max-w-xl flex-col items-start justify-center gap-6 px-6 py-16 sm:py-20">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">
           This browser isn’t supported yet.
