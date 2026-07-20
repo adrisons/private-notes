@@ -70,7 +70,7 @@ export function NoteHeader({
   return (
     // Full width of its container: the title is the page, not a card in it.
     // Left padding matches the toolbar and the editor body so the three line up.
-    <div className="w-full px-5 pt-8 sm:px-6 sm:pt-10">
+    <div className="u-content-column w-full pt-8 sm:pt-10">
       <div className="flex flex-wrap items-center justify-end gap-3">
         <span
           aria-live="polite"

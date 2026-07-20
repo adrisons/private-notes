@@ -19,9 +19,9 @@ import { cn } from "../lib/cn";
 /** Below this count every row stays in the DOM (keyboard + swipe stay simple). */
 export const VIRTUAL_LIST_THRESHOLD = 50;
 
-export const DEFAULT_ROW_GAP = 4;
+export const DEFAULT_ROW_GAP = 8;
 
-export const NOTE_LIST_ROW_HEIGHT = 64;
+export const NOTE_LIST_ROW_HEIGHT = 72;
 
 export type VirtualListScrollMode = "internal" | "external";
 
@@ -209,7 +209,7 @@ function VirtualListInner<T>(
       onKeyDown={onKeyDown}
       className={cn(
         "outline-none",
-        virtualize ? "relative w-full" : "space-y-1",
+        virtualize ? "relative w-full" : "space-y-2",
         listClassName,
       )}
       style={virtualize ? { height: totalHeight } : undefined}
@@ -249,7 +249,7 @@ function VirtualListInner<T>(
     <div
       ref={scrollRef}
       data-virtual-list-scroll=""
-      className={cn("min-h-0 overflow-y-auto", className)}
+      className={cn("u-scrollbar min-h-0 overflow-y-auto", className)}
       onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
     >
       {list}

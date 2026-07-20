@@ -310,7 +310,11 @@ weights only: `--foreground`, `--foreground-muted`, `--foreground-subtle`.
 ## 7. Layout and responsiveness
 
 Desktop keeps the two-pane layout: note list on the left, editor on the
-right, with `--border-strong` between regions.
+right, with `--border-strong` between regions. The main column (note header,
+editor body, space detail) is **left-aligned** and capped at `--measure`,
+with `--content-gutter` as the responsive inset from the sidebar — it stays
+compact on mobile and grows with viewport width on desktop, never centering
+the column in leftover space.
 
 **Mobile (< 768px)** collapses the entire left region — brand row, search,
 and note list — into a **top bar with a disclosure control** (`AppShell`):
@@ -359,6 +363,7 @@ transitions:
 |---|---|
 | `.u-enter` / `.u-enter-pop` / `.u-enter-panel` / `.u-enter-backdrop` | Blur-in entrances and overlay backdrop |
 | `.u-content-swap` | Large-surface swap: opacity + `translateY(4px)`, no blur |
+| `.u-content-column` | Main reading column: left-aligned, `--measure` cap, `--content-gutter` inset |
 | `.u-press` | Press scale and fast transitions |
 | `.u-lift` | Hover elevation + press |
 | `.u-slab` | Primary button offset shadow body |

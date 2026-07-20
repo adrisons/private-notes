@@ -43,8 +43,12 @@
   --sidebar-width: 288px;
   --header-height: 56px;
   --measure: 46rem; /* editor line length */
+  --content-gutter: 1.25rem; /* main column inset; widens from md up */
   --attachment-max-width: 35rem; /* default cap for large attachment images */
   --attachment-resize-stroke: 6px;
+
+  /* Scrollbars — thin, unobtrusive (design.md §8). */
+  --scrollbar-size: 6px;
 }
 
 /* ---------------------------------------------------------------------
@@ -121,17 +125,17 @@ html[data-theme="light"] {
 html[data-theme="dark"] {
   color-scheme: dark;
 
-  --canvas: #1a1718;
-  --surface: #211e20;
-  --surface-raised: #2a2528;
-  --surface-sunken: #151213;
+  --canvas: #252220;
+  --surface: #2c2926;
+  --surface-raised: #36322f;
+  --surface-sunken: #1e1b19;
 
   --foreground: #eeeae8;
-  --foreground-muted: #a9a19d;
+  --foreground-muted: #b8b0ab;
   --foreground-subtle: #7c7470;
 
-  --border: #332d30;
-  --border-strong: #423b3e;
+  --border: #3a3532;
+  --border-strong: #49433f;
 
   --accent: #ff8a63;
   --accent-hover: #e0704a;
@@ -183,17 +187,17 @@ html[data-theme="dark"] {
   html:not([data-theme]) {
     color-scheme: dark;
 
-    --canvas: #1a1718;
-    --surface: #211e20;
-    --surface-raised: #2a2528;
-    --surface-sunken: #151213;
+    --canvas: #252220;
+    --surface: #2c2926;
+    --surface-raised: #36322f;
+    --surface-sunken: #1e1b19;
 
     --foreground: #eeeae8;
-    --foreground-muted: #a9a19d;
+    --foreground-muted: #b8b0ab;
     --foreground-subtle: #7c7470;
 
-    --border: #332d30;
-    --border-strong: #423b3e;
+    --border: #3a3532;
+    --border-strong: #49433f;
 
     --accent: #ff8a63;
     --accent-hover: #e0704a;
@@ -237,5 +241,12 @@ html[data-theme="dark"] {
 
     --ambient-warm: rgba(255, 138, 99, 0.05);
     --ambient-cool: rgba(150, 120, 240, 0.04);
+  }
+}
+
+/* Desktop two-pane: widen the inset between sidebar and content with viewport. */
+@media (min-width: 768px) {
+  :root {
+    --content-gutter: clamp(1.5rem, 2.5vw + 0.5rem, 3rem);
   }
 }

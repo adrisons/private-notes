@@ -196,6 +196,18 @@ body::before {
   animation: content-swap-in var(--duration-normal) var(--ease-out) both;
 }
 
+/*
+ * Main reading column: left-aligned, measure-capped, responsive gutter from
+ * the sidebar (design.md §7). Shared by note editor, note header, and space
+ * detail so all three share one left edge on desktop.
+ */
+.u-content-column {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--measure);
+  padding-inline: var(--content-gutter);
+}
+
 .u-sidebar-list-swap {
   animation: sidebar-list-swap var(--duration-normal) var(--ease-spring) both;
 }
@@ -449,6 +461,7 @@ html[data-theme-transition] *::after {
 .u-swipe-row {
   position: relative;
   overflow: hidden;
+  border-radius: var(--radius-md);
 }
 
 .u-swipe-actions {
@@ -617,6 +630,37 @@ html[data-theme-transition] *::after {
 .u-focus-inset:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 var(--focus-ring-width) var(--ring);
+}
+
+/*
+ * Thin scrollbars for panels and lists. Reserves gutter space so content
+ * does not jump when overflow appears.
+ */
+.u-scrollbar {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--foreground-subtle) 70%, transparent)
+    transparent;
+}
+
+.u-scrollbar::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+.u-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.u-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-full);
+  background-color: color-mix(in srgb, var(--foreground-subtle) 70%, transparent);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.u-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--foreground-muted) 80%, transparent);
 }
 
 /* Skip link: hidden until focused (WCAG 2.4.1). */

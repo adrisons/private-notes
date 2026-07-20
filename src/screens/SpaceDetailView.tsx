@@ -156,7 +156,7 @@ export function SpaceDetailView({
 
   return (
     <div className="u-content-swap flex h-full min-h-0 flex-col">
-      <div className="mx-auto flex w-full max-w-3xl min-h-0 flex-1 flex-col px-5 py-8 sm:px-6 sm:py-10">
+      <div className="u-content-column flex min-h-0 flex-1 flex-col py-8 sm:py-10">
         <div className="flex flex-wrap items-center justify-end gap-3">
           {custom ? (
             <>
@@ -258,7 +258,7 @@ export function SpaceDetailView({
           itemHeight={NOTE_LIST_ROW_HEIGHT}
           ariaLabel={`Notes in ${space.name}`}
           className="mt-8 min-h-0 flex-1"
-          listClassName="space-y-1 pt-2 pb-4"
+          listClassName="pt-2 pb-4"
           getItemKey={(note) => note.id}
           emptyState={
             <div className="px-2 py-8 text-center text-sm text-[var(--foreground-muted)]">

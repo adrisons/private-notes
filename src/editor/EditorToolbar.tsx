@@ -294,7 +294,7 @@ export function EditorToolbar({ editor, onPickImage }: ToolbarProps) {
 
   return (
     // Sticky: the controls stay reachable while reading a long note.
-    <div className="sticky top-0 z-20 w-full max-w-[var(--measure)] bg-[var(--canvas)] px-5 pt-4 pb-2 sm:px-6">
+    <div className="u-content-column sticky top-0 z-20 bg-[var(--canvas)] pt-4 pb-2">
       {/*
         The host reserves the collapsed height; the pill floats inside it. That
         way unrolling on hover slides over the note instead of shoving the text

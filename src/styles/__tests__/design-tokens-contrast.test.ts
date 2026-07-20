@@ -29,7 +29,7 @@ const AA_NORMAL = 4.5;
 describe("design token contrast", () => {
   it("keeps --foreground-muted readable on common surfaces (WCAG AA)", () => {
     const lightMuted = "#6b625b";
-    const darkMuted = "#a9a19d";
+    const darkMuted = "#b8b0ab";
 
     expect(contrastRatio(lightMuted, "#fbfaf8")).toBeGreaterThanOrEqual(
       AA_NORMAL,
@@ -40,10 +40,10 @@ describe("design token contrast", () => {
     expect(contrastRatio(lightMuted, "#ffffff")).toBeGreaterThanOrEqual(
       AA_NORMAL,
     );
-    expect(contrastRatio(darkMuted, "#1a1718")).toBeGreaterThanOrEqual(
+    expect(contrastRatio(darkMuted, "#252220")).toBeGreaterThanOrEqual(
       AA_NORMAL,
     );
-    expect(contrastRatio(darkMuted, "#211e20")).toBeGreaterThanOrEqual(
+    expect(contrastRatio(darkMuted, "#2c2926")).toBeGreaterThanOrEqual(
       AA_NORMAL,
     );
   });

@@ -1,6 +1,11 @@
 import { forwardRef, type CSSProperties, type MouseEvent } from "react";
 import { Button } from "../ui/Button";
 import { CondensedSpaceChips } from "../ui/CondensedSpaceChips";
+import {
+  SidebarListRowButton,
+  SidebarListRowCheckbox,
+  SidebarListRowItem,
+} from "../ui/SidebarListRow";
 import { cn } from "../lib/cn";
 import { useSwipeReveal } from "../lib/use-swipe-reveal";
 import type { NoteListItem, SpaceChipDisplay } from "../application/view-models";
@@ -63,6 +68,43 @@ export interface NoteListRowProps {
   className?: string;
 }
 
+interface NoteRowContentProps {
+  note: NoteListItem;
+  spaceChips: SpaceChipDisplay[];
+  selectionMode: boolean;
+  checked: boolean;
+  formatRelative: (iso: string) => string;
+}
+
+function NoteRowContent({
+  note,
+  spaceChips,
+  selectionMode,
+  checked,
+  formatRelative,
+}: NoteRowContentProps) {
+  return (
+    <div className="flex items-start gap-3">
+      {selectionMode ? <SidebarListRowCheckbox checked={checked} /> : null}
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-medium text-[var(--foreground)]">
+          {note.title || "Untitled"}
+        </div>
+        <div className="mt-1 flex items-center gap-2">
+          {spaceChips.length > 0 ? (
+            <CondensedSpaceChips chips={spaceChips} />
+          ) : (
+            <span className="min-w-0 flex-1" aria-hidden />
+          )}
+          <span className="shrink-0 whitespace-nowrap text-xs text-[var(--foreground-muted)]">
+            {formatRelative(note.updatedAt)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export const NoteListRow = forwardRef<HTMLButtonElement, NoteListRowProps>(
   function NoteListRow(
     {
@@ -105,128 +147,92 @@ export const NoteListRow = forwardRef<HTMLButtonElement, NoteListRowProps>(
       onDelete();
     };
 
-    return (
-      <li
-        style={style}
-        className={cn("u-swipe-row rounded-[var(--radius-md)]", className)}
+    const rowButton = (
+      <SidebarListRowButton
+        ref={ref}
+        kind="note"
+        selected={selected}
+        checked={checked}
+        selectionMode={selectionMode}
+        fillHeight
+        swipePanel={swipeEnabled}
+        role={selectionMode ? "checkbox" : undefined}
+        aria-checked={selectionMode ? checked : undefined}
+        aria-current={!selectionMode && selected ? "true" : undefined}
+        aria-label={
+          selectionMode
+            ? `${checked ? "Deselect" : "Select"} ${note.title || "Untitled"}`
+            : undefined
+        }
+        tabIndex={focused ? 0 : -1}
+        onFocus={onFocus}
+        onClick={(event) => {
+          if (swipeOpen) {
+            close();
+            return;
+          }
+          if (selectionMode) {
+            onToggleCheck(event.shiftKey);
+            return;
+          }
+          onSelect();
+        }}
+        onContextMenu={selectionMode ? undefined : onContextMenu}
+        {...(swipeEnabled ? bind : {})}
+        data-dragging={isDragging ? "true" : undefined}
+        style={
+          swipeEnabled ? { transform: `translateX(${offset}px)` } : undefined
+        }
       >
-        <div
-          className="u-swipe-actions u-touch-only items-center justify-end gap-1 pr-3"
-          style={{ width: NOTE_SWIPE_ACTIONS_WIDTH }}
-          aria-hidden={!swipeOpen}
-        >
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-label="Duplicate note"
-            onClick={handleDuplicate}
-            className={cn(
-              iconButtonClass,
-              "hover:bg-[var(--accent-soft)] hover:text-[var(--accent-soft-foreground)]",
-            )}
-          >
-            <DuplicateIcon />
-          </Button>
-          <Button
-            type="button"
-            variant="danger"
-            size="sm"
-            aria-label="Delete note"
-            onClick={handleDelete}
-            className={iconButtonClass}
-          >
-            <DeleteIcon />
-          </Button>
-        </div>
-        <button
-          ref={ref}
-          type="button"
-          role={selectionMode ? "checkbox" : undefined}
-          aria-checked={selectionMode ? checked : undefined}
-          aria-current={!selectionMode && selected ? "true" : undefined}
-          aria-label={
-            selectionMode
-              ? `${checked ? "Deselect" : "Select"} ${note.title || "Untitled"}`
-              : undefined
-          }
-          tabIndex={focused ? 0 : -1}
-          onFocus={onFocus}
-          onClick={(event) => {
-            if (swipeOpen) {
-              close();
-              return;
-            }
-            if (selectionMode) {
-              onToggleCheck(event.shiftKey);
-              return;
-            }
-            onSelect();
-          }}
-          onContextMenu={selectionMode ? undefined : onContextMenu}
-          {...(swipeEnabled ? bind : {})}
-          data-dragging={isDragging ? "true" : undefined}
-          style={
-            swipeEnabled ? { transform: `translateX(${offset}px)` } : undefined
-          }
-          className={cn(
-            "u-swipe-panel gesture-annotate u-press u-lift u-focus-inset w-full cursor-pointer",
-            "rounded-[var(--radius-md)] px-3.5 py-3 text-left max-md:min-h-[var(--hit-touch)]",
-            "hover:bg-[var(--surface-raised)]",
-            selectionMode &&
-              checked &&
-              "bg-[var(--accent-soft)] ring-1 ring-[var(--accent)]/30",
-            !selectionMode &&
-              selected &&
-              "bg-[var(--surface-raised)] shadow-[var(--shadow-rest)]",
-            !selectionMode && !selected && "bg-[var(--canvas)]",
-            selectionMode && !checked && "bg-[var(--canvas)]",
-          )}
-        >
-          <div className="flex items-start gap-3">
-            {selectionMode ? (
-              <span
-                aria-hidden
+        <NoteRowContent
+          note={note}
+          spaceChips={spaceChips}
+          selectionMode={selectionMode}
+          checked={checked}
+          formatRelative={formatRelative}
+        />
+      </SidebarListRowButton>
+    );
+
+    return (
+      <SidebarListRowItem style={style} className={className}>
+        {swipeEnabled ? (
+          <div className="u-swipe-row p-0.5">
+            <div
+              className="u-swipe-actions u-touch-only items-center justify-end gap-1 pr-3"
+              style={{ width: NOTE_SWIPE_ACTIONS_WIDTH }}
+              aria-hidden={!swipeOpen}
+            >
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label="Duplicate note"
+                onClick={handleDuplicate}
                 className={cn(
-                  "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border",
-                  checked
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
-                    : "border-[var(--border-strong)] bg-[var(--surface)]",
+                  iconButtonClass,
+                  "hover:bg-[var(--accent-soft)] hover:text-[var(--accent-soft-foreground)]",
                 )}
               >
-                {checked ? (
-                  <svg
-                    className="h-2.5 w-2.5"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M2.5 6.5 5 9l4.5-6" />
-                  </svg>
-                ) : null}
-              </span>
-            ) : null}
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium text-[var(--foreground)]">
-                {note.title || "Untitled"}
-              </div>
-              <div className="mt-1 flex items-center gap-2">
-                {spaceChips.length > 0 ? (
-                  <CondensedSpaceChips chips={spaceChips} />
-                ) : (
-                  <span className="min-w-0 flex-1" aria-hidden />
-                )}
-                <span className="shrink-0 whitespace-nowrap text-xs text-[var(--foreground-muted)]">
-                  {formatRelative(note.updatedAt)}
-                </span>
-              </div>
+                <DuplicateIcon />
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                aria-label="Delete note"
+                onClick={handleDelete}
+                className={iconButtonClass}
+              >
+                <DeleteIcon />
+              </Button>
             </div>
+            {rowButton}
           </div>
-        </button>
-      </li>
+        ) : (
+          rowButton
+        )}
+      </SidebarListRowItem>
     );
   },
 );

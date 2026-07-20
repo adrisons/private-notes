@@ -7,6 +7,10 @@ import {
   NOTE_LIST_ROW_HEIGHT,
   type VirtualListHandle,
 } from "../ui/VirtualList";
+import {
+  SIDEBAR_LIST_GAP_CLASS,
+  SIDEBAR_LIST_INSET_CLASS,
+} from "../ui/sidebar-list-layout";
 import { useTouchActionsEnabled } from "../lib/touch-actions";
 import { formatRelative } from "../lib/format-relative";
 import { NoteListRow } from "./NoteListRow";
@@ -452,7 +456,8 @@ export function NotesList({
             itemHeight={NOTE_LIST_ROW_HEIGHT}
             ariaLabel={listAriaLabel}
             scrollMode="external"
-            listClassName="px-3 pt-2 pb-4"
+            className={SIDEBAR_LIST_INSET_CLASS}
+            listClassName={SIDEBAR_LIST_GAP_CLASS}
             listRef={listRef}
             ariaMultiselectable={selectionMode || undefined}
             onKeyDown={handleListKeyDown}
@@ -502,7 +507,8 @@ export function NotesList({
             itemHeight={SPACE_LIST_ROW_HEIGHT}
             ariaLabel={listAriaLabel}
             scrollMode="external"
-            listClassName="space-y-1 px-3 pt-2 pb-4"
+            className={SIDEBAR_LIST_INSET_CLASS}
+            listClassName={SIDEBAR_LIST_GAP_CLASS}
             listRef={listRef}
             ariaMultiselectable={selectionMode || undefined}
             onKeyDown={handleListKeyDown}

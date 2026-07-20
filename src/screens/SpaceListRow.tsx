@@ -1,5 +1,9 @@
 import { forwardRef, type CSSProperties } from "react";
-import { cn } from "../lib/cn";
+import {
+  SidebarListRowButton,
+  SidebarListRowCheckbox,
+  SidebarListRowItem,
+} from "../ui/SidebarListRow";
 import { spaceDotStyle } from "../ui/space-colors";
 import type { SpaceListItem } from "../application/view-models";
 
@@ -46,13 +50,15 @@ export const SpaceListRow = forwardRef<HTMLButtonElement, SpaceListRowProps>(
     const noteLabel = space.noteCount === 1 ? "note" : "notes";
 
     return (
-      <li
-        style={style}
-        className={cn("rounded-[var(--radius-md)]", className)}
-      >
-        <button
+      <SidebarListRowItem style={style} className={className}>
+        <SidebarListRowButton
           ref={ref}
-          type="button"
+          kind="space"
+          selected={selected}
+          checked={checked}
+          selectionMode={selectionMode}
+          selectable={selectable}
+          fillHeight
           role={selectionMode && selectable ? "checkbox" : undefined}
           aria-checked={selectionMode && selectable ? checked : undefined}
           aria-current={!selectionMode && selected ? "true" : undefined}
@@ -70,47 +76,10 @@ export const SpaceListRow = forwardRef<HTMLButtonElement, SpaceListRowProps>(
             }
             if (!selectionMode) onSelect();
           }}
-          className={cn(
-            "gesture-annotate u-press u-lift u-focus-inset h-full w-full cursor-pointer",
-            "rounded-[var(--radius-md)] px-3.5 py-3 text-left max-md:min-h-[var(--hit-touch)]",
-            "hover:bg-[var(--surface-raised)]",
-            selectionMode &&
-              selectable &&
-              checked &&
-              "bg-[var(--accent-soft)] ring-1 ring-[var(--accent)]/30",
-            !selectionMode &&
-              selected &&
-              "bg-[var(--accent-soft)] ring-1 ring-[var(--accent)]/30",
-            !selectionMode && !selected && "bg-[var(--canvas)]",
-            selectionMode && selectable && !checked && "bg-[var(--canvas)]",
-            selectionMode && !selectable && "cursor-default opacity-70",
-          )}
         >
           <div className="flex items-start gap-3">
             {selectionMode && selectable ? (
-              <span
-                aria-hidden
-                className={cn(
-                  "mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border",
-                  checked
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
-                    : "border-[var(--border-strong)] bg-[var(--surface)]",
-                )}
-              >
-                {checked ? (
-                  <svg
-                    className="h-2.5 w-2.5"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M2.5 6.5 5 9l4.5-6" />
-                  </svg>
-                ) : null}
-              </span>
+              <SidebarListRowCheckbox checked={checked} />
             ) : null}
             <span
               aria-hidden
@@ -131,8 +100,8 @@ export const SpaceListRow = forwardRef<HTMLButtonElement, SpaceListRowProps>(
               ) : null}
             </div>
           </div>
-        </button>
-      </li>
+        </SidebarListRowButton>
+      </SidebarListRowItem>
     );
   },
 );

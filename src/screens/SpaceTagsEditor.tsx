@@ -47,7 +47,10 @@ function TagChip({
 }) {
   return (
     <span
-      className="inline-flex max-w-full shrink-0 items-center gap-0.5 rounded-[var(--radius-sm)] py-0.5 pl-2 pr-1 text-xs font-medium"
+      className={cn(
+        "inline-flex max-w-full shrink-0 items-center gap-0.5 rounded-[var(--radius-sm)] py-0.5 text-xs font-medium",
+        onRemove ? "pl-2 pr-1" : "px-2",
+      )}
       style={spaceChipStyle(colorId)}
     >
       <span className="truncate">{name}</span>

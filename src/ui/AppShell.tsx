@@ -126,7 +126,7 @@ export function AppShell({
               <aside
                 aria-label="Notes and search"
                 data-virtual-list-scroll=""
-                className="flex max-h-[70dvh] min-h-0 flex-col overflow-y-auto border-b border-[var(--border-strong)] bg-[var(--surface)] shadow-[var(--shadow-overlay)] md:h-full md:max-h-none md:border-r md:border-b-0 md:shadow-none"
+                className="u-scrollbar flex max-h-[70dvh] min-h-0 flex-col overflow-x-hidden overflow-y-auto border-b border-[var(--border-strong)] bg-[var(--surface)] shadow-[var(--shadow-overlay)] md:h-full md:max-h-none md:border-r md:border-b-0 md:shadow-none"
               >
                 {sidebar}
               </aside>
