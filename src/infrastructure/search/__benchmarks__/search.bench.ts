@@ -2,19 +2,25 @@
  * Semantic-search scaling benchmark — the app's #1 client-side bottleneck.
  *
  * `searchSemantic` streams *every* note's embedding file and scores each chunk
- * on the main thread (O(total chunks) per query, no ANN index, no cross-query
- * cache). These benches measure how query latency grows with the corpus so
- * performance work can be guided by numbers.
+ * on the main thread (O(total chunks) per query, no ANN index). Two costs are
+ * separated here:
+ *
+ * - **cold** — no lexical cache, so the inverted index is rebuilt from the
+ *   whole corpus. This is the first keystroke after a vault opens or reindexes.
+ * - **warm** — a session-scoped lexical cache is reused (ADR-010), so only
+ *   dense scoring runs. This is every subsequent keystroke in the palette, and
+ *   the case that dominates real use.
  *
  * Run with `pnpm bench` (not part of `pnpm test`).
  */
 import { bench, describe } from "vitest";
 import { buildFakeVault, SCALES } from "../../../test/loadgen";
-import { searchSemantic } from "../search";
+import { searchSemantic, type LexicalIndexCache } from "../search";
 import { dot } from "../embedder";
 
 // One query reused across scales so only the corpus size varies.
 const QUERY = "project meeting plan performance";
+const OPTIONS = { topK: 8, minScore: 0.15, relativeCutoff: 0.6 } as const;
 
 // Prebuild corpora up front: Vitest's benchmark mode does not run suite-level
 // `beforeAll`, so top-level await is the reliable way to prepare fixtures.
@@ -24,12 +30,14 @@ const corpora = await Promise.all(
 
 corpora.forEach((corpus, i) => {
   describe(`searchSemantic · ${SCALES[i]} notes`, () => {
-    bench("query", async () => {
-      await searchSemantic(corpus.root, QUERY, corpus.embedder, {
-        topK: 8,
-        minScore: 0.15,
-        relativeCutoff: 0.6,
-      });
+    bench("cold (rebuild lexical index)", async () => {
+      await searchSemantic(corpus.root, QUERY, corpus.embedder, OPTIONS);
+    });
+
+    // A cache primed once, then reused — the palette's steady state.
+    const warm: LexicalIndexCache = { current: null };
+    bench("warm (cached lexical index)", async () => {
+      await searchSemantic(corpus.root, QUERY, corpus.embedder, OPTIONS, warm);
     });
   });
 });

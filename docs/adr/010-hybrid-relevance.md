@@ -133,8 +133,20 @@ first run and every keystroke typed while a vault is still indexing.
 ### Negative
 
 - Existing vaults re-index once on upgrade (schema bump).
-- The inverted index is rebuilt per query from the records already streamed off disk. That is cheap next to the file reads themselves, but it is work repeated per keystroke.
 - Renaming a note now costs a re-embed of that note.
+
+The inverted index was first rebuilt per query from the records streamed off
+disk. On a synthetic FS that assumption ("cheap next to the file reads") was
+wrong: re-tokenising the whole corpus dominated a query and regressed
+`searchSemantic` ~10× on every corpus size. The index is now built once and
+cached per open vault (`LexicalIndexCache`, held by `fs-semantic-search`), fed
+incrementally from the same dense-scoring stream, and dropped whenever the
+on-disk index changes (`reindex`, `pruneOrphans`). Dense scoring still streams
+every record — the query vector is new each keystroke — but the corpus is
+tokenised once per change, not once per keystroke. Prefix expansion is a
+binary search over the sorted vocabulary rather than a full scan. Persisting
+the index to disk (surviving reload, not just the session) remains available if
+the first-query cost after opening a large vault proves to matter.
 
 ### Neutral
 

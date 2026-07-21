@@ -52,6 +52,20 @@ describe("searchLexicalIndex", () => {
     ]);
   });
 
+  it("expands a prefix to exactly the terms it prefixes, not its neighbours", () => {
+    // "cor", "corta", "corte", "coste" sort adjacently; only the first three
+    // share the "cort" prefix. A binary-search expansion must stop at the
+    // block boundary and not spill into "coste".
+    const adjacent = buildLexicalIndex([
+      { id: "corta", title: "Corta", body: "" },
+      { id: "corte", title: "Corte", body: "" },
+      { id: "coste", title: "Coste", body: "" },
+    ]);
+    expect(
+      searchLexicalIndex(adjacent, "cort").map((m) => m.id).sort(),
+    ).toEqual(["corta", "corte"]);
+  });
+
   it("ignores prefixes shorter than three characters", () => {
     expect(searchLexicalIndex(index, "pe")).toEqual([]);
   });
