@@ -11,18 +11,21 @@ const notes: NoteListItem[] = [
   {
     id: "a",
     title: "Alpha note",
+    createdAt: "2026-05-17T12:00:00Z",
     updatedAt: "2026-05-17T12:00:00Z",
     spaceIds: [],
   },
   {
     id: "b",
     title: "Beta note",
+    createdAt: "2026-05-16T12:00:00Z",
     updatedAt: "2026-05-16T12:00:00Z",
     spaceIds: [],
   },
   {
     id: "c",
     title: "Gamma note",
+    createdAt: "2026-05-15T12:00:00Z",
     updatedAt: "2026-05-15T12:00:00Z",
     spaceIds: [],
   },
@@ -135,6 +138,7 @@ describe("NotesList", () => {
         {
           id: "a",
           title: "In Work",
+          createdAt: "2026-05-17T12:00:00Z",
           updatedAt: "2026-05-17T12:00:00Z",
           spaceIds: [workId],
         },

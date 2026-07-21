@@ -11,6 +11,7 @@ const notesListProps = {
     {
       id: "a",
       title: "Alpha",
+      createdAt: "2026-05-17T12:00:00Z",
       updatedAt: "2026-05-17T12:00:00Z",
       spaceIds: [],
     },

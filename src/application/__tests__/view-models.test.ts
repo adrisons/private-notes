@@ -23,18 +23,21 @@ describe("rankSearchResults", () => {
     {
       id: "a",
       title: "Tiradito de pescado",
+      createdAt: "2026-05-17T12:00:00Z",
       updatedAt: "2026-05-17T12:00:00Z",
       spaceIds: [],
     },
     {
       id: "b",
       title: "Raita de pepino",
+      createdAt: "2026-05-16T12:00:00Z",
       updatedAt: "2026-05-16T12:00:00Z",
       spaceIds: [],
     },
     {
       id: "c",
       title: "Reunión de producto",
+      createdAt: "2026-05-15T12:00:00Z",
       updatedAt: "2026-05-15T12:00:00Z",
       spaceIds: [workId],
     },

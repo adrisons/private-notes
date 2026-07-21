@@ -1,4 +1,5 @@
 import { foldSearchText, tokenizeSearchText } from "./normalize";
+import { scoreDateProximity, type DateQuery } from "../../lib/parse-date-query";
 
 /**
  * Ranking policy. Everything here is pure: given signals, produce one ordered
@@ -17,6 +18,8 @@ export type MatchKind =
   | "text"
   /** Vector similarity only. */
   | "semantic"
+  /** Ranked by how close its creation date is to a parsed date query. */
+  | "date"
   /** Not a match at all — the recency list shown for an empty query. */
   | "recent";
 
@@ -166,8 +169,19 @@ export function spaceSignal(
 export interface RankableNote {
   id: string;
   title: string;
+  /** UTC ISO creation timestamp, needed only when a date query is fused in. */
+  createdAt?: string;
   spaceNames?: readonly string[];
 }
+
+/**
+ * Weight of the date-proximity signal in a *mixed* query, in the same [0, 1]
+ * units as a content score. Held below the title bonuses on purpose: in a
+ * mixed query content decides *which* notes are answers and proximity only
+ * reorders comparable ones, so a note the user is clearly asking for by name
+ * cannot be pushed down by a closer-but-irrelevant note's timestamp.
+ */
+const DATE_PROXIMITY_WEIGHT = 0.5;
 
 /** Content relevance from the index, best-first, one or more entries per note. */
 export interface ContentHit {
@@ -194,9 +208,28 @@ export function rankNotes(options: {
   query: string;
   content: readonly ContentHit[];
   notes: readonly RankableNote[];
+  /** Parsed date expression, fused as a third signal (ADR-011). */
+  dateQuery?: DateQuery | null;
   limit?: number;
 }): RankedNote[] {
   const query = options.query.trim();
+  const dateQuery = options.dateQuery ?? null;
+
+  // Pure date ("agosto 2025"): no text to embed, so rank the whole in-memory
+  // note list by creation-date proximity. This is the instant, index-free
+  // path — it needs neither the embedder nor a disk read and works before a
+  // single vector exists.
+  if (dateQuery && query.length === 0) {
+    const ranked = options.notes.map((note) => ({
+      noteId: note.id,
+      score: note.createdAt ? scoreDateProximity(note.createdAt, dateQuery) : 0,
+      matchKind: "date" as MatchKind,
+    }));
+    // Stable sort keeps the caller's order (recency) among equal proximities.
+    ranked.sort((a, b) => b.score - a.score);
+    return options.limit === undefined ? ranked : ranked.slice(0, options.limit);
+  }
+
   if (query.length === 0) return [];
 
   interface Bonus {
@@ -244,6 +277,20 @@ export function rankNotes(options: {
       score: total(bonus),
       matchKind: kindFor(bonus, "title"),
     });
+  }
+
+  // Mixed query ("pescado agosto 2025"): content already chose *which* notes;
+  // add proximity so date decides the order among comparable matches. It is
+  // only added to notes the content stage already surfaced — a date must not
+  // conjure a note into the list, nor filter a strong content match out.
+  if (dateQuery) {
+    const createdAt = new Map(
+      options.notes.map((note) => [note.id, note.createdAt]),
+    );
+    for (const item of ranked) {
+      const iso = createdAt.get(item.noteId);
+      if (iso) item.score += DATE_PROXIMITY_WEIGHT * scoreDateProximity(iso, dateQuery);
+    }
   }
 
   // Stable sort: ties keep the order the caller supplied, which is content

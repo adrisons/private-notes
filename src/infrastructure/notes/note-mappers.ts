@@ -36,6 +36,7 @@ export function summaryFromRecord(record: NoteRecord): NoteSummary {
   return {
     id: noteId(record.id),
     title: record.title,
+    createdAt: record.createdAt,
     updatedAt: record.updatedAt,
     spaceIds: parseSpaceIds(record.spaceIds),
   };

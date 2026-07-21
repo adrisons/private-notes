@@ -29,10 +29,11 @@
  * "África" holds notes from all three, which is what makes the concept query
  * meaningful rather than a synonym for "Recetas".
  *
- * §2 (date-aware search) will extend this table with date queries. Note that
- * `marruecos 2020` below matches the *text* "2020", not the note's creation
- * date; making that distinction real is exactly what §2 is for, and these
- * fixtures will need per-note creation dates when it lands.
+ * §2 (date-aware search) extends this table with date and mixed queries. A few
+ * notes carry an explicit `createdAt` so those cases can assert proximity;
+ * `marruecos 2020` below now reads "2020" as a *creation-date* filter rather
+ * than as body text, which is exactly the distinction §2 exists to make
+ * (ADR-011).
  */
 
 export interface RelevanceNote {
@@ -42,7 +43,16 @@ export interface RelevanceNote {
   body: string;
   /** Spaces the note is filed under, by name. Notes can span several. */
   spaceNames?: string[];
+  /**
+   * UTC ISO creation timestamp. Only the notes exercised by date queries set
+   * one; everything else defaults to `DEFAULT_CREATED_AT`, far from any tested
+   * range so it stays out of the way.
+   */
+  createdAt?: string;
 }
+
+/** Baseline creation date for notes no date query cares about. */
+export const DEFAULT_CREATED_AT = "2022-01-01T12:00:00.000Z";
 
 export interface RelevanceCase {
   query: string;
@@ -77,6 +87,7 @@ export const RELEVANCE_NOTES: RelevanceNote[] = [
     body:
       "Corta el lomo en láminas muy finas. Mezcla la leche de tigre con ají amarillo y lima. Sirve bien frío con cebolla morada encima.",
     spaceNames: [SPACES.recetas],
+    createdAt: "2025-08-20T12:00:00.000Z",
   },
   {
     key: "chermoula",
@@ -84,6 +95,9 @@ export const RELEVANCE_NOTES: RelevanceNote[] = [
     body:
       "Clásico de Marruecos: cilantro, perejil, comino, pimentón y ajo majados con aceite de oliva. Marina el lomo dos horas antes de asarlo.",
     spaceNames: [SPACES.recetas, SPACES.africa],
+    // Same month as the "agosto 2025" cases but a year off — a decoy for
+    // proximity that shares no year with the parsed range.
+    createdAt: "2024-08-10T12:00:00.000Z",
   },
   {
     key: "ceviche",
@@ -91,6 +105,7 @@ export const RELEVANCE_NOTES: RelevanceNote[] = [
     body:
       "Dados de pescado blanco, zumo de lima, cebolla morada, cilantro y ají limo. Reposa cinco minutos y sirve al momento.",
     spaceNames: [SPACES.recetas],
+    createdAt: "2025-08-06T12:00:00.000Z",
   },
   {
     key: "merluza",
@@ -176,6 +191,7 @@ export const RELEVANCE_NOTES: RelevanceNote[] = [
     body:
       "Viaje de marzo de 2020 por Marruecos. Zoco, medina y un riad con terraza. Té a la menta a todas horas y una excursión a las cascadas.",
     spaceNames: [SPACES.viajes, SPACES.africa],
+    createdAt: "2020-03-15T12:00:00.000Z",
   },
   {
     key: "egipto",
@@ -241,6 +257,7 @@ export const RELEVANCE_NOTES: RelevanceNote[] = [
     body:
       "Offsite de 2020: dos días de trabajo y uno libre. Cerramos la hoja de ruta y repartimos responsabilidades del trimestre.",
     spaceNames: [SPACES.trabajo, SPACES.africa],
+    createdAt: "2020-06-10T12:00:00.000Z",
   },
   {
     key: "producto",
@@ -411,9 +428,10 @@ export const RELEVANCE_CASES: RelevanceCase[] = [
   {
     query: "marruecos 2020",
     reason:
-      "Multi-term across metadata-ish text: the note carrying both beats the ones carrying either. The year matches as text, not as a creation date — that distinction is TODO §2.",
+      "Now that §2 has landed, '2020' is a creation-date filter, not body text. Both matching notes name the country; marrakech was created in 2020 and chermoula in 2024, so proximity breaks the tie for marrakech.",
     first: "marrakech",
-    expectedAll: ["marrakech", "offsite"],
+    expectedTop: ["marrakech"],
+    rankedBelow: ["chermoula"],
   },
   {
     query: "pescado blanco",
@@ -475,5 +493,31 @@ export const RELEVANCE_CASES: RelevanceCase[] = [
     query: "plantas",
     reason: "Unfiled note with no competing occurrence.",
     first: "plantas",
+  },
+
+  // ------------------------------------------ date-aware queries (ADR-011)
+  {
+    query: "agosto 2025",
+    reason:
+      "Pure date query: nothing to embed, ranked entirely by how close each note's creation date is to August 2025. The two notes created that month lead; a fish recipe created in August *2024* must sit below them — same month, wrong year, which is exactly what embedding a date cannot tell apart.",
+    expectedTop: ["tiradito", "ceviche"],
+    rankedBelow: ["chermoula"],
+  },
+  {
+    query: "pescado agosto 2025",
+    reason:
+      "Mixed query: 'pescado' chooses the fish notes, August 2025 orders them. tiradito and chermoula are equally strong on content (both carry the word in their title), so the date breaks the tie: tiradito, created in range, must rank above chermoula, created a year off. Content still decides membership — ceviche stays in the list.",
+    first: "tiradito",
+    expectedTop: ["tiradito"],
+    expectedAll: ["tiradito", "ceviche", "chermoula"],
+    rankedBelow: ["chermoula"],
+  },
+  {
+    query: "marzo 2020",
+    reason:
+      "Pure date at month granularity. marrakech was created in March 2020 and leads; offsite shares the year but was created in June, three months off, so proximity ranks it below.",
+    first: "marrakech",
+    expectedTop: ["marrakech"],
+    rankedBelow: ["offsite"],
   },
 ];

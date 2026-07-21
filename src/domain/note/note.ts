@@ -19,6 +19,7 @@ export function noteToSummary(note: Note): NoteSummary {
   return {
     id: note.id,
     title: note.title,
+    createdAt: note.createdAt,
     updatedAt: note.updatedAt,
     spaceIds: note.spaceIds,
   };

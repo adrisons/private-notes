@@ -9,12 +9,14 @@ const notes: NoteListItem[] = [
   {
     id: "n1",
     title: "Cooking pasta",
+    createdAt: "2026-05-17T12:00:00Z",
     updatedAt: "2026-05-17T12:00:00Z",
     spaceIds: [],
   },
   {
     id: "n2",
     title: "Rocket science",
+    createdAt: "2026-05-16T12:00:00Z",
     updatedAt: "2026-05-16T12:00:00Z",
     spaceIds: [],
   },
@@ -163,6 +165,44 @@ describe("CommandPalette", () => {
 
     expect(asRecent).not.toBe("");
     expect(asMatch).not.toBe(asRecent);
+  });
+
+  it("reads a date expression as a creation-date filter, index-free", async () => {
+    const user = userEvent.setup({
+      advanceTimers: vi.advanceTimersByTimeAsync,
+    });
+    // The model is not ready — a date query must still answer, from the
+    // in-memory note list, without ever consulting the embedder.
+    const onSearch = vi.fn(async (): Promise<SearchResultItem[]> => []);
+    renderPalette({ onSearch, searchReady: false });
+
+    await user.type(screen.getByLabelText("Search notes"), "August 2026");
+
+    expect(screen.getByText(/by creation date/i)).toBeInTheDocument();
+    expect(screen.getByText("Cooking pasta")).toBeInTheDocument();
+    expect(onSearch).not.toHaveBeenCalled();
+  });
+
+  it("falls back to plain text search when the date chip is dismissed", async () => {
+    const user = userEvent.setup({
+      advanceTimers: vi.advanceTimersByTimeAsync,
+    });
+    const onSearch = vi.fn(async (): Promise<SearchResultItem[]> => []);
+    renderPalette({ onSearch });
+
+    await user.type(screen.getByLabelText("Search notes"), "August 2026");
+    expect(screen.getByText(/by creation date/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /plain text/i }));
+    expect(screen.queryByText(/by creation date/i)).not.toBeInTheDocument();
+
+    // With the date dismissed the literal text is searched instead.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+    await waitFor(() => {
+      expect(onSearch).toHaveBeenCalledWith("August 2026");
+    });
   });
 
   it("ignores a slow search that resolves after a newer one", async () => {

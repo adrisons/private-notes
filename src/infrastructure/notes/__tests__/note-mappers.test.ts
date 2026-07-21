@@ -33,6 +33,7 @@ describe("note mappers", () => {
     expect(summaryFromRecord(sampleRecord)).toEqual({
       id: noteId("01HNOTE123"),
       title: "Hello",
+      createdAt: "2026-05-17T10:00:00.000Z",
       updatedAt: "2026-05-18T10:00:00.000Z",
       spaceIds: [],
     });

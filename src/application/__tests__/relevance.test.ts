@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { setupTestVault, type TestVaultIo } from "../../test/vaultFixtures";
 import {
+  DEFAULT_CREATED_AT,
   RELEVANCE_CASES,
   RELEVANCE_NOTES,
   type RelevanceCase,
 } from "../../test/relevanceFixtures";
+import { parseDateQuery, withoutDateText } from "../../lib/parse-date-query";
 import { createNote, listNotes } from "../../infrastructure/notes/storage";
 import { FakeEmbedder } from "../../infrastructure/search/embedder";
 import { reindex } from "../../infrastructure/search/indexer";
@@ -61,6 +63,7 @@ async function buildHarness(): Promise<Harness> {
   const notes: NoteListItem[] = RELEVANCE_NOTES.map((fixture) => ({
     id: noteIdByKey.get(fixture.key)!,
     title: fixture.title,
+    createdAt: fixture.createdAt ?? DEFAULT_CREATED_AT,
     updatedAt: "2026-05-17T10:00:00.000Z",
     spaceIds: (fixture.spaceNames ?? []).map(
       (name) => spaceIdByName.get(name)!,
@@ -86,17 +89,31 @@ async function buildHarness(): Promise<Harness> {
 
 let harness: Harness;
 
+/**
+ * Fixed reference point so relative and bare-month parsing is deterministic.
+ * The corpus is Spanish, so the parser runs under `es` — that is the "active
+ * locale" the palette would carry for these users.
+ */
+const FIXED_NOW = new Date("2026-07-21T12:00:00.000Z");
+
 /** Run one fixture query through the same path the palette uses. */
 async function rank(query: string): Promise<string[]> {
-  const hits = await searchNotes(harness.search, embedder, query);
+  const dateQuery = parseDateQuery(query, { locale: "es", now: FIXED_NOW });
+  const textPart = dateQuery ? withoutDateText(query, dateQuery) : query;
+  // Pure date queries skip the embedder entirely, exactly as the palette does.
+  const pureDate = dateQuery !== null && textPart.length === 0;
+  const hits = pureDate
+    ? []
+    : await searchNotes(harness.search, embedder, dateQuery ? textPart : query);
   const keyById = new Map(
     [...harness.noteIdByKey].map(([key, id]) => [id, key]),
   );
   return rankSearchResults({
-    query,
+    query: dateQuery ? textPart : query,
     hits,
     notes: harness.notes,
     spaces: harness.spaces,
+    dateQuery,
   }).map((result) => keyById.get(result.noteId) ?? result.noteId);
 }
 

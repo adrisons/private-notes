@@ -19,12 +19,14 @@ const notes: NoteListItem[] = [
   {
     id: "a",
     title: "Alpha note",
+    createdAt: "2026-05-17T12:00:00Z",
     updatedAt: "2026-05-17T12:00:00Z",
     spaceIds: [workId],
   },
   {
     id: "b",
     title: "Beta note",
+    createdAt: "2026-05-16T12:00:00Z",
     updatedAt: "2026-05-16T12:00:00Z",
     spaceIds: [],
   },

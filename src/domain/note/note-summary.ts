@@ -5,6 +5,7 @@ import type { NoteId } from "./note-id";
 export interface NoteSummary {
   readonly id: NoteId;
   title: string;
+  createdAt: string;
   updatedAt: string;
   /** Custom spaces only; empty means General. */
   spaceIds: SpaceId[];

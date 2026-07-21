@@ -33,6 +33,7 @@ duplicating them inside ADR-003/004.
 | [008](./adr/008-schema-compatibility.md) | Schema & compatibility | `types.ts`, manifest validation, `compatibility.ts` |
 | [009](./adr/009-layered-application-architecture.md) | Layered DDD / ports & adapters | `src/domain/`, `src/application/`, `src/infrastructure/`, hooks in `App.tsx` |
 | [010](./adr/010-hybrid-relevance.md) | Hybrid relevance & one ranked list | `src/domain/search/`, `indexer.ts`, `search.ts`, `CommandPalette.tsx` |
+| [011](./adr/011-date-aware-search.md) | Date-aware search (parsed date range as a signal) | `src/lib/parse-date-query.ts`, `src/domain/search/rank.ts`, `CommandPalette.tsx` |
 
 ## Suggested reading order by task
 

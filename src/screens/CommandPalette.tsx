@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog } from "../ui/Dialog";
 import { Input } from "../ui/Input";
+import { Button } from "../ui/Button";
 import { SpaceChip } from "../ui/SpaceChip";
 import { cn } from "../lib/cn";
+import {
+  formatDateQueryLabel,
+  parseDateQuery,
+  withoutDateText,
+} from "../lib/parse-date-query";
 import {
   rankSearchResults,
   resolveNoteSpaceChips,
@@ -102,6 +108,24 @@ function SemanticIcon() {
   );
 }
 
+function CalendarIcon() {
+  return (
+    <svg
+      aria-hidden
+      className="h-4 w-4 shrink-0"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="4" y="5" width="16" height="16" rx="2" />
+      <path d="M4 9h16M8 3v4M16 3v4" />
+    </svg>
+  );
+}
+
 function SpaceIcon() {
   return (
     <svg
@@ -129,6 +153,7 @@ function resultIcon(matchKind: MatchKind) {
   if (matchKind === "recent") return <ClockIcon />;
   if (matchKind === "semantic") return <SemanticIcon />;
   if (matchKind === "space") return <SpaceIcon />;
+  if (matchKind === "date") return <CalendarIcon />;
   return <MatchIcon />;
 }
 
@@ -145,9 +170,25 @@ export function CommandPalette({
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<SearchResultItem[]>([]);
   const [active, setActive] = useState(0);
+  const [dismissedDate, setDismissedDate] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchSeq = useRef(0);
+
+  // A date expression in the query becomes a creation-date signal — unless the
+  // user dismissed it for this exact query, in which case it falls back to
+  // plain text search (the date words match as words again).
+  const dateQuery = useMemo(() => {
+    if (dismissedDate === query) return null;
+    return parseDateQuery(query);
+  }, [query, dismissedDate]);
+
+  // What the embedder should see: the query with any date text removed. Empty
+  // means a pure date query, which skips the embedder altogether.
+  const textPart = useMemo(
+    () => (dateQuery ? withoutDateText(query, dateQuery) : query.trim()),
+    [query, dateQuery],
+  );
 
   // Reset state and focus input each time the palette opens.
   useEffect(() => {
@@ -155,6 +196,7 @@ export function CommandPalette({
       setQuery("");
       setHits([]);
       setActive(0);
+      setDismissedDate(null);
       queueMicrotask(() => inputRef.current?.focus());
     }
   }, [open]);
@@ -162,15 +204,20 @@ export function CommandPalette({
   useEffect(() => {
     if (!open) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!searchReady || query.trim().length === 0) {
+    const pureDate = dateQuery !== null && textPart.length === 0;
+    // Pure date needs no embedder and no index — it is scored from the
+    // in-memory note list below, so leave `hits` empty and skip the search.
+    // Everything else waits for the model, as before.
+    if (query.trim().length === 0 || pureDate || !searchReady) {
       // Invalidate anything in flight: its results describe an older query.
       searchSeq.current++;
       setHits([]);
       return;
     }
+    const embedQuery = dateQuery ? textPart : query;
     debounceRef.current = setTimeout(async () => {
       const seq = ++searchSeq.current;
-      const results = await onSearch(query);
+      const results = await onSearch(embedQuery);
       // The debounce prevents most overlap, but not a slow query resolving
       // after a newer, faster one — which would silently overwrite fresher
       // results with staler ones.
@@ -179,7 +226,7 @@ export function CommandPalette({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [open, query, searchReady, onSearch]);
+  }, [open, query, searchReady, onSearch, dateQuery, textPart]);
 
   const noteById = useMemo(
     () => new Map(notes.map((note) => [note.id, note])),
@@ -204,19 +251,21 @@ export function CommandPalette({
       ];
     }
     // One ranking, not two lists stapled together: content relevance from the
-    // index and title/space matches from the notes already in memory are
-    // scored against each other before anything is rendered.
+    // index, title/space matches from the notes in memory, and creation-date
+    // proximity from a parsed date query are all scored against each other
+    // before anything is rendered.
     return rankSearchResults({
-      query: trimmed,
+      query: dateQuery ? textPart : trimmed,
       hits,
       notes: byRecency,
       spaces: spaceItems,
+      dateQuery,
     }).map((result) => ({
       kind: "result" as const,
       noteId: result.noteId,
       matchKind: result.matchKind,
     }));
-  }, [query, hits, byRecency, spaceItems]);
+  }, [query, textPart, dateQuery, hits, byRecency, spaceItems]);
 
   // Re-animate results when a debounced search completes, not on every keystroke.
   const resultsAnimateKey = useMemo(() => {
@@ -286,6 +335,28 @@ export function CommandPalette({
             items.length > 0 ? `command-palette-item-${active}` : undefined
           }
         />
+        {dateQuery ? (
+          <div className="flex items-center gap-2 border-t border-[var(--border)] px-4 py-2">
+            <span className="text-[var(--accent)]">
+              <CalendarIcon />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-xs font-medium text-[var(--foreground)]">
+              {formatDateQueryLabel(dateQuery)}
+              <span className="text-[var(--foreground-muted)]">
+                {" · by creation date"}
+              </span>
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 min-w-7 px-2 text-xs"
+              onClick={() => setDismissedDate(query)}
+              aria-label="Search as plain text instead"
+            >
+              Dismiss
+            </Button>
+          </div>
+        ) : null}
         <ul
           id="command-palette-results"
           key={resultsAnimateKey}

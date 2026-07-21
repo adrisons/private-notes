@@ -9,6 +9,7 @@ import {
   type MatchKind,
 } from "../domain";
 import type { SearchHit } from "./ports/search-hit";
+import type { DateQuery } from "../lib/parse-date-query";
 
 export type { MatchKind };
 
@@ -44,6 +45,12 @@ export interface SpaceChipDisplay {
 export interface NoteListItem {
   id: string;
   title: string;
+  /**
+   * When the note was created. The list still *shows* `updatedAt` (see
+   * `formatRelative`); `createdAt` rides along only so date-aware search can
+   * rank by creation date without a disk read (ADR-011).
+   */
+  createdAt: string;
   updatedAt: string;
   spaceIds: SpaceId[];
 }
@@ -118,6 +125,7 @@ export function toNoteListItem(summary: NoteSummary): NoteListItem {
   return {
     id: summary.id,
     title: summary.title,
+    createdAt: summary.createdAt,
     updatedAt: summary.updatedAt,
     spaceIds: summary.spaceIds,
   };
@@ -172,6 +180,8 @@ export function rankSearchResults(input: {
   hits: SearchResultItem[];
   notes: NoteListItem[];
   spaces: SpaceListItem[];
+  /** A parsed date expression fuses creation-date proximity into the order. */
+  dateQuery?: DateQuery | null;
   limit?: number;
 }): RankedResultItem[] {
   return rankNotes({
@@ -180,10 +190,12 @@ export function rankSearchResults(input: {
     notes: input.notes.map((note) => ({
       id: note.id,
       title: note.title,
+      createdAt: note.createdAt,
       spaceNames: note.spaceIds.map(
         (id) => resolveSpaceDisplay(id, input.spaces).name,
       ),
     })),
+    dateQuery: input.dateQuery,
     limit: input.limit,
   });
 }

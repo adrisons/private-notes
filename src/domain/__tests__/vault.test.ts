@@ -7,12 +7,14 @@ const summaries: NoteSummary[] = [
   {
     id: noteId("a"),
     title: "Older",
+    createdAt: "2026-05-17T10:00:00.000Z",
     updatedAt: "2026-05-17T10:00:00.000Z",
     spaceIds: [],
   },
   {
     id: noteId("b"),
     title: "Newer",
+    createdAt: "2026-05-19T10:00:00.000Z",
     updatedAt: "2026-05-19T10:00:00.000Z",
     spaceIds: [],
   },

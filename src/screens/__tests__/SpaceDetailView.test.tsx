@@ -27,6 +27,7 @@ const notes: NoteListItem[] = [
   {
     id: "n1",
     title: "Foto personal",
+    createdAt: "2026-07-20T09:00:00.000Z",
     updatedAt: "2026-07-20T09:00:00.000Z",
     spaceIds: [workSpace.id],
   },
