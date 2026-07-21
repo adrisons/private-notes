@@ -6,11 +6,15 @@ import { FakeEmbedder } from "../embedder";
 import { reindex, pruneOrphans } from "../indexer";
 import { searchSemantic } from "../search";
 import {
+  clearSemanticIndex,
+  deleteNoteEmbeddings,
+  readContentHashes,
   readNoteEmbeddings,
   readSemanticManifest,
 } from "../index-fs";
+import { writeText } from "../../fs/handle";
 import { listNotes } from "../../notes/storage";
-import { TITLE_CHUNK_IDX } from "../types";
+import { SEMANTIC_PATHS, TITLE_CHUNK_IDX } from "../types";
 
 async function setup() {
   const root = makeFakeRoot();
@@ -100,6 +104,66 @@ describe("indexer", () => {
     expect(result.skipped).toBe(0);
   });
 
+  it("writes a content-hash hint for every indexed note", async () => {
+    const io = await setup();
+    const a = await createNote(io, { title: "a", body: "one" });
+    const b = await createNote(io, { title: "b", body: "two" });
+    const embedder = new FakeEmbedder();
+    await reindex(io.root, await listNotes(io), embedder);
+
+    const hints = await readContentHashes(io.root);
+    expect(Object.keys(hints).sort()).toEqual([a.id, b.id].sort());
+    const rec = await readNoteEmbeddings(io.root, a.id);
+    expect(hints[a.id]).toBe(rec?.contentHash);
+  });
+
+  it("trusts the hint and skips an unchanged note without reading its vectors", async () => {
+    const io = await setup();
+    const rec = await createNote(io, { title: "x", body: "same body" });
+    const embedder = new FakeEmbedder();
+    await reindex(io.root, await listNotes(io), embedder);
+
+    // Corrupt the vectors file but leave it in place. A scan that trusted the
+    // hint never opens it; one that parsed it would treat the garbage as stale
+    // and re-embed. Search tolerates a corrupt file by skipping it, so trusting
+    // the hint here is the deliberate trade-off (ADR-011).
+    await writeText(
+      io.root,
+      `${SEMANTIC_PATHS.notes}/${rec.id}.json`,
+      "not json at all",
+    );
+    const second = await reindex(io.root, await listNotes(io), embedder);
+    expect(second.embedded).toBe(0);
+    expect(second.skipped).toBe(1);
+  });
+
+  it("re-embeds when the vectors file vanished even though the hint remains", async () => {
+    const io = await setup();
+    const rec = await createNote(io, { title: "x", body: "same body" });
+    const embedder = new FakeEmbedder();
+    await reindex(io.root, await listNotes(io), embedder);
+
+    // Hint still points at this note, but its vectors are gone. The existence
+    // guard must catch that and re-embed rather than fast-skip into a hole.
+    await deleteNoteEmbeddings(io.root, rec.id);
+    const second = await reindex(io.root, await listNotes(io), embedder);
+    expect(second.embedded).toBe(1);
+    expect(second.skipped).toBe(0);
+  });
+
+  it("drops the hint file when the index is cleared", async () => {
+    const io = await setup();
+    const rec = await createNote(io, { title: "x", body: "anything" });
+    await reindex(io.root, await listNotes(io), new FakeEmbedder());
+    expect(await readContentHashes(io.root)).toHaveProperty(rec.id);
+
+    // A model change wipes the vectors via clearSemanticIndex; the hints must
+    // go with them so the next scan cannot fast-skip against a hint whose
+    // vectors no longer exist.
+    await clearSemanticIndex(io.root);
+    expect(await readContentHashes(io.root)).toEqual({});
+  });
+
   it("clears the index when the embedder model changes", async () => {
     const io = await setup();
     await createNote(io, { title: "x", body: "anything" });
@@ -150,5 +214,31 @@ describe("pruneOrphans", () => {
     const removed = await pruneOrphans(io.root, [a.id]);
     expect(removed).toBe(1);
     expect(await readNoteEmbeddings(io.root, b.id)).toBeNull();
+  });
+
+  it("drops the pruned note's content-hash hint", async () => {
+    const io = await setup();
+    const a = await createNote(io, { title: "a", body: "a" });
+    const b = await createNote(io, { title: "b", body: "b" });
+    const embedder = new FakeEmbedder();
+    await reindex(io.root, await listNotes(io), embedder);
+
+    await pruneOrphans(io.root, [a.id]);
+    const hints = await readContentHashes(io.root);
+    expect(hints).toHaveProperty(a.id);
+    expect(hints).not.toHaveProperty(b.id);
+  });
+
+  it("detects an orphan from its filename, even a corrupt one it cannot parse", async () => {
+    const io = await setup();
+    const a = await createNote(io, { title: "a", body: "a" });
+    await reindex(io.root, await listNotes(io), new FakeEmbedder());
+    // A corrupt vectors file for a note that is not live. Name-based pruning
+    // still sees it; a parse-based scan would skip it and leak the orphan.
+    await writeText(io.root, `${SEMANTIC_PATHS.notes}/ghost.json`, "corrupt");
+
+    const removed = await pruneOrphans(io.root, [a.id]);
+    expect(removed).toBe(1);
+    expect(await readNoteEmbeddings(io.root, a.id)).not.toBeNull();
   });
 });
