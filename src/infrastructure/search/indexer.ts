@@ -4,9 +4,12 @@ import { sha256Hex } from "../attachments/hash";
 import {
   clearSemanticIndex,
   deleteNoteEmbeddings,
-  iterateNoteEmbeddings,
+  hasNoteEmbeddings,
+  listNoteEmbeddingIds,
+  readContentHashes,
   readNoteEmbeddings,
   readSemanticManifest,
+  writeContentHashes,
   writeNoteEmbeddings,
   writeSemanticManifest,
 } from "./index-fs";
@@ -16,6 +19,7 @@ import {
   SEMANTIC_SCHEMA_VERSION,
   TITLE_CHUNK_IDX,
   type ChunkRecord,
+  type ContentHashIndex,
   type NoteEmbeddings,
 } from "./types";
 import type { NoteRecord } from "../fs/schema";
@@ -36,29 +40,29 @@ async function contentFingerprint(title: string, body: string): Promise<string> 
 }
 
 /**
- * Returns true when the embeddings file is missing, was written for a
- * different model/schema, or points at a stale `contentHash`.
+ * Reads the note's vectors file and returns true when it is missing, was
+ * written for a different model/schema, or points at a stale `contentHash`.
+ *
+ * This is the precise, authoritative check. `reindex` only reaches for it when
+ * the cheap content-hash hint could not settle the question — so on a steady
+ * reload of an unchanged vault it is not called at all (ADR-011).
  */
 async function needsReindex(
   root: FileSystemDirectoryHandle,
   note: NoteRecord,
   embedder: Embedder,
-  body: string,
-): Promise<{ stale: true; hash: string } | { stale: false }> {
+  hash: string,
+): Promise<boolean> {
   const existing = await readNoteEmbeddings(root, note.id);
-  const hash = await contentFingerprint(note.title, body);
-  if (!existing) return { stale: true, hash };
-  if (existing.schemaVersion !== SEMANTIC_SCHEMA_VERSION) {
-    return { stale: true, hash };
-  }
+  if (!existing) return true;
+  if (existing.schemaVersion !== SEMANTIC_SCHEMA_VERSION) return true;
   if (
     existing.modelId !== embedder.id ||
     existing.dimensions !== embedder.dimensions
   ) {
-    return { stale: true, hash };
+    return true;
   }
-  if (existing.contentHash !== hash) return { stale: true, hash };
-  return { stale: false };
+  return existing.contentHash !== hash;
 }
 
 interface PlannedChunk {
@@ -151,6 +155,15 @@ export async function reindex(
   const batchSize = options.batchSize ?? 16;
   const progress = options.onProgress ?? (() => {});
 
+  // Scan-time hints: `noteId → contentHash` we last embedded. They let the
+  // up-to-date check skip a note without opening its (large) vectors file,
+  // which is the cost that dominates a no-op reindex on reload. A hint is
+  // trusted only when it matches a freshly computed hash *and* the vectors
+  // file still exists, so a stale or partially-synced hint costs at most a
+  // redundant re-embed, never a wrong skip (ADR-011).
+  const hints = await readContentHashes(root);
+  const nextHints: ContentHashIndex = {};
+
   // First pass: identify stale notes; skip ones still valid.
   type Work = { note: NoteRecord; body: string; hash: string };
   const work: Work[] = [];
@@ -158,10 +171,21 @@ export async function reindex(
   for (const note of notes) {
     const text = await readText(root, note.path);
     const body = parseNote(text).body;
-    const status = await needsReindex(root, note, embedder, body);
-    if (status.stale) {
-      work.push({ note, body, hash: status.hash });
+    const hash = await contentFingerprint(note.title, body);
+    if (hints[note.id] === hash && (await hasNoteEmbeddings(root, note.id))) {
+      // Fast path: body unchanged and its vectors are on disk. Never opens the
+      // vectors file. This is what makes a reload scan cheap.
+      nextHints[note.id] = hash;
+      skipped++;
+      continue;
+    }
+    // Hint missing, stale, or the vectors file vanished — verify precisely.
+    // Also the first run after upgrade, when no hint file exists yet: this
+    // pass re-populates the hints so subsequent scans take the fast path.
+    if (await needsReindex(root, note, embedder, hash)) {
+      work.push({ note, body, hash });
     } else {
+      nextHints[note.id] = hash;
       skipped++;
     }
   }
@@ -184,6 +208,7 @@ export async function reindex(
         updatedAt: new Date().toISOString(),
         chunks: [],
       });
+      nextHints[item.note.id] = item.hash;
       done++;
       progress({ done, total });
       continue;
@@ -207,15 +232,16 @@ export async function reindex(
       chunks: plan.map((c, j) => ({ ...c.record, embedding: vectors[j]! })),
     };
     await writeNoteEmbeddings(root, record);
+    nextHints[item.note.id] = item.hash;
     done++;
     progress({ done, total });
   }
 
-  // Garbage-collect embeddings for notes that no longer exist.
-  const liveIds = new Set(notes.map((n) => n.id));
-  // We do not iterate aggressively here — callers can call `pruneOrphans`
-  // separately to keep `reindex` predictable.
-  void liveIds;
+  // Persist the hints last. The per-note vectors files are the source of truth
+  // and are already written, so losing this write only costs a slower next
+  // scan. Built from the live `notes` only, so a note that disappeared drops
+  // out of the map here without a separate cleanup pass.
+  await writeContentHashes(root, nextHints);
 
   return { embedded: total, skipped };
 }
@@ -226,10 +252,23 @@ export async function pruneOrphans(
   liveIds: Iterable<string>,
 ): Promise<number> {
   const live = new Set(liveIds);
-  const stale: string[] = [];
-  for await (const rec of iterateNoteEmbeddings(root)) {
-    if (!live.has(rec.noteId)) stale.push(rec.noteId);
-  }
+  // Orphans are found from directory *names* — the filename is the note id, so
+  // this never opens or parses a vectors file. Reload runs this before every
+  // reindex, so parsing them all here would undo the reindex fast path.
+  const stale = (await listNoteEmbeddingIds(root)).filter((id) => !live.has(id));
   for (const id of stale) await deleteNoteEmbeddings(root, id);
+
+  // Keep the hint map in step with what is actually on disk.
+  if (stale.length > 0) {
+    const hints = await readContentHashes(root);
+    let changed = false;
+    for (const id of stale) {
+      if (id in hints) {
+        delete hints[id];
+        changed = true;
+      }
+    }
+    if (changed) await writeContentHashes(root, hints);
+  }
   return stale.length;
 }

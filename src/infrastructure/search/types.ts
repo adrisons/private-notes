@@ -11,7 +11,17 @@ export const SEMANTIC_PATHS = {
   root: ".semantic-index",
   manifest: ".semantic-index/manifest.json",
   notes: ".semantic-index/notes",
+  /** Scan-time hint file: `noteId → contentHash` (ADR-011). */
+  contentHashes: ".semantic-index/content-hashes.json",
 } as const;
+
+/**
+ * Compact map of `noteId → contentHash`, written alongside the index. It lets
+ * the reindex scan decide a note is unchanged without opening its (large)
+ * vectors file. It is a hint, never the source of truth: each note's
+ * authoritative `contentHash` still lives inside its own JSON (ADR-011).
+ */
+export type ContentHashIndex = Record<string, string>;
 
 export interface SemanticManifest {
   schemaVersion: number;

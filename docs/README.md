@@ -33,12 +33,13 @@ duplicating them inside ADR-003/004.
 | [008](./adr/008-schema-compatibility.md) | Schema & compatibility | `types.ts`, manifest validation, `compatibility.ts` |
 | [009](./adr/009-layered-application-architecture.md) | Layered DDD / ports & adapters | `src/domain/`, `src/application/`, `src/infrastructure/`, hooks in `App.tsx` |
 | [010](./adr/010-hybrid-relevance.md) | Hybrid relevance & one ranked list | `src/domain/search/`, `indexer.ts`, `search.ts`, `CommandPalette.tsx` |
+| [011](./adr/011-reindex-scan-hint.md) | Content-hash hint for a cheap reindex scan | `indexer.ts`, `index-fs.ts`, `.semantic-index/content-hashes.json` |
 
 ## Suggested reading order by task
 
 | Task | ADRs |
 |------|------|
-| New on-disk format or migration | 002, 008, 004 |
+| New on-disk format or migration | 002, 008, 004, 011 |
 | Search quality or model change | 003, 004, 008 |
 | Editor / markdown features | 005, 002 |
 | Images in notes | 006, 005 |
