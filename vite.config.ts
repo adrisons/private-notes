@@ -83,10 +83,56 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}"],
       exclude: ["src/**/*.d.ts", "src/test/**", "src/workers/**"],
     },
-    // Performance/load benchmarks (`pnpm bench`). Kept out of the unit run;
-    // `*.bench.ts` files never match the default `test.include` globs.
-    benchmark: {
-      include: ["src/**/*.bench.ts"],
-    },
+    // The suite is split into named projects so each kind can run (and be
+    // cached) on its own in CI, while sharing the single config above via
+    // `extends: true`. Selection is by filename convention:
+    //   *.integration.test.*  → cross-module / App-level flows (`test:integration`)
+    //   *.relevance.test.*     → the search-ranking regression net (`test:relevance`)
+    //   everything else *.test.* → fast unit tests (`test:general`)
+    //   *.bench.ts             → performance/load benchmarks (`pnpm bench`)
+    // `vitest run` runs the three test projects; `vitest bench` runs `bench`.
+    // Each test project pins `benchmark.include: []` so a `*.bench.ts` file is
+    // owned only by the `bench` project (otherwise Vitest's default benchmark
+    // glob would tag benchmarks with an arbitrary test project's name).
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "general",
+          include: ["src/**/*.test.{ts,tsx}"],
+          exclude: [
+            "src/**/*.integration.test.{ts,tsx}",
+            "src/**/*.relevance.test.{ts,tsx}",
+          ],
+          benchmark: { include: [] },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "integration",
+          include: ["src/**/*.integration.test.{ts,tsx}"],
+          benchmark: { include: [] },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "relevance",
+          include: ["src/**/*.relevance.test.{ts,tsx}"],
+          benchmark: { include: [] },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "bench",
+          // Benchmarks only: no unit tests, so `vitest run` skips this project
+          // and only `vitest bench` exercises it.
+          include: [],
+          benchmark: { include: ["src/**/*.bench.ts"] },
+        },
+      },
+    ],
   },
 });

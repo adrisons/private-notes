@@ -1,0 +1,20 @@
+name: Setup
+description: >-
+  Install pnpm + Node and the project's dependencies, restoring the pnpm store
+  from cache. Reused by every CI job so the install logic lives in one place.
+  The calling job must run actions/checkout before invoking this action.
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+      with:
+        version: 11.0.8
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: pnpm
+
+    - run: pnpm install --frozen-lockfile
+      shell: bash
