@@ -16,6 +16,7 @@
 import { bench, describe } from "vitest";
 import { buildFakeVault, SCALES } from "../../../test/loadgen";
 import { reindex } from "../indexer";
+import { writeContentHashes } from "../index-fs";
 
 // withEmbeddings seeds the vectors files but not the hint file (it bypasses
 // reindex). Prime each corpus with one reindex so the hint file exists, which
@@ -30,9 +31,23 @@ await Promise.all(
   corpora.map((corpus) => reindex(corpus.root, corpus.records, corpus.embedder)),
 );
 
+// NOTE: this harness understates the real win. The fake FS keeps files in
+// memory (no I/O latency) and FakeEmbedder is 32-dim, so the vectors files are
+// ~12x smaller than production's 384-dim and cheap to parse. The delta below is
+// only the JSON-parse cost skipped; in the browser over OPFS with 384-dim
+// vectors it is a real read of the whole vectors corpus, avoided on every
+// reload (and again in pruneOrphans, which this bench does not cover).
 corpora.forEach((corpus, i) => {
   describe(`reindex (no-op scan) · ${SCALES[i]} notes`, () => {
-    bench("warm rescan (hint-backed)", async () => {
+    // Empty the hint file first so every note falls back to reading and parsing
+    // its vectors — the pre-ADR-011 behaviour. The reset is one write, dwarfed
+    // by the scan it precedes.
+    bench("cold (reads every vectors file)", async () => {
+      await writeContentHashes(corpus.root, {});
+      await reindex(corpus.root, corpus.records, corpus.embedder);
+    });
+
+    bench("warm (hint-backed, skips vectors)", async () => {
       await reindex(corpus.root, corpus.records, corpus.embedder);
     });
   });
