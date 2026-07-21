@@ -94,6 +94,8 @@ describe("error use cases", () => {
             hasPermission: vi.fn(),
             open: vi.fn(),
             reconcile: vi.fn(),
+            assessRepair: vi.fn(),
+            repair: vi.fn(),
           },
           handleStore: {
             load: vi.fn(),
@@ -125,6 +127,8 @@ describe("error use cases", () => {
               ),
             ),
             reconcile: vi.fn(),
+            assessRepair: vi.fn(),
+            repair: vi.fn(),
           },
           handleStore: {
             load: vi.fn(),
@@ -156,6 +160,8 @@ describe("error use cases", () => {
             hasPermission: vi.fn(),
             open: vi.fn(),
             reconcile: vi.fn(),
+            assessRepair: vi.fn(),
+            repair: vi.fn(),
           },
           handleStore: {
             load: vi.fn(),

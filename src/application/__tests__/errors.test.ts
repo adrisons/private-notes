@@ -10,6 +10,7 @@ import {
   setBackgroundErrorListener,
   userFacingMessage,
   userFixHint,
+  vaultIncompatibleCause,
 } from "../errors";
 import { VaultDataError, VaultIncompatibleError } from "../../lib/validate";
 
@@ -123,6 +124,25 @@ describe("application/errors", () => {
       fixHint:
         "Grant read/write access when the browser asks, then choose the folder again.",
     });
+  });
+
+  it("extracts vault incompatibility from wrapped VaultIOError", () => {
+    const cause = new VaultIncompatibleError("not-a-vault", "not a vault");
+    const error = new VaultIOError(
+      "This folder is not a private-notes vault.",
+      {
+        operation: "open-vault",
+        module: "application/use-cases/open-vault.ts",
+        trace: "openVault",
+        fixHint: "test",
+      },
+      "Choose another folder.",
+      cause,
+    );
+
+    expect(vaultIncompatibleCause(error)).toBe(cause);
+    expect(vaultIncompatibleCause(cause)).toBe(cause);
+    expect(vaultIncompatibleCause(new Error("other"))).toBeNull();
   });
 
   it("extracts user-facing text from typed errors", () => {

@@ -78,6 +78,17 @@ export function openVaultUserError(cause: unknown): UserErrorPayload {
   return OPEN_VAULT_USER_ERRORS.generic;
 }
 
+/** Extract a vault incompatibility cause from an open/repair failure chain. */
+export function vaultIncompatibleCause(
+  error: unknown,
+): VaultIncompatibleError | null {
+  if (error instanceof VaultIncompatibleError) return error;
+  if (error instanceof VaultIOError && error.cause instanceof VaultIncompatibleError) {
+    return error.cause;
+  }
+  return null;
+}
+
 export class VaultError extends Error {
   readonly kind: AppErrorKind;
   readonly fixHint: string;

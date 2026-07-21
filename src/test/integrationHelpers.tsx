@@ -1,6 +1,8 @@
 import { expect, vi, type MockInstance } from "vitest";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { makeFakeRoot } from "./fakeFs";
+import { serializeNote } from "../domain/note/frontmatter";
+import { writeText } from "../infrastructure/fs/handle";
 import {
   advanceAutosave,
   advanceCommandPaletteSearch,
@@ -147,4 +149,44 @@ export function stubDirectoryPicker(
 /** Prepare a fresh fake vault root and directory picker for integration tests. */
 export function createIntegrationTestContext(): IntegrationTestContext {
   return { pickerRoot: makeFakeRoot() };
+}
+
+/** Folder with unrelated files — triggers the blocked-folder dialog on open. */
+export async function seedBlockedFolder(
+  root: FileSystemDirectoryHandle,
+): Promise<void> {
+  await writeText(root, "readme.txt", "not a private-notes vault");
+}
+
+/** Folder with note markdown but no vault metadata — triggers the repair dialog. */
+export async function seedRepairableFolder(
+  root: FileSystemDirectoryHandle,
+  title = "Sample note",
+): Promise<void> {
+  await writeText(
+    root,
+    "notes/2026/05/sample-note-001.md",
+    serializeNote(
+      {
+        id: "note-001",
+        title,
+        createdAt: "2026-05-17T10:00:00.000Z",
+        updatedAt: "2026-05-17T10:00:00.000Z",
+      },
+      "Body",
+    ),
+  );
+}
+
+/** Pick a folder from Welcome and wait until a vault-open dialog appears. */
+export async function pickFolderExpectingOpenDialog(
+  result: AppRenderResult,
+  dialogTitle: RegExp,
+): Promise<void> {
+  await result.user.click(
+    screen.getByRole("button", { name: /choose folder/i }),
+  );
+  await waitFor(() => {
+    expect(screen.getByRole("dialog", { name: dialogTitle })).toBeInTheDocument();
+  });
 }
