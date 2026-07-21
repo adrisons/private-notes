@@ -1,6 +1,19 @@
-import type { Embedder } from "../../application/ports/embedder";
+import type {
+  Embedder,
+  EmbedderPrefixes,
+} from "../../application/ports/embedder";
 
-export type { Embedder };
+export type { Embedder, EmbedderPrefixes };
+
+/** Text to embed as a retrieval query, per the model's own convention. */
+export function toQueryInput(embedder: Embedder, text: string): string {
+  return `${embedder.prefixes?.query ?? ""}${text}`;
+}
+
+/** Text to embed as an indexed passage, per the model's own convention. */
+export function toPassageInput(embedder: Embedder, text: string): string {
+  return `${embedder.prefixes?.passage ?? ""}${text}`;
+}
 
 /** L2-normalize in place. Vectors of length 0 are returned as zero vectors. */
 export function l2NormalizeInPlace(v: number[]): number[] {
@@ -29,9 +42,11 @@ export function dot(a: number[], b: number[]): number {
 export class FakeEmbedder implements Embedder {
   readonly id: string;
   readonly dimensions: number;
-  constructor(id = "fake-hash-32", dimensions = 32) {
+  readonly minScore?: number;
+  constructor(id = "fake-hash-32", dimensions = 32, minScore?: number) {
     this.id = id;
     this.dimensions = dimensions;
+    this.minScore = minScore;
   }
   async embed(texts: string[]): Promise<number[][]> {
     return texts.map((t) => this.embedOne(t));

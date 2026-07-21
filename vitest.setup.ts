@@ -6,6 +6,34 @@ import { expect } from "vitest";
 expect.extend(axeMatchers);
 
 /**
+ * Node 22+ exposes an experimental global localStorage getter that returns
+ * undefined unless `--localstorage-file` is set. That shadows jsdom's
+ * storage even though jsdom already created `window._localStorage`.
+ */
+function ensureWebStorage(): void {
+  type WindowWithStorage = Window & {
+    _localStorage?: Storage;
+    _sessionStorage?: Storage;
+  };
+  const win = window as WindowWithStorage;
+
+  if (globalThis.localStorage === undefined && win._localStorage) {
+    Object.defineProperty(globalThis, "localStorage", {
+      value: win._localStorage,
+      configurable: true,
+    });
+  }
+  if (globalThis.sessionStorage === undefined && win._sessionStorage) {
+    Object.defineProperty(globalThis, "sessionStorage", {
+      value: win._sessionStorage,
+      configurable: true,
+    });
+  }
+}
+
+ensureWebStorage();
+
+/**
  * jsdom has no Canvas API. axe-core's color-contrast rule creates a 2D context
  * to detect icon ligatures; without this stub every accessibility test logs
  * "HTMLCanvasElement.prototype.getContext is not implemented".

@@ -32,6 +32,7 @@ describe("useSemanticIndex", () => {
         snippet: "hello world",
         offset: 0,
         length: 11,
+        matchKind: "semantic",
       },
     ]);
     mockSearch.reindex.mockResolvedValue(undefined);
@@ -85,9 +86,12 @@ describe("useSemanticIndex", () => {
     expect(mockSearch.searchSemantic).toHaveBeenCalledWith(
       "hello",
       fakeEmbedder,
-      { topK: 8, minScore: 0.15 },
+      // No `minScore`: the floor belongs to the model, not to this call site.
+      { topK: 8, minScore: undefined, relativeCutoff: 0.6 },
     );
-    expect(hits).toEqual([{ noteId: "n1", score: 0.9 }]);
+    expect(hits).toEqual([
+      { noteId: "n1", score: 0.9, matchKind: "semantic" },
+    ]);
   });
 
   it("scheduleReindex forwards note records when the embedder is ready", async () => {

@@ -73,9 +73,8 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
-    // Use forks so each worker is a real Node process; jsdom provides
-    // localStorage (Node's own Web Storage API stays off without
-    // --experimental-webstorage, so there is nothing to shadow).
+    // Use forks so each worker is a real Node process. Node 22+ may expose a
+    // broken global localStorage getter; vitest.setup.ts wires jsdom's storage.
     pool: "forks",
     css: false,
     coverage: {

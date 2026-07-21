@@ -61,12 +61,13 @@ Details: [ADR-002](./adr/002-note-storage-format.md), [ADR-004](./adr/004-semant
 | Spaces registry + note tags | `src/infrastructure/spaces/`, `src/domain/space/` | [002](./adr/002-note-storage-format.md) |
 | Embedder, chunking, worker | `src/infrastructure/search/`, `src/workers/` | [003](./adr/003-semantic-search-embeddings.md) |
 | Index I/O, search, reindex | `src/infrastructure/search/` | [004](./adr/004-semantic-index-persistence.md) |
+| Relevance policy (folding, lexical index, ranking) | `src/domain/search/` | [010](./adr/010-hybrid-relevance.md) |
 | Editor UI | `src/editor/` | [005](./adr/005-markdown-editor.md) |
 | MD parse/serialize | `src/infrastructure/markdown/` | [005](./adr/005-markdown-editor.md) |
 | Attachments + cache | `src/infrastructure/attachments/` | [006](./adr/006-attachments-cache.md) |
 | Autosave, orchestration | `src/application/hooks/`, thin `src/App.tsx` | [007](./adr/007-autosave-eventual-reindex.md), [009](./adr/009-layered-application-architecture.md) |
 | Sidebar search, index status | `src/screens/SidebarSearch.tsx`, `IndexStatus.tsx`, labels in `application/view-models.ts` | [007](./adr/007-autosave-eventual-reindex.md) |
-| Command palette search | `src/screens/CommandPalette.tsx` | [003](./adr/003-semantic-search-embeddings.md), [004](./adr/004-semantic-index-persistence.md) |
+| Command palette search | `src/screens/CommandPalette.tsx` | [003](./adr/003-semantic-search-embeddings.md), [004](./adr/004-semantic-index-persistence.md), [010](./adr/010-hybrid-relevance.md) |
 | Browser gate | `src/lib/compatibility.ts` | [001](./adr/001-local-first-vault.md), [008](./adr/008-schema-compatibility.md) |
 
 ## Flow: open vault
@@ -121,11 +122,17 @@ flowchart LR
   Q[Query string] --> E[Embed query in worker]
   E --> S[Stream note JSON files]
   S --> D[Dot product per chunk]
-  D --> T[Top-K hits + snippets]
+  S --> L[Inverted index over titles + chunks]
+  D --> C[Floor + relative cutoff]
+  C --> F[Reciprocal rank fusion]
+  L --> F
+  F --> R[rankNotes: + title / space bonuses]
+  R --> T[One ranked list + snippets]
 ```
 
-- **Indexing:** chunk body → embed batches → write `.semantic-index/notes/<id>.json`.
-- **Invalidation:** `contentHash`, schema version, model id/dimensions ([ADR-004](./adr/004-semantic-index-persistence.md)).
+- **Indexing:** title vector + title-prefixed body chunks → embed batches → write `.semantic-index/notes/<id>.json` ([ADR-010](./adr/010-hybrid-relevance.md)).
+- **Ranking:** dense and lexical retrieval are fused by rank, then title and space signals from the in-memory note list are added — one list, never two concatenated ([ADR-010](./adr/010-hybrid-relevance.md)). Pure ranking policy lives in `src/domain/search/`.
+- **Invalidation:** `contentHash` (title *and* body), schema version, model id/dimensions ([ADR-004](./adr/004-semantic-index-persistence.md)).
 - **Embed layers:** `indexer` / `search` call the `Embedder` interface; `TransformersEmbedder` forwards inference to the worker; chunking, disk I/O, and scoring stay on the main thread. See [semantic-search-primer.md](./semantic-search-primer.md).
 
 ## Flow: full reindex
@@ -151,10 +158,11 @@ Semantic search itself runs inside `CommandPalette`, not inline in the sidebar.
 
 ## Command palette
 
-`CommandPalette` combines:
+`CommandPalette` renders **one ranked list**, never two concatenated ones ([ADR-010](./adr/010-hybrid-relevance.md)):
 
-- **Semantic hits** when the embedder is ready and the query is non-empty.
-- **Lexical fallback** — title substring match on the note list when semantic search returns nothing useful.
+- **Content hits** — dense and literal retrieval fused, when the embedder is ready and the query is non-empty.
+- **Title and space signals** — scored against those hits from the note list already in memory, so they work before the index does.
+- The row icon names which signal fired: clock for recency, arrow for a title or literal match, and distinct icons for vector-only and space matches.
 
 ## Code splitting
 

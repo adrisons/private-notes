@@ -16,7 +16,14 @@ const validEmbeddings = {
   schemaVersion: 1,
   updatedAt: "2026-05-17T10:00:00.000Z",
   chunks: [
-    { idx: 0, text: "hi", offset: 0, length: 2, embedding: [0.1, 0.2, 0.3] },
+    {
+      idx: 0,
+      kind: "body",
+      text: "hi",
+      offset: 0,
+      length: 2,
+      embedding: [0.1, 0.2, 0.3],
+    },
   ],
 };
 
@@ -59,5 +66,13 @@ describe("parseNoteEmbeddings", () => {
       chunks: [{ ...validEmbeddings.chunks[0], embedding: [0.1, "x", 0.3] }],
     };
     expect(parseNoteEmbeddings(bad)).toBeNull();
+  });
+
+  it("rejects a chunk written before chunk kinds existed", () => {
+    const legacy: Record<string, unknown> = { ...validEmbeddings.chunks[0] };
+    delete legacy.kind;
+    expect(
+      parseNoteEmbeddings({ ...validEmbeddings, chunks: [legacy] }),
+    ).toBeNull();
   });
 });

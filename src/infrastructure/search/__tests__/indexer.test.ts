@@ -10,6 +10,7 @@ import {
   readSemanticManifest,
 } from "../index-fs";
 import { listNotes } from "../../notes/storage";
+import { TITLE_CHUNK_IDX } from "../types";
 
 async function setup() {
   const root = makeFakeRoot();
@@ -41,8 +42,39 @@ describe("indexer", () => {
 
     const rec = await readNoteEmbeddings(io.root, notes[0]!.id);
     expect(rec?.modelId).toBe(embedder.id);
-    expect(rec?.chunks).toHaveLength(1);
+    // One vector for the title, one for the body.
+    expect(rec?.chunks.map((c) => c.kind)).toEqual(["title", "body"]);
+    expect(rec?.chunks[0]?.text).toBe("Cats");
+    expect(rec?.chunks[0]?.idx).toBe(TITLE_CHUNK_IDX);
     expect(rec?.chunks[0]?.embedding.length).toBe(embedder.dimensions);
+  });
+
+  it("re-embeds when only the title changes", async () => {
+    const io = await setup();
+    const rec = await createNote(io, { title: "Cats", body: "same body" });
+    const embedder = new FakeEmbedder();
+    await reindex(io.root, await listNotes(io), embedder);
+
+    await updateNote(io, rec.id, { title: "Dogs" });
+    const result = await reindex(io.root, await listNotes(io), embedder);
+    expect(result.embedded).toBe(1);
+  });
+
+  it("embeds the title alongside each body chunk", async () => {
+    const io = await setup();
+    const seen: string[] = [];
+    const base = new FakeEmbedder();
+    const spy = {
+      id: base.id,
+      dimensions: base.dimensions,
+      embed: async (texts: string[]) => {
+        seen.push(...texts);
+        return base.embed(texts);
+      },
+    };
+    await createNote(io, { title: "Tiradito", body: "leche de tigre" });
+    await reindex(io.root, await listNotes(io), spy);
+    expect(seen).toEqual(["Tiradito", "Tiradito\n\nleche de tigre"]);
   });
 
   it("skips notes whose content has not changed", async () => {

@@ -11,7 +11,7 @@ Local-first private notes with on-device semantic search.
 - A Chromium-based browser (Chrome, Edge, Brave, Opera, Arc). Firefox and Safari do not yet support the File System Access API.
 - Node 20+ for development.
 
-The first time you search, the model (~120 MB quantized, multilingual MiniLM) is downloaded from the Hugging Face CDN and cached in your browser. Every subsequent run is fully offline.
+The first time you search, the model (~120 MB quantized, multilingual E5) is downloaded from the Hugging Face CDN and cached in your browser. Every subsequent run is fully offline.
 
 ## Why not WebLLM?
 
@@ -44,13 +44,14 @@ The semantic index is kept in a separate sibling folder so it can be shared acro
 {
   "noteId": "01HXXX…",
   "filePath": "notes/2026/05/example-01HXXX.md",
-  "contentHash": "sha256 of the note body",
-  "modelId": "Xenova/paraphrase-multilingual-MiniLM-L12-v2",
+  "contentHash": "sha256 of the note title + body",
+  "modelId": "Xenova/multilingual-e5-small",
   "dimensions": 384,
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "updatedAt": "2026-05-17T10:00:00.000Z",
   "chunks": [
-    { "idx": 0, "text": "…", "offset": 0, "length": 380, "embedding": [/* unit vector */] }
+    { "idx": -1, "kind": "title", "text": "…", "offset": 0, "length": 0, "embedding": [/* unit vector */] },
+    { "idx": 0, "kind": "body", "text": "…", "offset": 0, "length": 380, "embedding": [/* unit vector */] }
   ]
 }
 ```

@@ -4,8 +4,10 @@ import type { SearchHit } from "./search-hit";
 
 export interface SemanticSearchOptions {
   topK?: number;
+  /** Cosine floor; defaults to the active model's own floor. */
   minScore?: number;
-  maxPerNote?: number;
+  /** Share of the best score a hit must keep to survive, measured from the floor. */
+  relativeCutoff?: number;
 }
 
 export interface ReindexOptions {

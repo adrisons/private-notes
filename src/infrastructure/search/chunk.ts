@@ -1,8 +1,13 @@
 /**
- * Word-based chunker. We target ~200 words per chunk with ~32 words overlap,
- * which approximates 256 / 32 BERT tokens for English/Spanish prose. Splitting
- * by tokens would require the tokenizer in this file — keeping it word-based
- * lets the chunker stay synchronous and dependency-free.
+ * Word-based chunker. Splitting by tokens would require the tokenizer in this
+ * file — keeping it word-based lets the chunker stay synchronous and
+ * dependency-free.
+ *
+ * ~120 words per chunk with ~24 overlap. The earlier 200/32 turned a whole
+ * recipe into one vector averaging ingredients, method and notes, so no part
+ * of it was strongly about anything; 120 is short enough that a paragraph
+ * keeps its own subject and still comfortably inside the model's window
+ * (ADR-010).
  */
 
 export interface Chunk {
@@ -31,8 +36,8 @@ function tokens(text: string): Array<{ word: string; offset: number }> {
 }
 
 export function chunkText(body: string, options: ChunkOptions = {}): Chunk[] {
-  const size = options.size ?? 200;
-  const overlap = options.overlap ?? 32;
+  const size = options.size ?? 120;
+  const overlap = options.overlap ?? 24;
   if (size <= overlap) {
     throw new Error("Chunk size must be greater than overlap");
   }

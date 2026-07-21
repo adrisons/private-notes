@@ -9,13 +9,14 @@
 - On-disk data outlives any single app build; users may open the same folder with an older or newer version.
 - The vault and semantic index evolve independently ([ADR-002](./002-note-storage-format.md), [ADR-004](./004-semantic-index-persistence.md)).
 - The browser must expose APIs the app depends on ([ADR-001](./001-local-first-vault.md)).
-- The app ships vault schema **v1** as the canonical on-disk format. There is no migration history before v1.
+- The app ships a versioned vault schema as the canonical on-disk format; the
+  current number lives in `SCHEMA_VERSION` (see below).
 
 ## Decision
 
 ### Vault schema (`.private-notes/`)
 
-- Constant `SCHEMA_VERSION` in `src/infrastructure/fs/schema.ts` (currently `1`).
+- Constant `SCHEMA_VERSION` in `src/infrastructure/fs/schema.ts`.
 - `validateManifestJson`:
   - Wrong `app` signature → incompatible.
   - `version > SCHEMA_VERSION` → **refuse to open** (“written by a newer app”).
@@ -25,7 +26,7 @@
 
 ### Semantic index schema (`.semantic-index/`)
 
-- Constant `SEMANTIC_SCHEMA_VERSION` in `src/infrastructure/search/types.ts` (currently `1`).
+- Constant `SEMANTIC_SCHEMA_VERSION` in `src/infrastructure/search/types.ts`.
 - Per-note and manifest `schemaVersion` must match; otherwise re-embed.
 - **Model change** (`modelId` / `dimensions`): `clearSemanticIndex` wipes all per-note JSON, then new manifest — **never mix embeddings from different models**.
 - During search, mismatched records are **skipped** until reindex updates them.

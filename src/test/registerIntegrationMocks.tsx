@@ -12,11 +12,14 @@ vi.mock("../infrastructure/fs/permissions", () => ({
 vi.mock("../infrastructure/search/transformers-embedder", async () => {
   const { FakeEmbedder } = await import("../infrastructure/search/embedder");
   class MockTransformersEmbedder extends FakeEmbedder {
+    constructor(model: { id: string }) {
+      super(model.id);
+    }
     async ready(): Promise<void> {}
   }
   return {
     TransformersEmbedder: MockTransformersEmbedder,
-    DEFAULT_MODEL_ID: "fake-hash-32",
+    DEFAULT_MODEL: { id: "fake-hash-32" },
   };
 });
 

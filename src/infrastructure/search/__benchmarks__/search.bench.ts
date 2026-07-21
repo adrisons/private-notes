@@ -28,6 +28,7 @@ corpora.forEach((corpus, i) => {
       await searchSemantic(corpus.root, QUERY, corpus.embedder, {
         topK: 8,
         minScore: 0.15,
+        relativeCutoff: 0.6,
       });
     });
   });

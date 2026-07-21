@@ -26,6 +26,7 @@ import {
 import { FakeEmbedder, type Embedder } from "../infrastructure/search/embedder";
 import {
   SEMANTIC_SCHEMA_VERSION,
+  TITLE_CHUNK_IDX,
   type NoteEmbeddings,
 } from "../infrastructure/search/types";
 
@@ -136,9 +137,21 @@ export async function buildFakeVault(options: CorpusOptions): Promise<Corpus> {
     for (let i = 0; i < records.length; i++) {
       const record = records[i]!;
       const body = bodies[i]!;
-      const chunks = chunkText(body);
+      // Same shape the indexer writes: a title vector plus the body chunks.
+      const chunks = [
+        {
+          idx: TITLE_CHUNK_IDX,
+          kind: "title" as const,
+          text: record.title,
+          offset: 0,
+          length: 0,
+        },
+        ...chunkText(body).map((c) => ({ ...c, kind: "body" as const })),
+      ];
       const vectors = await embedder.embed(chunks.map((c) => c.text));
-      const contentHash = await sha256Hex(new TextEncoder().encode(body));
+      const contentHash = await sha256Hex(
+        new TextEncoder().encode(`${record.title}\n\n${body}`),
+      );
       const embeddings: NoteEmbeddings = {
         noteId: record.id,
         filePath: record.path,

@@ -4,8 +4,9 @@ import { Input } from "../ui/Input";
 import { SpaceChip } from "../ui/SpaceChip";
 import { cn } from "../lib/cn";
 import {
-  dedupeSearchResultsByNote,
+  rankSearchResults,
   resolveNoteSpaceChips,
+  type MatchKind,
   type NoteListItem,
   type SearchResultItem,
   type SpaceListItem,
@@ -24,13 +25,10 @@ interface CommandPaletteProps {
 
 type Item =
   | { kind: "create" }
-  | { kind: "note"; record: NoteListItem }
-  | { kind: "hit"; noteId: string };
+  | { kind: "result"; noteId: string; matchKind: MatchKind };
 
 function keyFor(item: Item): string {
-  if (item.kind === "create") return "create";
-  if (item.kind === "note") return `n:${item.record.id}`;
-  return `h:${item.noteId}`;
+  return item.kind === "create" ? "create" : `r:${item.noteId}`;
 }
 
 /** Line icons, 24px grid — never emoji (design.md §1.2). */
@@ -86,6 +84,54 @@ function MatchIcon() {
   );
 }
 
+function SemanticIcon() {
+  return (
+    <svg
+      aria-hidden
+      className="h-4 w-4 shrink-0"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 4l1.8 4.2L18 10l-4.2 1.8L12 16l-1.8-4.2L6 10l4.2-1.8z" />
+      <path d="M18 16.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" />
+    </svg>
+  );
+}
+
+function SpaceIcon() {
+  return (
+    <svg
+      aria-hidden
+      className="h-4 w-4 shrink-0"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 12V5a1 1 0 011-1h7l8 8-8 8z" />
+      <circle cx="8.5" cy="8.5" r="1.25" />
+    </svg>
+  );
+}
+
+/**
+ * Every row used to carry the clock, so a literal title match looked exactly
+ * like "something you opened lately". The icon now names the claim the row is
+ * making — and for a space match the chip beside it names which space.
+ */
+function resultIcon(matchKind: MatchKind) {
+  if (matchKind === "recent") return <ClockIcon />;
+  if (matchKind === "semantic") return <SemanticIcon />;
+  if (matchKind === "space") return <SpaceIcon />;
+  return <MatchIcon />;
+}
+
 export function CommandPalette({
   open,
   onClose,
@@ -101,6 +147,7 @@ export function CommandPalette({
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchSeq = useRef(0);
 
   // Reset state and focus input each time the palette opens.
   useEffect(() => {
@@ -116,11 +163,18 @@ export function CommandPalette({
     if (!open) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!searchReady || query.trim().length === 0) {
+      // Invalidate anything in flight: its results describe an older query.
+      searchSeq.current++;
       setHits([]);
       return;
     }
     debounceRef.current = setTimeout(async () => {
-      setHits(await onSearch(query));
+      const seq = ++searchSeq.current;
+      const results = await onSearch(query);
+      // The debounce prevents most overlap, but not a slow query resolving
+      // after a newer, faster one — which would silently overwrite fresher
+      // results with staler ones.
+      if (seq === searchSeq.current) setHits(results);
     }, 200);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -132,39 +186,37 @@ export function CommandPalette({
     [notes],
   );
 
-  const noteTitleById = useMemo(
-    () => new Map(notes.map((note) => [note.id, note.title])),
+  const byRecency = useMemo(
+    () => [...notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
     [notes],
   );
 
   const items: Item[] = useMemo(() => {
-    const sorted = [...notes].sort((a, b) =>
-      b.updatedAt.localeCompare(a.updatedAt),
-    );
-    const trimmed = query.trim().toLowerCase();
+    const trimmed = query.trim();
     if (trimmed.length === 0) {
       return [
         { kind: "create" as const },
-        ...sorted.slice(0, 8).map((n) => ({ kind: "note" as const, record: n })),
+        ...byRecency.slice(0, 8).map((note) => ({
+          kind: "result" as const,
+          noteId: note.id,
+          matchKind: "recent" as const,
+        })),
       ];
     }
-    const semantic = dedupeSearchResultsByNote(hits);
-    const hitNoteIds = new Set(semantic.map((hit) => hit.noteId));
-    const lexical = sorted
-      .filter(
-        (note) =>
-          note.title.toLowerCase().includes(trimmed) &&
-          !hitNoteIds.has(note.id),
-      )
-      .slice(0, 5);
-    return [
-      ...semantic.map((hit) => ({
-        kind: "hit" as const,
-        noteId: hit.noteId,
-      })),
-      ...lexical.map((n) => ({ kind: "note" as const, record: n })),
-    ];
-  }, [query, hits, notes]);
+    // One ranking, not two lists stapled together: content relevance from the
+    // index and title/space matches from the notes already in memory are
+    // scored against each other before anything is rendered.
+    return rankSearchResults({
+      query: trimmed,
+      hits,
+      notes: byRecency,
+      spaces: spaceItems,
+    }).map((result) => ({
+      kind: "result" as const,
+      noteId: result.noteId,
+      matchKind: result.matchKind,
+    }));
+  }, [query, hits, byRecency, spaceItems]);
 
   // Re-animate results when a debounced search completes, not on every keystroke.
   const resultsAnimateKey = useMemo(() => {
@@ -180,7 +232,6 @@ export function CommandPalette({
 
   const choose = (item: Item) => {
     if (item.kind === "create") onCreate();
-    else if (item.kind === "note") onOpenNote(item.record.id);
     else onOpenNote(item.noteId);
     onClose();
   };
@@ -268,18 +319,12 @@ export function CommandPalette({
                   </li>
                 );
               }
-              const title =
-                item.kind === "note"
-                  ? item.record.title || "Untitled"
-                  : noteTitleById.get(item.noteId) || "Untitled";
-              const noteId =
-                item.kind === "note" ? item.record.id : item.noteId;
-              const note = noteById.get(noteId);
+              const note = noteById.get(item.noteId);
+              const title = note?.title || "Untitled";
               const chips = note
                 ? resolveNoteSpaceChips(note.spaceIds, spaceItems)
                 : [];
-              const icon =
-                item.kind === "note" ? <ClockIcon /> : <MatchIcon />;
+              const icon = resultIcon(item.matchKind);
               return (
                 <li key={keyFor(item)} role="presentation">
                   <button

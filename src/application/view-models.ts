@@ -4,9 +4,13 @@ import {
   GENERAL_SPACE_DESCRIPTION,
   GENERAL_SPACE_ID,
   isGeneralSpaceId,
+  rankNotes,
   type CustomSpace,
+  type MatchKind,
 } from "../domain";
 import type { SearchHit } from "./ports/search-hit";
+
+export type { MatchKind };
 
 /**
  * Presentation vocabulary for spaces. Screens and primitives read space
@@ -66,10 +70,11 @@ export interface SpaceListItem {
   updatedAt?: string;
 }
 
-/** Command palette semantic hit — one row per note. */
+/** Command palette content hit — one row per note. */
 export interface SearchResultItem {
   noteId: string;
   score: number;
+  matchKind: MatchKind;
 }
 
 /** Reindex progress surfaced in the sidebar. */
@@ -138,6 +143,7 @@ export function toSearchResultItem(hit: SearchHit): SearchResultItem {
   return {
     noteId: hit.noteId,
     score: hit.score,
+    matchKind: hit.matchKind,
   };
 }
 
@@ -145,15 +151,40 @@ export function toSearchResultItems(hits: SearchHit[]): SearchResultItem[] {
   return hits.map(toSearchResultItem);
 }
 
-/** Keep the best-scoring hit per note while preserving global search order. */
-export function dedupeSearchResultsByNote(
-  hits: SearchResultItem[],
-): SearchResultItem[] {
-  const seen = new Set<string>();
-  return hits.filter((hit) => {
-    if (seen.has(hit.noteId)) return false;
-    seen.add(hit.noteId);
-    return true;
+/** One search result row, already merged and ordered. */
+export interface RankedResultItem {
+  noteId: string;
+  score: number;
+  matchKind: MatchKind;
+}
+
+/**
+ * The palette's single ranked list.
+ *
+ * The index knows bodies; the caller knows titles, spaces and what is on
+ * screen right now. Both halves have to meet before anything is ordered —
+ * ranking them separately and concatenating the two lists is what buried a
+ * note titled *Tiradito de pescado* under eight weak cosine matches for the
+ * query "pescado".
+ */
+export function rankSearchResults(input: {
+  query: string;
+  hits: SearchResultItem[];
+  notes: NoteListItem[];
+  spaces: SpaceListItem[];
+  limit?: number;
+}): RankedResultItem[] {
+  return rankNotes({
+    query: input.query,
+    content: input.hits,
+    notes: input.notes.map((note) => ({
+      id: note.id,
+      title: note.title,
+      spaceNames: note.spaceIds.map(
+        (id) => resolveSpaceDisplay(id, input.spaces).name,
+      ),
+    })),
+    limit: input.limit,
   });
 }
 

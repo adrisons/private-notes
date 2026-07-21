@@ -32,6 +32,7 @@ duplicating them inside ADR-003/004.
 | [007](./adr/007-autosave-eventual-reindex.md) | Autosave & eventual reindex | `src/App.tsx`, debounced persist |
 | [008](./adr/008-schema-compatibility.md) | Schema & compatibility | `types.ts`, manifest validation, `compatibility.ts` |
 | [009](./adr/009-layered-application-architecture.md) | Layered DDD / ports & adapters | `src/domain/`, `src/application/`, `src/infrastructure/`, hooks in `App.tsx` |
+| [010](./adr/010-hybrid-relevance.md) | Hybrid relevance & one ranked list | `src/domain/search/`, `indexer.ts`, `search.ts`, `CommandPalette.tsx` |
 
 ## Suggested reading order by task
 

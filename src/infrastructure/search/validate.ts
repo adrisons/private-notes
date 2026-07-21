@@ -26,6 +26,7 @@ function isChunkRecord(v: unknown, dimensions: number): v is ChunkRecord {
   return (
     isObject(v) &&
     isNumber(v.idx) &&
+    (v.kind === "title" || v.kind === "body") &&
     isString(v.text) &&
     isNumber(v.offset) &&
     isNumber(v.length) &&

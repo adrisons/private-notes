@@ -28,6 +28,7 @@ function sampleEmbeddings(noteId = "note-1"): NoteEmbeddings {
     chunks: [
       {
         idx: 0,
+        kind: "body",
         text: "hello world",
         offset: 0,
         length: 11,

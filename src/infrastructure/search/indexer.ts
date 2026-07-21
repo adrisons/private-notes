@@ -11,9 +11,11 @@ import {
   writeSemanticManifest,
 } from "./index-fs";
 import { chunkText } from "./chunk";
-import type { Embedder } from "./embedder";
+import { toPassageInput, type Embedder } from "./embedder";
 import {
   SEMANTIC_SCHEMA_VERSION,
+  TITLE_CHUNK_IDX,
+  type ChunkRecord,
   type NoteEmbeddings,
 } from "./types";
 import type { NoteRecord } from "../fs/schema";
@@ -25,8 +27,12 @@ export interface IndexerOptions {
   onProgress?: (progress: { done: number; total: number }) => void;
 }
 
-async function bodyHash(body: string): Promise<string> {
-  return sha256Hex(new TextEncoder().encode(body));
+/**
+ * The title is part of what gets embedded, so renaming a note has to
+ * invalidate its vectors just like editing it does.
+ */
+async function contentFingerprint(title: string, body: string): Promise<string> {
+  return sha256Hex(new TextEncoder().encode(`${title}\n\n${body}`));
 }
 
 /**
@@ -40,7 +46,7 @@ async function needsReindex(
   body: string,
 ): Promise<{ stale: true; hash: string } | { stale: false }> {
   const existing = await readNoteEmbeddings(root, note.id);
-  const hash = await bodyHash(body);
+  const hash = await contentFingerprint(note.title, body);
   if (!existing) return { stale: true, hash };
   if (existing.schemaVersion !== SEMANTIC_SCHEMA_VERSION) {
     return { stale: true, hash };
@@ -53,6 +59,56 @@ async function needsReindex(
   }
   if (existing.contentHash !== hash) return { stale: true, hash };
   return { stale: false };
+}
+
+interface PlannedChunk {
+  record: Omit<ChunkRecord, "embedding">;
+  /** Exactly what goes to the model — never the same string as `record.text`. */
+  input: string;
+}
+
+/**
+ * Decide what to embed for one note.
+ *
+ * The title used to be invisible to search: it lives in frontmatter, and
+ * `parseNote` strips frontmatter before chunking, so a note called "Tiradito
+ * de pescado" could not be found by the word *pescado* unless the recipe
+ * happened to repeat it. Two things fix that, and they fix different halves:
+ *
+ * - a **title-only vector**, so a title match scores on its own instead of
+ *   being averaged into two hundred words of method;
+ * - the **title prefixed onto every body chunk**, so a chunk about marinating
+ *   still knows what dish it belongs to.
+ */
+function planChunks(
+  rawTitle: string,
+  body: string,
+  embedder: Embedder,
+): PlannedChunk[] {
+  const title = rawTitle.trim();
+  const planned: PlannedChunk[] = [];
+  if (title.length > 0) {
+    planned.push({
+      record: {
+        idx: TITLE_CHUNK_IDX,
+        kind: "title",
+        text: title,
+        offset: 0,
+        length: 0,
+      },
+      input: toPassageInput(embedder, title),
+    });
+  }
+  for (const chunk of chunkText(body)) {
+    planned.push({
+      record: { ...chunk, kind: "body" },
+      input: toPassageInput(
+        embedder,
+        title.length > 0 ? `${title}\n\n${chunk.text}` : chunk.text,
+      ),
+    });
+  }
+  return planned;
 }
 
 /**
@@ -115,8 +171,8 @@ export async function reindex(
   progress({ done, total });
 
   for (const item of work) {
-    const chunks = chunkText(item.body);
-    if (chunks.length === 0) {
+    const plan = planChunks(item.note.title, item.body, embedder);
+    if (plan.length === 0) {
       // Empty note: persist an empty embeddings record so we do not retry.
       await writeNoteEmbeddings(root, {
         noteId: item.note.id,
@@ -134,8 +190,8 @@ export async function reindex(
     }
 
     const vectors: number[][] = [];
-    for (let i = 0; i < chunks.length; i += batchSize) {
-      const batch = chunks.slice(i, i + batchSize).map((c) => c.text);
+    for (let i = 0; i < plan.length; i += batchSize) {
+      const batch = plan.slice(i, i + batchSize).map((c) => c.input);
       const out = await embedder.embed(batch);
       vectors.push(...out);
     }
@@ -148,7 +204,7 @@ export async function reindex(
       dimensions: embedder.dimensions,
       schemaVersion: SEMANTIC_SCHEMA_VERSION,
       updatedAt: new Date().toISOString(),
-      chunks: chunks.map((c, j) => ({ ...c, embedding: vectors[j]! })),
+      chunks: plan.map((c, j) => ({ ...c.record, embedding: vectors[j]! })),
     };
     await writeNoteEmbeddings(root, record);
     done++;

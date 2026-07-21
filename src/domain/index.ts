@@ -59,3 +59,29 @@ export {
   addSpaceId,
   removeSpaceId,
 } from "./space/space-ids";
+export {
+  foldInflection,
+  foldSearchText,
+  tokenizeSearchText,
+} from "./search/normalize";
+export {
+  buildLexicalIndex,
+  searchLexicalIndex,
+  type LexicalDocument,
+  type LexicalIndex,
+  type LexicalMatch,
+} from "./search/lexical-index";
+export {
+  applyRelativeCutoff,
+  DEFAULT_RELATIVE_CUTOFF,
+  fuseRankings,
+  rankNotes,
+  RELEVANCE_BONUS,
+  spaceSignal,
+  titleBonus,
+  type ContentHit,
+  type MatchKind,
+  type RankableNote,
+  type RankedNote,
+  type SpaceSignal,
+} from "./search/rank";
