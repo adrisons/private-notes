@@ -7,88 +7,89 @@ device — not the text, not the search index, not a single analytics ping. The
 browser reads and writes that folder directly, and search runs on your own
 machine. No account, no server, no sync you did not ask for.
 
-## Contents
+## 🧭 Contents
 
 - [private-notes](#private-notes)
-  - [Contents](#contents)
-  - [Why private-notes](#why-private-notes)
-  - [Features](#features)
-  - [Requirements](#requirements)
-  - [How search works](#how-search-works)
-  - [Folder layout](#folder-layout)
-    - [What is stored per note in the semantic index](#what-is-stored-per-note-in-the-semantic-index)
-  - [Scripts](#scripts)
-  - [Architecture \& decisions](#architecture--decisions)
-  - [Status](#status)
+  - [🧭 Contents](#-contents)
+  - [🔒 Why private-notes](#-why-private-notes)
+  - [✨ Features](#-features)
+  - [💻 Requirements](#-requirements)
+  - [🔍 How search works](#-how-search-works)
+  - [📂 Folder layout](#-folder-layout)
+    - [🧠 What is stored per note in the semantic index](#-what-is-stored-per-note-in-the-semantic-index)
+  - [🧰 Scripts](#-scripts)
+  - [📐 Architecture  decisions](#-architecture--decisions)
+  - [🚦 Status](#-status)
 
-## Why private-notes
+
+
+## 🔒 Why private-notes
 
 Three properties that shape every decision in this app:
 
-- **Private by construction.** The only network call the app ever makes is the
-  one-time download of the embedding model. Your note content has no path to
-  the network — no backend, no telemetry, no login. Privacy is not a setting
-  you have to trust; it is the shape of the code.
-- **Local-first, files you own.** The Markdown on disk is the source of truth.
-  Indexes and caches are derived from it, so the app can rebuild itself from
-  your files at any time. Point another editor at the same folder, back it up,
-  or sync it through Dropbox — the notes are just files, and they are yours.
-- **Fast and light.** Search answers as you type: a warm keyword index, cached
-  across keystrokes, fused with on-device embeddings. The note list is
-  virtualized and stays smooth at thousands of notes, saves happen on a
-  debounce, and reindexing runs in the background so writing never stalls.
+- 🔒 **Private by construction.** The only network call the app ever makes is the
+one-time download of the embedding model. Your note content has no path to
+the network — no backend, no telemetry, no login. Privacy is not a setting
+you have to trust; it is the shape of the code.
+- 💾 **Local-first, files you own.** The Markdown on disk is the source of truth.
+Indexes and caches are derived from it, so the app can rebuild itself from
+your files at any time. Point another editor at the same folder, back it up,
+or sync it through Dropbox — the notes are just files, and they are yours.
+- ⚡ **Fast and light.** Search answers as you type: a warm keyword index, cached
+across keystrokes, fused with on-device embeddings. The note list is
+virtualized and stays smooth at thousands of notes, saves happen on a
+debounce, and reindexing runs in the background so writing never stalls.
 
-## Features
 
-- **Semantic search that understands meaning.** A small multilingual model
-  finds notes by concept, so you can search for what you meant, not just the
-  words you typed.
-- **Keyword search that stays exact.** A BM25-shaped inverted index makes sure
-  precise terms and short queries still land, fused with meaning into one
-  ranked list.
-- **Titles and spaces feed search too.** Rename a note and it is searchable at
-  once; type "africa" and everything filed under that space surfaces, even when
-  the word never appears in the text.
-- **Spaces to group your notes.** Custom collections like *Trips*, *Recipes* or
-  *Work* keep things organized without folders full of files to babysit.
-- **A Markdown editor that writes clean files.** A TipTap editor produces
-  standard Markdown with YAML frontmatter — what you see is exactly what lands
-  on disk, readable in any other tool.
-- **Attachments without waste.** Images are stored content-addressed and
-  deduplicated, so pasting the same picture twice writes it once.
-- **Instant, optimistic UI.** Notes autosave and re-index in the background,
-  and the interface answers immediately while you keep writing.
-- **Accent- and case-insensitive matching.** With light Spanish inflection
-  folding, so *pescados* finds *pescado*.
-- **Works fully offline.** After the first model download, every search runs
-  with no network at all.
-- **A vault that migrates forward.** The on-disk format is versioned, so
-  existing notes stay safe across updates.
 
-## Requirements
+## ✨ Features
+
+- 🧠 **Semantic search that understands meaning.** A small multilingual model
+finds notes by concept, so you can search for what you meant, not just the
+words you typed.
+- 🎯 **Keyword search that stays exact.** A BM25-shaped inverted index makes sure  
+precise terms and short queries still land, fused with meaning into one  
+ranked list.
+- 📚 **Spaces to group your notes.** Custom collections like *Trips*, *Recipes* or
+*Work* keep things organized without folders full of files to babysit.
+- 📝 **A Markdown editor that writes clean files.** A TipTap editor produces
+standard Markdown with YAML frontmatter — what you see is exactly what lands
+on disk, readable in any other tool.
+- 📎 **Attachments without waste.** Images are stored content-addressed and
+deduplicated, so pasting the same picture twice writes it once.
+- 🚀 **Instant, optimistic UI.** Notes autosave and re-index in the background,
+and the interface answers immediately while you keep writing.
+- 🔤 **Accent- and case-insensitive matching.** With light Spanish inflection
+folding, so *pescados* finds *pescado*.
+- 🔌 **Works fully offline.** After the first model download, every search runs  
+with no network at all.
+
+
+
+## 💻 Requirements
 
 - A Chromium-based browser (Chrome, Edge, Brave, Opera, Arc). Firefox and Safari do not yet support the File System Access API.
 - Node 20+ for development.
 
 The first time you search, the model (~120 MB quantized, `Xenova/multilingual-e5-small`, 384-dim) is downloaded from the Hugging Face CDN and cached in your browser. Every subsequent run is fully offline.
 
-## How search works
+## 🔍 How search works
 
 Search is **hybrid** and produces a single ranked list, never two lists stapled together:
 
-- **Meaning (dense).** Your query is embedded in the worker and compared to note
-  embeddings by cosine similarity. The model is asymmetric-retrieval tuned, with
-  `query:` / `passage:` prefixes.
-- **Keywords (lexical).** An inverted index with BM25-shaped scoring catches
-  exact terms and short queries. It is cached across keystrokes, so warm queries
-  are several times faster than the first one.
-- **Fusion.** Both are combined with Reciprocal Rank Fusion, then title and
-  space signals from the in-memory note list are layered on top — so a title or
-  space match answers even before the index is ready.
+- 🧠 **Meaning (dense).** Your query is embedded in the worker and compared to note
+embeddings by cosine similarity. The model is asymmetric-retrieval tuned, with
+`query:` / `passage:` prefixes.
+- 🎯 **Keywords (lexical).** An inverted index with BM25-shaped scoring catches
+exact terms and short queries. It is cached across keystrokes, so warm queries
+are several times faster than the first one.
+- 🔀 **Fusion.** Both are combined with Reciprocal Rank Fusion, then title and
+space signals from the in-memory note list are layered on top — so a title or
+space match answers even before the index is ready.
 
 Matching is accent- and case-insensitive with light Spanish inflection folding, so *pescados* finds *pescado*.
 
-## Folder layout
+## 📂 Folder layout
 
 The folder you choose is owned by the app. It is initialized on first use with this structure:
 
@@ -111,7 +112,7 @@ Each note is a Markdown file with YAML frontmatter (`id`, `title`, `createdAt`, 
 
 The semantic index is kept in a separate sibling folder so it can be shared across devices (e.g. via Dropbox). One JSON file per note keeps sync conflicts narrow — two devices editing different notes never write to the same file. If a note's `contentHash` no longer matches the on-disk note, or the active model differs from the one declared in `manifest.json`, those files are re-embedded.
 
-### What is stored per note in the semantic index
+### 🧠 What is stored per note in the semantic index
 
 ```jsonc
 {
@@ -131,7 +132,7 @@ The semantic index is kept in a separate sibling folder so it can be shared acro
 
 Embeddings of different models are never mixed. Changing the model deletes the index and reindexes everything. Because `contentHash` covers the title, renaming a note re-embeds it.
 
-## Scripts
+## 🧰 Scripts
 
 ```bash
 pnpm install
@@ -148,11 +149,11 @@ pnpm repair:vault   # rebuild vault metadata from the Markdown on disk
 
 This repo pins the package manager via the `packageManager` field in `package.json`. Use [pnpm](https://pnpm.io/) (Corepack: `corepack enable`).
 
-## Architecture & decisions
+## 📐 Architecture & decisions
 
 Engineering docs (architecture overview and ADRs): **[docs/README.md](./docs/README.md)**.
 
-## Status
+## 🚦 Status
 
 Pre-1.0 and under active development, but usable day to day: creating, editing
 and autosaving notes, organizing them into spaces, pasting images, and hybrid
