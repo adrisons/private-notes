@@ -232,8 +232,9 @@ comment.
 ## 9. Testing
 
 - Run `pnpm test` and `pnpm typecheck` before considering a change done.
-For UI changes, also run `pnpm lint`. `pnpm check` runs all three (typecheck
-→ lint → tests) and mirrors exactly what CI gates on.
+For UI changes, also run `pnpm lint`. `pnpm check` runs typecheck → lint →
+tests; CI runs the same plus `pnpm build` in parallel after those static
+checks (see `.github/workflows/ci.yml`).
 - Co-locate tests in `__tests__/` next to the module they cover, named
 `*.test.ts(x)`.
 - The functional suite is split into named vitest projects, selected by
