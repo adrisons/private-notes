@@ -10,12 +10,17 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:general": "vitest run --project general",
+    "test:integration": "vitest run --project integration",
+    "test:relevance": "vitest run --project relevance",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "bench": "vitest bench --run",
     "gen:vault": "node scripts/generate-vault.mjs",
+    "repair:vault": "node scripts/repair-vault.mjs",
     "lint": "eslint .",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run test"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.5",

@@ -232,9 +232,22 @@ comment.
 ## 9. Testing
 
 - Run `pnpm test` and `pnpm typecheck` before considering a change done.
-For UI changes, also run `pnpm lint`.
+For UI changes, also run `pnpm lint`. `pnpm check` runs all three (typecheck
+→ lint → tests) and mirrors exactly what CI gates on.
 - Co-locate tests in `__tests__/` next to the module they cover, named
 `*.test.ts(x)`.
+- The functional suite is split into named vitest projects, selected by
+filename convention. Follow it so a test lands in the right suite:
+
+  | Kind          | Filename                   | Script                  | Scope                                              |
+  | ------------- | -------------------------- | ----------------------- | -------------------------------------------------- |
+  | Unit          | `*.test.ts(x)`             | `pnpm test:general`     | Single module; the default, fast bucket.           |
+  | Integration   | `*.integration.test.ts(x)` | `pnpm test:integration` | Cross-module / App-level flows.                    |
+  | Relevance     | `*.relevance.test.ts(x)`   | `pnpm test:relevance`   | The search-ranking regression net over real stack. |
+  | Benchmark     | `*.bench.ts`               | `pnpm bench`            | Performance/load; not a pass/fail gate.            |
+
+  `pnpm test` (bare `vitest run`) runs general + integration + relevance
+  together; the projects live in `vite.config.ts` and share one config.
 - Mock the File System Access API with `src/test/fakeFs.ts`. Tests that
 touch IndexedDB import `fake-indexeddb/auto` at the top.
 - Cover the new behaviour with at least one test. Prefer testing the

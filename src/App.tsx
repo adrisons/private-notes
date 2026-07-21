@@ -8,6 +8,7 @@ import { NoteHeader } from "./screens/NoteHeader";
 import { EmptyState } from "./screens/EmptyState";
 import { SidebarSearch } from "./screens/SidebarSearch";
 import { VaultIndicator } from "./screens/VaultIndicator";
+import { VaultOpenDialogs } from "./screens/VaultOpenDialogs";
 import { SpaceDetailView } from "./screens/SpaceDetailView";
 import { getCompatibility } from "./lib/compatibility";
 import { Unsupported } from "./screens/Unsupported";
@@ -209,12 +210,17 @@ export function App() {
 
   if (!vault.session) {
     return (
-      <AppShell header={headerNode}>
-        <Welcome
-          onPickFolder={vault.handlePick}
-          disabledReason={vault.error ?? undefined}
-        />
-      </AppShell>
+      <>
+        <AppShell header={headerNode}>
+          <Welcome
+            onPickFolder={vault.handlePick}
+            disabledReason={
+              vault.openIssue ? undefined : (vault.error ?? undefined)
+            }
+          />
+        </AppShell>
+        <VaultOpenDialogs vault={vault} />
+      </>
     );
   }
 
@@ -349,6 +355,7 @@ export function App() {
         onOpenNote={openNote}
         onCreate={() => void handleCreateNote()}
       />
+      <VaultOpenDialogs vault={vault} />
     </AppShell>
   );
 }

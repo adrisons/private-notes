@@ -1,6 +1,7 @@
 import * as permissions from "./permissions";
 import * as vault from "./vault";
 import * as reconcile from "../notes/reconcile";
+import * as repair from "./repair-vault";
 import type { VaultGateway } from "../../application/ports/vault-gateway";
 
 export const fsVaultGateway: VaultGateway = {
@@ -12,4 +13,6 @@ export const fsVaultGateway: VaultGateway = {
   reconcile: async (handle) => {
     await reconcile.reconcileVault(handle);
   },
+  assessRepair: (handle) => repair.assessVaultRepair(handle),
+  repair: (handle) => repair.repairVault(handle),
 };

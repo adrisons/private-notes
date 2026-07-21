@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCompatibility } from "../../lib/compatibility";
 import { defaultInfrastructure } from "../composition";
+import { openVaultUserError, reportUserError, vaultIncompatibleCause } from "../errors";
 import { openVault } from "../use-cases/open-vault";
-import { reportUserError } from "../errors";
+import { repairVault } from "../use-cases/repair-vault";
 import type { VaultSession, VaultStartup } from "../vault-session";
 import type { OpenNoteState } from "../view-models";
 import { toNoteListItems, type NoteListItem } from "../view-models";
 
 const compat = getCompatibility();
+
+export type VaultOpenIssue =
+  | { kind: "repair"; handle: FileSystemDirectoryHandle; noteCount: number }
+  | { kind: "blocked"; message: string; fixHint: string };
 
 export interface UseVaultSessionOptions {
   flushBeforeSwitch?: () => void;
@@ -20,8 +25,13 @@ export interface UseVaultSessionResult {
   setCurrent: (current: OpenNoteState | null) => void;
   error: string | null;
   setError: (error: string | null) => void;
+  openIssue: VaultOpenIssue | null;
+  repairing: boolean;
   booting: boolean;
   handlePick: () => Promise<void>;
+  repairAndOpen: () => Promise<void>;
+  dismissOpenIssue: () => void;
+  chooseAnotherFolder: () => void;
   refreshSummaries: () => Promise<void>;
 }
 
@@ -37,6 +47,19 @@ function applyStartup(
   setCurrent(startup.current);
 }
 
+function clearActiveVault(
+  setSession: (s: VaultSession | null) => void,
+  setSummaries: (s: VaultStartup["summaries"]) => void,
+  setCurrent: (c: OpenNoteState | null) => void,
+  sessionRef: { current: VaultSession | null },
+): void {
+  sessionRef.current?.dispose();
+  sessionRef.current = null;
+  setSession(null);
+  setSummaries([]);
+  setCurrent(null);
+}
+
 export function useVaultSession(
   options: UseVaultSessionOptions = {},
 ): UseVaultSessionResult {
@@ -47,6 +70,8 @@ export function useVaultSession(
   const [summaries, setSummaries] = useState<VaultStartup["summaries"]>([]);
   const [current, setCurrent] = useState<OpenNoteState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [openIssue, setOpenIssue] = useState<VaultOpenIssue | null>(null);
+  const [repairing, setRepairing] = useState(false);
   const [booting, setBooting] = useState(true);
 
   const refreshSummaries = useCallback(async () => {
@@ -56,9 +81,14 @@ export function useVaultSession(
 
   const activateFromHandle = useCallback(
     async (handle: FileSystemDirectoryHandle) => {
-      sessionRef.current?.dispose();
-      const result = await openVault(handle);
-      applyStartup(setSession, setSummaries, setCurrent, result.session, result.startup);
+      clearActiveVault(setSession, setSummaries, setCurrent, sessionRef);
+      try {
+        const result = await openVault(handle);
+        applyStartup(setSession, setSummaries, setCurrent, result.session, result.startup);
+      } catch (err) {
+        clearActiveVault(setSession, setSummaries, setCurrent, sessionRef);
+        throw err;
+      }
     },
     [],
   );
@@ -93,18 +123,78 @@ export function useVaultSession(
     };
   }, []);
 
+  const handleOpenFailure = useCallback(async (err: unknown, handle: FileSystemDirectoryHandle) => {
+    const incompatible = vaultIncompatibleCause(err);
+    if (incompatible?.code === "not-a-vault") {
+      const assessment = await defaultInfrastructure.vaultGateway.assessRepair(handle);
+      if (assessment.eligible) {
+        setOpenIssue({ kind: "repair", handle, noteCount: assessment.noteCount });
+        setError(null);
+        return;
+      }
+      setOpenIssue({
+        kind: "blocked",
+        message: "This folder is not a private-notes vault.",
+        fixHint:
+          "Choose an empty folder to create a new vault, or one that already contains note files under notes/.",
+      });
+      setError(null);
+      return;
+    }
+
+    const payload =
+      incompatible !== null ? openVaultUserError(incompatible) : reportUserError(err);
+    setOpenIssue({
+      kind: "blocked",
+      message: payload.message,
+      fixHint: payload.fixHint,
+    });
+    setError(null);
+  }, []);
+
   const handlePick = useCallback(async () => {
     try {
       setError(null);
+      setOpenIssue(null);
       const handle = await defaultInfrastructure.folderPicker.pick();
       if (!handle) return;
       flushBeforeSwitch?.();
-      await activateFromHandle(handle);
+      try {
+        await activateFromHandle(handle);
+      } catch (err) {
+        await handleOpenFailure(err, handle);
+      }
     } catch (err) {
       const payload = reportUserError(err);
       setError(`${payload.message} ${payload.fixHint}`);
     }
-  }, [activateFromHandle, flushBeforeSwitch]);
+  }, [activateFromHandle, flushBeforeSwitch, handleOpenFailure]);
+
+  const repairAndOpen = useCallback(async () => {
+    if (openIssue?.kind !== "repair" || repairing) return;
+    const { handle } = openIssue;
+    setRepairing(true);
+    setError(null);
+    try {
+      flushBeforeSwitch?.();
+      await repairVault(handle);
+      setOpenIssue(null);
+      await activateFromHandle(handle);
+    } catch (err) {
+      await handleOpenFailure(err, handle);
+    } finally {
+      setRepairing(false);
+    }
+  }, [activateFromHandle, flushBeforeSwitch, handleOpenFailure, openIssue, repairing]);
+
+  const dismissOpenIssue = useCallback(() => {
+    setOpenIssue(null);
+  }, []);
+
+  const chooseAnotherFolder = useCallback(() => {
+    setOpenIssue(null);
+    void handlePick();
+  }, [handlePick]);
 
   useEffect(() => {
     if (!session) setCurrent(null);
@@ -117,8 +207,13 @@ export function useVaultSession(
     setCurrent,
     error,
     setError,
+    openIssue,
+    repairing,
     booting,
     handlePick,
+    repairAndOpen,
+    dismissOpenIssue,
+    chooseAnotherFolder,
     refreshSummaries,
   };
 }

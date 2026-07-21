@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "fake-indexeddb/auto";
 import "./test/registerIntegrationMocks";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { vaultIOError } from "./test/errorFixtures";
 import {
   advanceAutosave,
   cleanupIntegrationTest,
   renderAppWithFakeTimers,
   resetVaultStore,
+  waitForVaultOpen,
 } from "./test/appHarness";
 import {
   confirmDeleteActiveNote,
@@ -16,11 +17,15 @@ import {
   expectErrorToast,
   expectLoggedVaultIOError,
   openVaultFromWelcomeScreen,
+  pickFolderExpectingOpenDialog,
+  seedBlockedFolder,
+  seedRepairableFolder,
   sidebarNoteButton,
   stubDirectoryPicker,
   waitForIndexErrorInSidebar,
   type IntegrationTestContext,
 } from "./test/integrationHelpers";
+import { makeFakeRoot } from "./test/fakeFs";
 import * as openVaultModule from "./application/use-cases/open-vault";
 import * as saveNoteModule from "./application/use-cases/save-note";
 import * as createNoteModule from "./application/use-cases/create-note";
@@ -70,6 +75,9 @@ describe("App error handling integration", () => {
 
       await waitFor(() => {
         expect(
+          screen.getByRole("dialog", { name: /cannot open this folder/i }),
+        ).toBeInTheDocument();
+        expect(
           screen.getByText(/could not access this folder\./i),
         ).toBeInTheDocument();
         expect(
@@ -78,6 +86,85 @@ describe("App error handling integration", () => {
       });
       expectLoggedVaultIOError(consoleError, "open-vault");
       openSpy.mockRestore();
+    });
+  });
+
+  describe("incompatible vault folders", () => {
+    it("shows the blocked-folder dialog for a non-empty folder without vault metadata", async () => {
+      await seedBlockedFolder(ctx.pickerRoot);
+
+      const result = await renderAppWithFakeTimers();
+      await pickFolderExpectingOpenDialog(
+        result,
+        /cannot open this folder/i,
+      );
+
+      const dialog = screen.getByRole("dialog", {
+        name: /cannot open this folder/i,
+      });
+      expect(within(dialog).getByText(/not a private-notes vault/i)).toBeInTheDocument();
+      expect(
+        within(dialog).getByText(/choose an empty folder to create a new vault/i),
+      ).toBeInTheDocument();
+      expect(consoleError).not.toHaveBeenCalled();
+    });
+
+    it("shows the repair dialog when note files exist without vault metadata", async () => {
+      await seedRepairableFolder(ctx.pickerRoot, "Tiradito");
+
+      const result = await renderAppWithFakeTimers();
+      await pickFolderExpectingOpenDialog(result, /repair this folder/i);
+
+      const dialog = screen.getByRole("dialog", { name: /repair this folder/i });
+      expect(within(dialog).getByText(/1 note file/i)).toBeInTheDocument();
+      expect(within(dialog).getByText(/\.private-notes\//)).toBeInTheDocument();
+      expect(consoleError).not.toHaveBeenCalled();
+    });
+
+    it("repairs and opens a folder from the repair dialog", async () => {
+      await seedRepairableFolder(ctx.pickerRoot, "Arroz chaufa");
+
+      const result = await renderAppWithFakeTimers();
+      await pickFolderExpectingOpenDialog(result, /repair this folder/i);
+
+      const dialog = screen.getByRole("dialog", { name: /repair this folder/i });
+      await result.user.click(
+        within(dialog).getByRole("button", { name: /repair and open/i }),
+      );
+
+      await waitForVaultOpen(result);
+      expect(sidebarNoteButton("Arroz chaufa")).toBeInTheDocument();
+    });
+
+    it("returns to Welcome with a blocked dialog when switching to an invalid folder", async () => {
+      const goodRoot = makeFakeRoot();
+      const blockedRoot = makeFakeRoot();
+      await seedBlockedFolder(blockedRoot);
+
+      stubDirectoryPicker(goodRoot);
+      const result = await renderAppWithFakeTimers();
+      await result.user.click(
+        screen.getByRole("button", { name: /choose folder/i }),
+      );
+      await waitForVaultOpen(result);
+      vi.stubGlobal(
+        "showDirectoryPicker",
+        vi.fn().mockResolvedValue(blockedRoot),
+      );
+
+      fireEvent.click(
+        screen.getByRole("button", { name: /change folder/i }),
+      );
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("dialog", { name: /cannot open this folder/i }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole("heading", { name: /your notes, on your machine/i }),
+        ).toBeInTheDocument();
+      });
+      expect(consoleError).not.toHaveBeenCalled();
     });
   });
 

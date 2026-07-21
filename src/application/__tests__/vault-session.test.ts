@@ -15,6 +15,8 @@ const testVaultGateway: VaultGateway = {
   hasPermission: vi.fn().mockResolvedValue(true),
   open: vi.fn().mockResolvedValue(undefined),
   reconcile: vi.fn().mockResolvedValue(undefined),
+  assessRepair: vi.fn().mockResolvedValue({ eligible: false, noteCount: 0 }),
+  repair: vi.fn().mockResolvedValue({ noteCount: 0, spaceCount: 0, skipped: [] }),
 };
 
 describe("openVault", () => {
