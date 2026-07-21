@@ -51,15 +51,36 @@ interface Posting {
 export interface LexicalIndex {
   readonly documentCount: number;
   readonly postings: ReadonlyMap<string, ReadonlyMap<string, Posting>>;
+  /**
+   * Every term in `postings`, sorted, so prefix expansion is a binary search
+   * for the block of matches instead of a scan of the whole vocabulary.
+   */
+  readonly sortedTerms: readonly string[];
 }
 
-export function buildLexicalIndex(
-  documents: Iterable<LexicalDocument>,
-): LexicalIndex {
+/**
+ * Feed documents one at a time and materialise the index once at the end.
+ *
+ * Streaming search reads every note off disk anyway (ADR-004); building the
+ * index incrementally in that same pass avoids first collecting every note's
+ * title and body into a `LexicalDocument[]` only to walk it again — one fewer
+ * copy of the corpus in memory, one fewer pass.
+ */
+export interface LexicalIndexBuilder {
+  add(doc: LexicalDocument): void;
+  build(): LexicalIndex;
+}
+
+export function createLexicalIndexBuilder(): LexicalIndexBuilder {
   const postings = new Map<string, Map<string, Posting>>();
   let documentCount = 0;
 
-  const add = (docId: string, text: string, weight: number, isTitle: boolean) => {
+  const addField = (
+    docId: string,
+    text: string,
+    weight: number,
+    isTitle: boolean,
+  ) => {
     for (const term of tokenizeSearchText(text)) {
       let byDoc = postings.get(term);
       if (!byDoc) {
@@ -76,13 +97,25 @@ export function buildLexicalIndex(
     }
   };
 
-  for (const doc of documents) {
-    documentCount++;
-    add(doc.id, doc.title, TITLE_WEIGHT, true);
-    add(doc.id, doc.body, 1, false);
-  }
+  return {
+    add(doc) {
+      documentCount++;
+      addField(doc.id, doc.title, TITLE_WEIGHT, true);
+      addField(doc.id, doc.body, 1, false);
+    },
+    build() {
+      const sortedTerms = [...postings.keys()].sort();
+      return { documentCount, postings, sortedTerms };
+    },
+  };
+}
 
-  return { documentCount, postings };
+export function buildLexicalIndex(
+  documents: Iterable<LexicalDocument>,
+): LexicalIndex {
+  const builder = createLexicalIndexBuilder();
+  for (const doc of documents) builder.add(doc);
+  return builder.build();
 }
 
 /** Inverse document frequency, BM25 flavour — always positive. */
@@ -93,11 +126,24 @@ function idf(documentCount: number, documentFrequency: number): number {
   );
 }
 
+/** First index in `sorted` whose value is >= `target` (lower bound). */
+function lowerBound(sorted: readonly string[], target: string): number {
+  let lo = 0;
+  let hi = sorted.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (sorted[mid]! < target) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
 /**
  * Terms an indexed query term should score against: itself, plus every term
- * it prefixes. The prefix sweep walks the whole vocabulary, which is a few
- * thousand strings for a personal vault — cheaper than the file reads that
- * produced it.
+ * it prefixes. Every string with `term` as a prefix sorts >= `term` and forms
+ * one contiguous block, so a binary search to the block's start and a walk
+ * until the prefix stops matching replaces scanning the whole vocabulary —
+ * O(log V + matches) rather than O(V) on every keystroke.
  */
 function expand(
   index: LexicalIndex,
@@ -106,10 +152,11 @@ function expand(
   const out: Array<{ term: string; weight: number }> = [];
   if (index.postings.has(term)) out.push({ term, weight: 1 });
   if (term.length < PREFIX_MIN_LENGTH) return out;
-  for (const candidate of index.postings.keys()) {
-    if (candidate !== term && candidate.startsWith(term)) {
-      out.push({ term: candidate, weight: PREFIX_WEIGHT });
-    }
+  const { sortedTerms } = index;
+  for (let i = lowerBound(sortedTerms, term); i < sortedTerms.length; i++) {
+    const candidate = sortedTerms[i]!;
+    if (!candidate.startsWith(term)) break;
+    if (candidate !== term) out.push({ term: candidate, weight: PREFIX_WEIGHT });
   }
   return out;
 }

@@ -3,7 +3,7 @@ import { makeFakeRoot } from "../../../test/fakeFs";
 import { initializeVault } from "../../fs/vault";
 import { FakeEmbedder, type Embedder } from "../embedder";
 import { writeNoteEmbeddings } from "../index-fs";
-import { searchSemantic } from "../search";
+import { searchSemantic, type LexicalIndexCache } from "../search";
 import { SEMANTIC_SCHEMA_VERSION, TITLE_CHUNK_IDX } from "../types";
 
 async function setupRoot() {
@@ -259,6 +259,63 @@ describe("searchSemantic", () => {
       makeRecord("n1", [{ text: "beta gamma", embedding: qVec!.map(() => 0) }]),
     );
     expect(await searchSemantic(root, "alpha", strict)).toEqual([]);
+  });
+
+  it("populates the lexical cache on a miss and reuses it without re-tokenising", async () => {
+    const root = await setupRoot();
+    const embedder = new FakeEmbedder();
+    const [qVec] = await embedder.embed(["pescado"]);
+    await writeNoteEmbeddings(
+      root,
+      makeRecord("tiradito", [
+        { text: "Tiradito de pescado", embedding: qVec!, kind: "title" },
+        { text: "lomo en laminas finas", embedding: qVec! },
+      ]),
+    );
+
+    const cache: LexicalIndexCache = { current: null };
+    const first = await searchSemantic(root, "pescado", embedder, {}, cache);
+    expect(first.map((h) => h.noteId)).toEqual(["tiradito"]);
+    const built = cache.current;
+    expect(built).not.toBeNull();
+
+    // A second query keeps the exact same index instance (no rebuild) and still
+    // resolves against it.
+    const second = await searchSemantic(root, "laminas", embedder, {}, cache);
+    expect(cache.current).toBe(built);
+    expect(second.map((h) => h.noteId)).toEqual(["tiradito"]);
+  });
+
+  it("serves lexical hits from a stale cache until the session clears it", async () => {
+    const root = await setupRoot();
+    const embedder = new FakeEmbedder();
+    const [qVec] = await embedder.embed(["ceviche"]);
+    // Orthogonal so dense scoring rejects it under a strict floor: the note can
+    // only ever surface through the lexical index.
+    const orthogonal = qVec!.map((_, i) => (i === 0 ? 1 : 0));
+    await writeNoteEmbeddings(
+      root,
+      makeRecord("tiradito", [{ text: "Tiradito de pescado", embedding: orthogonal }]),
+    );
+
+    // Prime the cache, then add a note the cache does not know about.
+    const cache: LexicalIndexCache = { current: null };
+    await searchSemantic(root, "pescado", embedder, { minScore: 0.99 }, cache);
+    await writeNoteEmbeddings(
+      root,
+      makeRecord("ceviche", [{ text: "Ceviche de pescado", embedding: orthogonal }]),
+    );
+
+    // "ceviche" is dense-rejected and invisible to the stale lexical index —
+    // proving the index is genuinely reused, not rebuilt per query.
+    const stale = await searchSemantic(root, "ceviche", embedder, { minScore: 0.99 }, cache);
+    expect(stale.map((h) => h.noteId)).not.toContain("ceviche");
+
+    // Clearing the cache (what reindex/pruneOrphans do) rebuilds it, and now
+    // the literal match lands.
+    cache.current = null;
+    const fresh = await searchSemantic(root, "ceviche", embedder, { minScore: 0.99 }, cache);
+    expect(fresh.map((h) => h.noteId)).toContain("ceviche");
   });
 
   it("sends the model's query prefix, not the raw query", async () => {

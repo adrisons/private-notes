@@ -2,9 +2,10 @@ import { iterateNoteEmbeddings } from "./index-fs";
 import { dot, toQueryInput, type Embedder } from "./embedder";
 import type { ChunkRecord, NoteEmbeddings } from "./types";
 import {
-  buildLexicalIndex,
+  createLexicalIndexBuilder,
   searchLexicalIndex,
   type LexicalDocument,
+  type LexicalIndex,
 } from "../../domain/search/lexical-index";
 import { applyRelativeCutoff, fuseRankings } from "../../domain/search/rank";
 import type { MatchKind } from "../../domain/search/rank";
@@ -36,6 +37,22 @@ export interface SearchOptions {
 
 /** How many literal matches to carry into the fusion. */
 const LEXICAL_CANDIDATES = 32;
+
+/**
+ * A place for the session to stash the lexical index between queries.
+ *
+ * The index is a pure function of the note text already streamed off disk, so
+ * rebuilding it on every keystroke is O(corpus) of wasted tokenisation — the
+ * dominant cost of a query on a large vault. The session (`fs-semantic-search`)
+ * owns one of these per vault and clears it whenever the on-disk index changes
+ * (`reindex`, `pruneOrphans`), so the index is built once and reused across a
+ * palette's worth of keystrokes. Dense scoring still streams every record —
+ * the query vector is new each time — but that pass no longer re-tokenises the
+ * corpus. Omitting the cache falls back to building fresh each call.
+ */
+export interface LexicalIndexCache {
+  current: LexicalIndex | null;
+}
 
 /** One note's contribution to the two candidate lists. */
 interface Candidate {
@@ -89,6 +106,7 @@ export async function searchSemantic(
   query: string,
   embedder: Embedder,
   options: SearchOptions = {},
+  cache?: LexicalIndexCache,
 ): Promise<SearchHit[]> {
   const trimmed = query.trim();
   if (trimmed.length === 0) return [];
@@ -99,7 +117,10 @@ export async function searchSemantic(
   if (!qVec) return [];
 
   const candidates = new Map<string, Candidate>();
-  const documents: LexicalDocument[] = [];
+  // Reuse the cached lexical index when the session has one; otherwise build it
+  // in this same streaming pass so the corpus is tokenised once, not per query.
+  const cachedLexical = cache?.current ?? null;
+  const builder = cachedLexical ? null : createLexicalIndexBuilder();
 
   for await (const rec of iterateNoteEmbeddings(root)) {
     if (rec.modelId !== embedder.id || rec.dimensions !== embedder.dimensions) {
@@ -118,8 +139,11 @@ export async function searchSemantic(
       }
     }
     candidates.set(rec.noteId, { record: rec, bestChunk, bestScore });
-    documents.push(toLexicalDocument(rec));
+    builder?.add(toLexicalDocument(rec));
   }
+
+  const lexicalIndex = cachedLexical ?? builder!.build();
+  if (cache && !cachedLexical) cache.current = lexicalIndex;
 
   const dense = [...candidates.values()]
     .filter((c) => c.bestScore >= minScore)
@@ -139,11 +163,9 @@ export async function searchSemantic(
     }).map((d) => d.id),
   );
 
-  const lexicalMatches = searchLexicalIndex(
-    buildLexicalIndex(documents),
-    trimmed,
-    { limit: LEXICAL_CANDIDATES },
-  );
+  const lexicalMatches = searchLexicalIndex(lexicalIndex, trimmed, {
+    limit: LEXICAL_CANDIDATES,
+  });
   const lexicalIds = new Set(lexicalMatches.map((m) => m.id));
 
   const terms = tokenizeSearchText(trimmed);

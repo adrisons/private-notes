@@ -36,9 +36,15 @@ describe("fsSemanticSearchFactory", () => {
     expect(api.reindex).toHaveBeenCalledWith(root, notes, embedder, undefined);
 
     await search.searchSemantic("pasta", embedder, { topK: 3 });
-    expect(api.searchSemantic).toHaveBeenCalledWith(root, "pasta", embedder, {
-      topK: 3,
-    });
+    expect(api.searchSemantic).toHaveBeenCalledWith(
+      root,
+      "pasta",
+      embedder,
+      { topK: 3 },
+      // A per-session lexical-index cache is threaded through so keystrokes
+      // reuse the index instead of rebuilding it (ADR-010).
+      { current: null },
+    );
 
     await search.pruneOrphans(["n1"]);
     expect(api.pruneOrphans).toHaveBeenCalledWith(root, ["n1"]);

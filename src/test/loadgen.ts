@@ -49,8 +49,12 @@ const WORDS =
     " ",
   );
 
-/** Roughly one chunk == `size - overlap` words (see chunk.ts defaults). */
-const WORDS_PER_CHUNK = 168;
+/**
+ * Roughly one chunk == `size - overlap` words. Tracks `chunk.ts` defaults
+ * (120 − 24 = 96 since ADR-010); keeping the old 168 quietly inflated every
+ * synthetic note by ~1.75× chunks and skewed the search benchmarks.
+ */
+const WORDS_PER_CHUNK = 96;
 
 function generateBody(rng: () => number, targetChunks: number): string {
   const wordCount = Math.max(1, targetChunks) * WORDS_PER_CHUNK;
