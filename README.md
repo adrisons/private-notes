@@ -9,14 +9,17 @@ machine. No account, no server, no sync you did not ask for.
 
 ## Contents
 
-- [Why private-notes](#why-private-notes)
-- [Features](#features)
-- [Requirements](#requirements)
-- [How search works](#how-search-works)
-- [Folder layout](#folder-layout)
-- [Scripts](#scripts)
-- [Architecture & decisions](#architecture--decisions)
-- [Status](#status)
+- [private-notes](#private-notes)
+  - [Contents](#contents)
+  - [Why private-notes](#why-private-notes)
+  - [Features](#features)
+  - [Requirements](#requirements)
+  - [How search works](#how-search-works)
+  - [Folder layout](#folder-layout)
+    - [What is stored per note in the semantic index](#what-is-stored-per-note-in-the-semantic-index)
+  - [Scripts](#scripts)
+  - [Architecture \& decisions](#architecture--decisions)
+  - [Status](#status)
 
 ## Why private-notes
 
@@ -156,5 +159,4 @@ and autosaving notes, organizing them into spaces, pasting images, and hybrid
 search all work. The on-disk format is versioned and migrates forward
 ([ADR-008](./docs/adr/008-schema-compatibility.md)), so existing vaults stay
 safe across updates — a model or schema change just triggers a one-time reindex
-on open. Known performance and correctness work is tracked in
-[TODO.md](./TODO.md).
+on open.
