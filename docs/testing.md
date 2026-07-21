@@ -112,7 +112,8 @@ Automating this with Playwright is a possible future phase (deferred, see
 
 ## CI
 
-GitHub Actions runs `pnpm typecheck`, `pnpm test`, and `pnpm lint` on push/PR (see `.github/workflows/ci.yml`).
+GitHub Actions runs `pnpm typecheck`, `pnpm lint`, `pnpm build`, and the test
+suites on push/PR (see `.github/workflows/ci.yml`).
 
 ## Conventions
 

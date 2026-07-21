@@ -27,9 +27,17 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm run lint
 
-  # ── Stage 2: test suites, in parallel, once the code compiles and lints ───
-  # Gating on the static checks fails fast and avoids spending three test
-  # runners on a branch that doesn't type-check.
+  # ── Stage 2: build + test suites, in parallel, once static checks pass ────
+  # Gating on the static checks fails fast and avoids spending four runners on
+  # a branch that doesn't type-check.
+  build:
+    needs: [typecheck, lint]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm run build
+
   test-general:
     needs: [typecheck, lint]
     runs-on: ubuntu-latest
@@ -59,7 +67,7 @@ jobs:
   # cancelled, skipped, or failed.
   check:
     if: always()
-    needs: [typecheck, lint, test-general, test-integration, test-relevance]
+    needs: [typecheck, lint, build, test-general, test-integration, test-relevance]
     runs-on: ubuntu-latest
     steps:
       - name: Verify all checks passed
