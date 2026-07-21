@@ -5,23 +5,67 @@ on:
     branches: [main]
   pull_request:
 
+# A newer push to the same ref supersedes in-flight runs, so we don't burn
+# runner minutes on stale commits.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  # ── Stage 1: fast static checks, in parallel ──────────────────────────────
+  typecheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm run typecheck
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.0.8
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm run lint
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+  # ── Stage 2: test suites, in parallel, once the code compiles and lints ───
+  # Gating on the static checks fails fast and avoids spending three test
+  # runners on a branch that doesn't type-check.
+  test-general:
+    needs: [typecheck, lint]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm run test:general
 
-      - run: pnpm install --frozen-lockfile
+  test-integration:
+    needs: [typecheck, lint]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm run test:integration
 
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm lint
+  test-relevance:
+    needs: [typecheck, lint]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm run test:relevance
+
+  # ── Gate: a single required check that reflects the whole pipeline ─────────
+  # Branch protection can require just this job. It fails if any dependency was
+  # cancelled, skipped, or failed.
+  check:
+    if: always()
+    needs: [typecheck, lint, test-general, test-integration, test-relevance]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all checks passed
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}" = "true" ]; then
+            echo "One or more CI checks did not pass."
+            exit 1
+          fi
+          echo "All CI checks passed."

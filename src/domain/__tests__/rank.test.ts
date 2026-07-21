@@ -163,7 +163,7 @@ describe("rankNotes", () => {
     // The deliberate shape of the formula: a substring in the title is worth
     // half a point, not a veto. Only an exact title match is a veto — see the
     // case below. If this ever reads as wrong in practice, the fixture set in
-    // relevance.test.ts is where the argument gets settled.
+    // search.relevance.test.ts is where the argument gets settled.
     const content: ContentHit[] = [
       { noteId: "raita", score: 1, matchKind: "semantic" },
       { noteId: "tiradito", score: 0.4, matchKind: "semantic" },
