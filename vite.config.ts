@@ -73,7 +73,10 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
-    pool: "threads",
+    // Use forks so each worker is a real Node process; jsdom provides
+    // localStorage (Node's own Web Storage API stays off without
+    // --experimental-webstorage, so there is nothing to shadow).
+    pool: "forks",
     css: false,
     coverage: {
       provider: "v8",
@@ -81,10 +84,10 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}"],
       exclude: ["src/**/*.d.ts", "src/test/**", "src/workers/**"],
     },
-    // Node 22+ stubs global localStorage and shadows jsdom; disable it.
-    poolOptions: {
-      forks: { execArgv: ["--no-webstorage"] },
-      threads: { execArgv: ["--no-webstorage"] },
+    // Performance/load benchmarks (`pnpm bench`). Kept out of the unit run;
+    // `*.bench.ts` files never match the default `test.include` globs.
+    benchmark: {
+      include: ["src/**/*.bench.ts"],
     },
   },
 });
