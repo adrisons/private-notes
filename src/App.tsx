@@ -16,6 +16,7 @@ import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { ThemeToggle } from "./ui/ThemeToggle";
 import { CommandPalette } from "./screens/CommandPalette";
 import { useAppToast } from "./application/hooks/useAppToast";
+import { useInstallPrompt } from "./application/hooks/useInstallPrompt";
 import { useVaultSession } from "./application/hooks/useVaultSession";
 import { useCurrentNote } from "./application/hooks/useCurrentNote";
 import { useSemanticIndex } from "./application/hooks/useSemanticIndex";
@@ -35,6 +36,7 @@ const compat = getCompatibility();
 
 export function App() {
   const { toast, showError, dismiss } = useAppToast();
+  const install = useInstallPrompt();
   const flushRef = useRef<() => void>(() => {});
   const vault = useVaultSession({
     flushBeforeSwitch: () => flushRef.current(),
@@ -190,7 +192,7 @@ export function App() {
   if (!compat.supported) {
     return (
       <AppShell header={headerNode}>
-        <Unsupported reasons={compat.reasons} />
+        <Unsupported reasons={compat.reasons} kind={compat.unsupportedKind} />
       </AppShell>
     );
   }
@@ -217,6 +219,8 @@ export function App() {
             disabledReason={
               vault.openIssue ? undefined : (vault.error ?? undefined)
             }
+            canInstall={install.canInstall}
+            onInstall={() => void install.promptInstall()}
           />
         </AppShell>
         <VaultOpenDialogs vault={vault} />

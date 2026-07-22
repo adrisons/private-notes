@@ -30,7 +30,10 @@ The API does not give the app a filesystem path (e.g. `/Users/...`) to save and 
 
 ### Negative
 
-- **Chromium-only** until other engines ship FSA.
+- **Chromium desktop and Chrome Android only** until other engines ship FSA.
+  Firefox and iOS Safari lack the directory picker and stay unsupported; a
+  future OPFS backend behind the storage port would reach them
+  ([ADR-013](./013-vault-storage-port.md)).
 - Permission can expire; user may need to re-grant or re-pick the folder.
 - No built-in multi-user or real-time collaboration.
 

@@ -22,6 +22,7 @@ describe("repairVault use case", () => {
           handleStore: { load: vi.fn(), persist: vi.fn(), clear: vi.fn() },
           folderPicker: { pick: vi.fn() },
           semanticSearchFactory: { create: vi.fn() },
+          createVaultStorage: vi.fn(),
         },
       }),
     ).rejects.toBeInstanceOf(VaultIOError);

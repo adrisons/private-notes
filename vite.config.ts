@@ -2,6 +2,7 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 /**
  * Content-Security-Policy for the production build. Keep this in sync with
@@ -44,9 +45,57 @@ function cspMeta(): Plugin {
   };
 }
 
+/**
+ * Installable PWA shell (ADR-012). Uses the `injectManifest` strategy so the
+ * worker (src/infrastructure/platform/web/pwa/sw.ts) is bundled by esbuild;
+ * this avoids the flaky terser worker race in workbox's `generateSW` template.
+ *
+ * The worker precaches only the built app shell (HTML/CSS/JS/icons/fonts) —
+ * never note content (it lives on disk, off-origin) and never the embedding
+ * model weights (cached at runtime by the HTTP cache). Registration is manual
+ * via `platform/web/pwa/register-sw.ts`, so `injectRegister` is off.
+ */
+function pwa(): Plugin[] {
+  return VitePWA({
+    strategies: "injectManifest",
+    srcDir: "src/infrastructure/platform/web/pwa",
+    filename: "sw.ts",
+    registerType: "autoUpdate",
+    injectRegister: null,
+    includeAssets: ["favicon.svg", "apple-touch-icon.png"],
+    manifest: {
+      name: "private-notes",
+      short_name: "private-notes",
+      description:
+        "Local-first private notes with on-device semantic search.",
+      start_url: "/",
+      scope: "/",
+      display: "standalone",
+      theme_color: "#d2542f",
+      background_color: "#fbfaf8",
+      icons: [
+        { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+        { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+        {
+          src: "/icons/icon-maskable-512.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "maskable",
+        },
+      ],
+    },
+    injectManifest: {
+      globPatterns: ["**/*.{js,css,html,svg,png,ico,woff,woff2}"],
+      // Files above this are left to the browser HTTP cache and loaded on
+      // demand (e.g. large onnxruntime wasm), keeping the precache lean.
+      maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+    },
+  }) as Plugin[];
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), cspMeta()],
+  plugins: [react(), tailwindcss(), ...pwa(), cspMeta()],
   build: {
     rollupOptions: {
       output: {

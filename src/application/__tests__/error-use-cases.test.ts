@@ -104,6 +104,7 @@ describe("error use cases", () => {
           },
           folderPicker: { pick: vi.fn() },
           semanticSearchFactory: { create: vi.fn() },
+          createVaultStorage: vi.fn(),
         },
       }),
     ).rejects.toMatchObject({
@@ -137,6 +138,7 @@ describe("error use cases", () => {
           },
           folderPicker: { pick: vi.fn() },
           semanticSearchFactory: { create: vi.fn() },
+          createVaultStorage: vi.fn(),
         },
       }),
     ).rejects.toMatchObject({
@@ -170,6 +172,7 @@ describe("error use cases", () => {
           },
           folderPicker: { pick: vi.fn() },
           semanticSearchFactory: { create: vi.fn() },
+          createVaultStorage: vi.fn(),
         },
       }),
     ).rejects.toMatchObject({

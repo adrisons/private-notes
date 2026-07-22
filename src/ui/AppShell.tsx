@@ -72,7 +72,18 @@ export function AppShell({
   }, [panelOpen, closePanel]);
 
   return (
-    <div className="grid h-dvh grid-rows-[auto_1fr] bg-[var(--canvas)]">
+    // Safe-area insets keep the header and content clear of the notch and home
+    // indicator when installed as a standalone PWA (index.html sets
+    // `viewport-fit=cover`). Padding is inside `h-dvh` (border-box), so the
+    // layout never overflows the viewport.
+    <div
+      className="grid h-dvh grid-rows-[auto_1fr] bg-[var(--canvas)]"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
+      }}
+    >
       <a href={`#${mainId}`} className="u-skip-link">
         Skip to content
       </a>
@@ -140,6 +151,7 @@ export function AppShell({
           tabIndex={-1}
           aria-label="Note content"
           className="flex min-h-0 flex-col overflow-hidden outline-none"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
           {children}
         </main>

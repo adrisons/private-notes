@@ -69,6 +69,8 @@ Details: [ADR-002](./adr/002-note-storage-format.md), [ADR-004](./adr/004-semant
 | Sidebar search, index status | `src/screens/SidebarSearch.tsx`, `IndexStatus.tsx`, labels in `application/view-models.ts` | [007](./adr/007-autosave-eventual-reindex.md) |
 | Command palette search | `src/screens/CommandPalette.tsx` | [003](./adr/003-semantic-search-embeddings.md), [004](./adr/004-semantic-index-persistence.md), [010](./adr/010-hybrid-relevance.md) |
 | Browser gate | `src/lib/compatibility.ts` | [001](./adr/001-local-first-vault.md), [008](./adr/008-schema-compatibility.md) |
+| PWA shell, install prompt | `vite.config.ts`, `src/infrastructure/platform/web/pwa/`, `src/application/hooks/useInstallPrompt.ts` | [012](./adr/012-pwa-installable-shell.md) |
+| Vault storage port, web adapter | `src/application/ports/vault-storage.ts`, `src/infrastructure/platform/web/` | [013](./adr/013-vault-storage-port.md) |
 
 ## Flow: open vault
 

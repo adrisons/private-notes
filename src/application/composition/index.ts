@@ -4,6 +4,7 @@ import {
   createNoteRepository as createInfraNoteRepository,
   createSpaceRepository as createInfraSpaceRepository,
   createSemanticSearch as createInfraSemanticSearch,
+  defaultInfrastructure,
 } from "../../infrastructure/composition/default-deps";
 
 export {
@@ -37,5 +38,15 @@ export function createAttachmentStore(root: FileSystemDirectoryHandle) {
 export function createSemanticSearch(root: FileSystemDirectoryHandle) {
   return createInfraSemanticSearch(root);
 }
+
+/**
+ * Backend-agnostic file I/O for the open vault (ADR-013). Hooks that need raw
+ * vault I/O go through this port instead of touching a `FileSystemDirectoryHandle`.
+ */
+export function createVaultStorage(root: FileSystemDirectoryHandle) {
+  return defaultInfrastructure.createVaultStorage(root);
+}
+
+export type { VaultStorage, VaultRef } from "../ports/vault-storage";
 
 export { loadDefaultEmbedder } from "./load-embedder";

@@ -14,6 +14,8 @@ machine. No account, no server, no sync you did not ask for.
   - [🔒 Why private-notes](#-why-private-notes)
   - [✨ Features](#-features)
   - [💻 Requirements](#-requirements)
+  - [📲 Install (PWA)](#-install-pwa)
+  - [🔄 Sync across devices](#-sync-across-devices)
   - [🔍 How search works](#-how-search-works)
   - [📂 Folder layout](#-folder-layout)
     - [🧠 What is stored per note in the semantic index](#-what-is-stored-per-note-in-the-semantic-index)
@@ -68,10 +70,29 @@ with no network at all.
 
 ## 💻 Requirements
 
-- A Chromium-based browser (Chrome, Edge, Brave, Opera, Arc). Firefox and Safari do not yet support the File System Access API.
+- A Chromium-based browser — Chrome, Edge, Brave, Opera, or Arc — on **desktop or Android**. Firefox and iOS Safari do not support the File System Access API the vault relies on, so the app shows an "unsupported" screen there ([ADR-013](./docs/adr/013-vault-storage-port.md)).
 - Node 20+ for development.
 
 The first time you search, the model (~120 MB quantized, `Xenova/multilingual-e5-small`, 384-dim) is downloaded from the Hugging Face CDN and cached in your browser. Every subsequent run is fully offline.
+
+## 📲 Install (PWA)
+
+The app is a Progressive Web App: install it straight from the URL, no App Store or Play Store ([ADR-012](./docs/adr/012-pwa-installable-shell.md)).
+
+- 💻 **Desktop (Chrome/Edge/Brave/Arc).** Use the install icon in the address bar, or the **Install app** button on the welcome screen. You get a standalone window and an entry in your dock/taskbar/app list.
+- 📱 **Android (Chrome).** Choose **Install app** / **Add to Home screen**; it launches standalone like a native app.
+
+A service worker precaches only the app shell, so it opens offline after the first visit. Your notes and the embedding model are never uploaded.
+
+## 🔄 Sync across devices
+
+There is no sync server — the vault is just a folder of Markdown files, so any tool that keeps that folder in sync will do:
+
+1. Put your vault inside a folder mirrored by a sync service, e.g. **Google Drive** or **Dropbox**.
+2. On desktop, open it with **Choose folder**.
+3. On Android, open the *same* synced folder with **Choose folder**.
+
+Every device reads and writes the same files. The semantic index is one JSON file per note, so two devices editing *different* notes never touch the same file. Editing the *same* note on two devices while offline can still create a conflict in your sync tool — resolve it there, like any shared folder.
 
 ## 🔍 How search works
 

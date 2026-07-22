@@ -34,6 +34,8 @@ duplicating them inside ADR-003/004.
 | [009](./adr/009-layered-application-architecture.md) | Layered DDD / ports & adapters | `src/domain/`, `src/application/`, `src/infrastructure/`, hooks in `App.tsx` |
 | [010](./adr/010-hybrid-relevance.md) | Hybrid relevance & one ranked list | `src/domain/search/`, `indexer.ts`, `search.ts`, `CommandPalette.tsx` |
 | [011](./adr/011-reindex-scan-hint.md) | Content-hash hint for a cheap reindex scan | `indexer.ts`, `index-fs.ts`, `.semantic-index/content-hashes.json` |
+| [012](./adr/012-pwa-installable-shell.md) | PWA installable shell | `vite.config.ts`, `index.html`, `platform/web/pwa/`, `public/icons/` |
+| [013](./adr/013-vault-storage-port.md) | Vault storage port & web platform isolation | `application/ports/vault-storage.ts`, `infrastructure/platform/web/` |
 
 ## Suggested reading order by task
 
@@ -45,4 +47,5 @@ duplicating them inside ADR-003/004.
 | Images in notes | 006, 005 |
 | Save / sync / data loss | 007, 002, 004 |
 | App structure / new features touching vault lifecycle | 009, 007, 001 |
+| Install / PWA / platform support | 012, 013, 001 |
 | Tests / coverage | [testing.md](./testing.md) |
