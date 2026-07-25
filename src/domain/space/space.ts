@@ -29,6 +29,18 @@ export const FALLBACK_SPACE_NAME = "Untitled";
 export const RESERVED_SPACE_NAME_MESSAGE =
   "“General” is reserved for the built-in space.";
 
+export const DUPLICATE_SPACE_NAME_MESSAGE =
+  "A space with this name already exists.";
+
+/** Case-insensitive name collision against other custom spaces. */
+export function isDuplicateSpaceName(
+  name: string,
+  existingNames: readonly string[],
+): boolean {
+  const lower = name.toLowerCase();
+  return existingNames.some((existing) => existing.toLowerCase() === lower);
+}
+
 /** Custom spaces cannot reuse the built-in General name. */
 export function isReservedSpaceName(name: string): boolean {
   return name.trim().toLowerCase() === GENERAL_SPACE_NAME.toLowerCase();
@@ -49,10 +61,16 @@ export function normalizeSpaceDescription(
  * result, use-cases to reject the write. Persistence stores what it returns
  * verbatim.
  */
-export function assertValidSpaceName(raw: string): string {
+export function assertValidSpaceName(
+  raw: string,
+  existingNames: readonly string[] = [],
+): string {
   const name = normalizeSpaceName(raw);
   if (isReservedSpaceName(name)) {
     throw new SpaceValidationError(RESERVED_SPACE_NAME_MESSAGE);
+  }
+  if (isDuplicateSpaceName(name, existingNames)) {
+    throw new SpaceValidationError(DUPLICATE_SPACE_NAME_MESSAGE);
   }
   return name;
 }
@@ -64,9 +82,12 @@ export interface SpaceDraft {
 }
 
 /** Validated attributes for a new custom space; the id is minted on write. */
-export function createSpaceDraft(input: SpaceDraft): SpaceDraft {
+export function createSpaceDraft(
+  input: SpaceDraft,
+  existingNames: readonly string[] = [],
+): SpaceDraft {
   return {
-    name: assertValidSpaceName(input.name),
+    name: assertValidSpaceName(input.name, existingNames),
     colorId: input.colorId,
     ...(normalizeSpaceDescription(input.description)
       ? { description: normalizeSpaceDescription(input.description) }
@@ -82,10 +103,13 @@ export interface SpacePatch {
 }
 
 /** Same rules as `createSpaceDraft`, applied only to the fields being changed. */
-export function applySpacePatch(patch: SpacePatch): SpacePatch {
+export function applySpacePatch(
+  patch: SpacePatch,
+  existingNames: readonly string[] = [],
+): SpacePatch {
   return {
     ...(patch.name !== undefined
-      ? { name: assertValidSpaceName(patch.name) }
+      ? { name: assertValidSpaceName(patch.name, existingNames) }
       : null),
     ...(patch.colorId !== undefined ? { colorId: patch.colorId } : null),
     ...(patch.description !== undefined

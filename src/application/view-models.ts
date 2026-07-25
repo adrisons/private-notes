@@ -5,6 +5,7 @@ import {
   GENERAL_SPACE_ID,
   isGeneralSpaceId,
   rankNotes,
+  sortSummariesByRecency,
   type CustomSpace,
   type MatchKind,
 } from "../domain";
@@ -23,10 +24,12 @@ export {
   GENERAL_SPACE_DESCRIPTION,
   GENERAL_SPACE_ID,
   isGeneralSpaceId,
+  isDuplicateSpaceName,
   isReservedSpaceName,
   noteBelongsToSpace,
   removeSpaceId,
   RESERVED_SPACE_NAME_MESSAGE,
+  DUPLICATE_SPACE_NAME_MESSAGE,
   SPACE_COLOR_IDS,
   type SpaceColorId,
   type SpaceDraft,
@@ -77,13 +80,14 @@ export interface SpaceListItem {
 }
 
 /** Command palette content hit — one row per note. */
-export interface SearchResultItem {
-  noteId: string;
-  score: number;
-  matchKind: MatchKind;
-}
+export type SearchResultItem = SearchHit;
 
-/** Reindex progress surfaced in the sidebar. */
+/** Default recent-note cap for an empty palette query. */
+export const COMMAND_PALETTE_RECENT_LIMIT = 8;
+
+export function sortNoteListItemsByRecency(items: NoteListItem[]): NoteListItem[] {
+  return sortSummariesByRecency(items as NoteSummary[]) as NoteListItem[];
+}
 export interface ReindexProgress {
   done: number;
   total: number;
@@ -143,18 +147,6 @@ export function toOpenNoteState(note: Note, savedAt: string | null): OpenNoteSta
     savedAt,
     spaceIds: note.spaceIds,
   };
-}
-
-export function toSearchResultItem(hit: SearchHit): SearchResultItem {
-  return {
-    noteId: hit.noteId,
-    score: hit.score,
-    matchKind: hit.matchKind,
-  };
-}
-
-export function toSearchResultItems(hits: SearchHit[]): SearchResultItem[] {
-  return hits.map(toSearchResultItem);
 }
 
 /** One search result row, already merged and ordered. */

@@ -1,23 +1,12 @@
 import {
-  noteId,
+  noteToSummary,
   pickMostRecent,
   WELCOME_NOTE_BODY,
   WELCOME_NOTE_TITLE,
   type NoteId,
-  type NoteSummary,
 } from "../../domain";
 import type { VaultSession, VaultStartup } from "../vault-session";
-import type { OpenNoteState } from "../view-models";
 import { createNote } from "./create-note";
-
-function summaryFromState(state: OpenNoteState): NoteSummary {
-  return {
-    id: noteId(state.id),
-    title: state.title,
-    updatedAt: state.savedAt ?? new Date().toISOString(),
-    spaceIds: state.spaceIds,
-  };
-}
 
 /** Seed welcome note or open the most recently edited note. */
 export async function resolveVaultStartup(
@@ -30,7 +19,7 @@ export async function resolveVaultStartup(
       title: WELCOME_NOTE_TITLE,
       body: WELCOME_NOTE_BODY,
     });
-    summaries = [summaryFromState(current)];
+    summaries = [noteToSummary(current)];
     return { summaries, current };
   }
 

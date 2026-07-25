@@ -14,7 +14,7 @@ const REINDEX_DEBUG = {
   operation: "run-full-reindex",
   module: "application/use-cases/run-full-reindex.ts",
   trace:
-    "runFullReindex → session.listForReindex → search.pruneOrphans/reindex",
+    "runFullReindex → session.listForReindex → search.pruneOrphans/reindex → session.sweepOrphanAttachments",
   fixHint:
     "Inspect fs-semantic-search.ts reindex and the embedder worker; retry via IndexStatus.onReindex.",
 } as const;
@@ -30,6 +30,7 @@ export async function runFullReindex(
     const live = await session.listForReindex();
     await search.pruneOrphans(live.map((n) => n.id));
     await search.reindex(live, embedder, { onProgress: options.onProgress });
+    await session.sweepOrphanAttachments(live.map((n) => n.body));
     return null;
   } catch (err) {
     const error = registerBackgroundError("reindex", err, REINDEX_DEBUG);

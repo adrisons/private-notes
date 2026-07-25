@@ -1,18 +1,12 @@
 import type { Note, NoteId } from "../../domain";
 import type { VaultSession } from "../vault-session";
-import type { OpenNoteState } from "../view-models";
 import { guardVaultIO } from "../errors";
 
-export interface DuplicateNoteResult {
-  state: OpenNoteState;
-  note: Note;
-}
-
-/** Clone a note and return the new editor state. */
+/** Clone a note and return the new domain entity. */
 export async function duplicateNote(
   session: VaultSession,
   id: NoteId,
-): Promise<DuplicateNoteResult | null> {
+): Promise<Note | null> {
   return guardVaultIO(
     {
       operation: "duplicate-note",

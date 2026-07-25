@@ -1,44 +1,54 @@
 import type { CustomSpace, Note, NoteId, NoteSummary, SpaceId } from "../domain";
 import type { NoteRepository, CreateNoteInput } from "./ports/note-repository";
 import type { ReindexNoteInput } from "./ports/semantic-search";
+import type { SemanticSearch } from "./ports/semantic-search";
 import type {
   CreateSpaceInput,
   SpaceRepository,
   UpdateSpaceInput,
 } from "./ports/space-repository";
 import type { AttachmentStore } from "./ports/attachment-store";
-import type { OpenNoteState } from "./view-models";
-import { toOpenNoteState } from "./view-models";
-import { resolveVaultStartup } from "./use-cases/resolve-startup";
 
 export interface VaultStartup {
   summaries: NoteSummary[];
-  current: OpenNoteState | null;
+  current: Note | null;
 }
 
 export interface VaultSessionDeps {
   root: FileSystemDirectoryHandle;
+  vaultName?: string;
   notes: NoteRepository;
   spaces: SpaceRepository;
   attachments: AttachmentStore;
+  createSemanticSearch: (root: FileSystemDirectoryHandle) => SemanticSearch;
 }
 
 /** Session-scoped facade for one open vault folder. */
 export class VaultSession {
-  readonly root: FileSystemDirectoryHandle;
+  readonly vaultName: string;
+  private readonly root: FileSystemDirectoryHandle;
   private readonly notes: NoteRepository;
   private readonly spaces: SpaceRepository;
   readonly attachments: AttachmentStore;
+  private readonly createSemanticSearchFn: (
+    root: FileSystemDirectoryHandle,
+  ) => SemanticSearch;
 
   private constructor(deps: VaultSessionDeps) {
     this.root = deps.root;
+    this.vaultName = deps.vaultName ?? deps.root.name;
     this.notes = deps.notes;
     this.spaces = deps.spaces;
     this.attachments = deps.attachments;
+    this.createSemanticSearchFn = deps.createSemanticSearch;
   }
 
   static create(deps: VaultSessionDeps): VaultSession {
     return new VaultSession(deps);
+  }
+
+  createSemanticSearch(): SemanticSearch {
+    return this.createSemanticSearchFn(this.root);
   }
 
   listSummaries(): Promise<NoteSummary[]> {
@@ -49,44 +59,30 @@ export class VaultSession {
     return this.notes.listForReindex();
   }
 
-  resolveStartup(): Promise<VaultStartup> {
-    return resolveVaultStartup(this);
+  openNote(id: NoteId): Promise<Note | null> {
+    return this.notes.read(id);
   }
 
-  async openNote(id: NoteId): Promise<OpenNoteState | null> {
-    const note = await this.notes.read(id);
-    if (!note) return null;
-    return toOpenNoteState(note, note.updatedAt);
-  }
-
-  async createNote(input: CreateNoteInput = {
+  createNote(input: CreateNoteInput = {
     title: "Untitled",
     body: "",
-  }): Promise<OpenNoteState> {
-    const note = await this.notes.create(input);
-    return toOpenNoteState(note, note.updatedAt);
+  }): Promise<Note> {
+    return this.notes.create(input);
   }
 
   async saveNote(
     id: NoteId,
     title: string,
     body: string,
-  ): Promise<{ state: OpenNoteState; gcAttachments: string[]; note: Note }> {
+  ): Promise<{ note: Note; gcAttachments: string[] }> {
     const { note, gcAttachments } = await this.notes.update(id, { title, body });
     this.attachments.invalidate(gcAttachments);
-    return {
-      state: toOpenNoteState(note, note.updatedAt),
-      gcAttachments,
-      note,
-    };
+    return { note, gcAttachments };
   }
 
-  async assignNoteSpaces(
-    id: NoteId,
-    spaceIds: SpaceId[],
-  ): Promise<OpenNoteState | null> {
+  async assignNoteSpaces(id: NoteId, spaceIds: SpaceId[]): Promise<Note | null> {
     const { note } = await this.notes.update(id, { spaceIds });
-    return toOpenNoteState(note, note.updatedAt);
+    return note;
   }
 
   listSpaces(): Promise<CustomSpace[]> {
@@ -119,15 +115,12 @@ export class VaultSession {
     return gcAttachments;
   }
 
-  async duplicateNote(
-    id: NoteId,
-  ): Promise<{ state: OpenNoteState; note: Note } | null> {
-    const note = await this.notes.duplicate(id);
-    if (!note) return null;
-    return {
-      state: toOpenNoteState(note, note.updatedAt),
-      note,
-    };
+  duplicateNote(id: NoteId): Promise<Note | null> {
+    return this.notes.duplicate(id);
+  }
+
+  async sweepOrphanAttachments(bodies: string[]): Promise<string[]> {
+    return this.attachments.sweepUnreferenced(bodies);
   }
 
   dispose(): void {

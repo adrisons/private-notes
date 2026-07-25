@@ -106,8 +106,16 @@ export function App() {
 
   const handleCreateSpace = useCallback(async () => {
     note.flushPersist();
+    const taken = new Set(
+      spaces.spaceItems.map((space) => space.name.toLowerCase()),
+    );
+    let name = FALLBACK_SPACE_NAME;
+    let suffix = 2;
+    while (taken.has(name.toLowerCase())) {
+      name = `${FALLBACK_SPACE_NAME} ${suffix++}`;
+    }
     const id = await spaces.createSpace({
-      name: FALLBACK_SPACE_NAME,
+      name,
       colorId: "blue" satisfies SpaceColorId,
     });
     if (id) {
@@ -152,10 +160,7 @@ export function App() {
       await note.deleteNotes(ids);
     }
     setPendingDeleteIds([]);
-    if (search.embedderReady) {
-      await search.pruneOrphans();
-    }
-  }, [pendingDeleteIds, note, search]);
+  }, [pendingDeleteIds, note]);
 
   const handleDeleteSpaces = useCallback(
     async (ids: SpaceId[]) => {
@@ -236,7 +241,7 @@ export function App() {
       sidebar={
         <div className="flex flex-col">
           <VaultIndicator
-            name={vault.session.root.name}
+            name={vault.session.vaultName}
             onChange={vault.handlePick}
           />
           <SidebarSearch

@@ -23,23 +23,15 @@ const NOTE_TIMESTAMPS = {
 function buildSession(overrides: Partial<VaultSession> = {}): VaultSession {
   return {
     saveNote: vi.fn().mockResolvedValue({
-      state: {
-        id: "n1",
-        title: "Draft",
-        body: "Hello",
-        ...NOTE_TIMESTAMPS,
-        savedAt: "2026-05-17T10:00:00.000Z",
-        spaceIds: [],
-      },
       note: NOTE,
       gcAttachments: [],
     }),
     openNote: vi.fn().mockResolvedValue({
-      id: "n2",
+      id: noteId("n2"),
       title: "Other",
       body: "Other body",
+      path: "notes/2026/05/n2.md",
       ...NOTE_TIMESTAMPS,
-      savedAt: null,
       spaceIds: [],
     }),
     createNote: vi.fn(),
@@ -155,7 +147,7 @@ describe("useCurrentNote", () => {
       title: "Other",
       body: "Other body",
       ...NOTE_TIMESTAMPS,
-      savedAt: null,
+      savedAt: NOTE_TIMESTAMPS.updatedAt,
       spaceIds: [],
     });
   });

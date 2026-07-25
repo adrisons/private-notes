@@ -21,7 +21,18 @@ export const fsSemanticSearchFactory: SemanticSearchFactory = {
     return {
       async searchSemantic(query, embedder, options) {
         const api = await getApi();
-        return api.searchSemantic(root, query, embedder, options, lexicalCache);
+        const hits = await api.searchSemantic(
+          root,
+          query,
+          embedder,
+          options,
+          lexicalCache,
+        );
+        return hits.map(({ noteId, score, matchKind }) => ({
+          noteId,
+          score,
+          matchKind,
+        }));
       },
       async reindex(notes, embedder, options) {
         const api = await getApi();

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { NoteRecord } from "../../fs/schema";
 import {
   noteFromRecord,
-  noteToRecord,
   summaryFromRecord,
 } from "../note-mappers";
 import { noteToSummary } from "../../../domain/note/note";
@@ -22,11 +21,6 @@ describe("note mappers", () => {
     expect(note.id).toBe(noteId("01HNOTE123"));
     expect(note.body).toBe("Body text");
     expect(note.title).toBe("Hello");
-  });
-
-  it("round-trips record fields without the body", () => {
-    const note = noteFromRecord(sampleRecord, "Body");
-    expect(noteToRecord(note)).toEqual(sampleRecord);
   });
 
   it("projects a summary from record and note", () => {

@@ -6,6 +6,8 @@ import { cn } from "../lib/cn";
 import {
   rankSearchResults,
   resolveNoteSpaceChips,
+  sortNoteListItemsByRecency,
+  COMMAND_PALETTE_RECENT_LIMIT,
   type MatchKind,
   type NoteListItem,
   type SearchResultItem,
@@ -187,7 +189,7 @@ export function CommandPalette({
   );
 
   const byRecency = useMemo(
-    () => [...notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+    () => sortNoteListItemsByRecency(notes),
     [notes],
   );
 
@@ -196,7 +198,7 @@ export function CommandPalette({
     if (trimmed.length === 0) {
       return [
         { kind: "create" as const },
-        ...byRecency.slice(0, 8).map((note) => ({
+        ...byRecency.slice(0, COMMAND_PALETTE_RECENT_LIMIT).map((note) => ({
           kind: "result" as const,
           noteId: note.id,
           matchKind: "recent" as const,

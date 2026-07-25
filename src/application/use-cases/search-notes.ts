@@ -2,7 +2,6 @@ import { DEFAULT_RELATIVE_CUTOFF } from "../../domain";
 import type { Embedder } from "../ports/embedder";
 import type { SemanticSearch } from "../ports/semantic-search";
 import type { SearchResultItem } from "../view-models";
-import { toSearchResultItems } from "../view-models";
 
 export interface SearchNotesOptions {
   topK?: number;
@@ -11,7 +10,7 @@ export interface SearchNotesOptions {
 }
 
 /** Rows the palette can show without scrolling into guesswork. */
-const DEFAULT_TOP_K = 8;
+export const DEFAULT_TOP_K = 8;
 
 /**
  * Content relevance for a query. Title and space signals are added later, by
@@ -30,10 +29,9 @@ export async function searchNotes(
   query: string,
   options: SearchNotesOptions = {},
 ): Promise<SearchResultItem[]> {
-  const hits = await search.searchSemantic(query, embedder, {
+  return search.searchSemantic(query, embedder, {
     topK: options.topK ?? DEFAULT_TOP_K,
     minScore: options.minScore,
     relativeCutoff: options.relativeCutoff ?? DEFAULT_RELATIVE_CUTOFF,
   });
-  return toSearchResultItems(hits);
 }

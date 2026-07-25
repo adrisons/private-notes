@@ -1,13 +1,12 @@
-import type { NoteId, SpaceId } from "../../domain";
+import type { Note, NoteId, SpaceId } from "../../domain";
 import type { VaultSession } from "../vault-session";
-import type { OpenNoteState } from "../view-models";
 import { guardVaultIO } from "../errors";
 
 export async function assignNoteSpaces(
   session: VaultSession,
   id: NoteId,
   spaceIds: readonly SpaceId[],
-): Promise<OpenNoteState | null> {
+): Promise<Note | null> {
   return guardVaultIO(
     {
       operation: "assign-note-spaces",

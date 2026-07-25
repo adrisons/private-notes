@@ -4,6 +4,7 @@ import type { NoteId } from "../../domain";
 import type { ReindexNoteInput } from "../ports/semantic-search";
 import type { VaultSession } from "../vault-session";
 import type { OpenNoteState } from "../view-models";
+import { toOpenNoteState } from "../view-models";
 import { autosaveNote } from "../use-cases/autosave-note";
 
 const AUTOSAVE_MS = 500;
@@ -45,7 +46,7 @@ export function useAutosave({
           { id: id as NoteId, title, body },
           {
             onSaved: async (result) => {
-              setCurrent(result.state);
+              setCurrent(toOpenNoteState(result.note, result.note.updatedAt));
               await refreshSummaries();
             },
             onError,

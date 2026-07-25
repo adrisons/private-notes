@@ -1,7 +1,7 @@
 /**
  * Relevance regression net.
  *
- * Every item in TODO §1 is a ranking change, and ranking changes are the kind
+ * Ranking changes are the kind
  * of work that gets tuned by feel and silently undone six months later. This
  * corpus plus its query table is the contract those changes are measured
  * against: a tuning that breaks a case here is a regression until the case
@@ -411,7 +411,7 @@ export const RELEVANCE_CASES: RelevanceCase[] = [
   {
     query: "marruecos 2020",
     reason:
-      "Multi-term across metadata-ish text: the note carrying both beats the ones carrying either. The year matches as text, not as a creation date — that distinction is TODO §2.",
+      "Multi-term across metadata-ish text: the note carrying both beats the ones carrying either. The year matches as text, not as a creation date",
     first: "marrakech",
     expectedAll: ["marrakech", "offsite"],
   },

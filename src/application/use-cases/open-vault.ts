@@ -1,6 +1,7 @@
 import {
   createAttachmentStore,
   createNoteRepository,
+  createSemanticSearch,
   createSpaceRepository,
   defaultInfrastructure,
 } from "../composition";
@@ -41,9 +42,11 @@ export async function openVault(
 
     const session = VaultSession.create({
       root: handle,
+      vaultName: handle.name,
       notes: createNoteRepository(handle),
       spaces: createSpaceRepository(handle),
       attachments: createAttachmentStore(handle),
+      createSemanticSearch,
     });
     const startup = await resolveVaultStartup(session);
     return { session, startup };

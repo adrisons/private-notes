@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReindexNoteInput } from "../ports/semantic-search";
 import type { Embedder } from "../ports/embedder";
-import { createSemanticSearch, loadDefaultEmbedder } from "../composition";
+import { loadDefaultEmbedder } from "../composition";
 import type { SemanticSearch } from "../ports/semantic-search";
 import type { VaultSession } from "../vault-session";
 import type { ReindexProgress, SearchResultItem } from "../view-models";
@@ -28,7 +28,6 @@ export interface UseSemanticIndexResult {
   runReindex: () => Promise<void>;
   onSearch: (query: string) => Promise<SearchResultItem[]>;
   scheduleReindex: (notes: ReindexNoteInput[]) => void;
-  pruneOrphans: () => Promise<void>;
 }
 
 export function useSemanticIndex({
@@ -62,7 +61,7 @@ export function useSemanticIndex({
       searchRef.current = null;
       return;
     }
-    searchRef.current = createSemanticSearch(session.root);
+    searchRef.current = session.createSemanticSearch();
     let cancelled = false;
     void (async () => {
       try {
@@ -137,12 +136,6 @@ export function useSemanticIndex({
     [session],
   );
 
-  const pruneOrphans = useCallback(async () => {
-    if (!session || !embedderRef.current || !searchRef.current) return;
-    const summaries = await session.listSummaries();
-    await searchRef.current.pruneOrphans(summaries.map((n) => n.id));
-  }, [session]);
-
   return {
     embedderReady,
     reindexing,
@@ -151,6 +144,5 @@ export function useSemanticIndex({
     runReindex,
     onSearch,
     scheduleReindex,
-    pruneOrphans,
   };
 }

@@ -11,6 +11,12 @@ export {
 export { slugify } from "./note/slug";
 export { pickMostRecent, sortSummariesByRecency } from "./vault/vault";
 export {
+  NoteNotFoundError,
+  VaultDataError,
+  VaultIncompatibleError,
+  type VaultIncompatibleCode,
+} from "./vault/vault-errors";
+export {
   computeReconcileDiff,
   dedupeRecordsById,
   indexSnapshotChanged,
@@ -45,7 +51,9 @@ export {
   createSpaceDraft,
   FALLBACK_SPACE_NAME,
   isCustomSpaceId,
+  isDuplicateSpaceName,
   isReservedSpaceName,
+  DUPLICATE_SPACE_NAME_MESSAGE,
   RESERVED_SPACE_NAME_MESSAGE,
   type CustomSpace,
   type Space,

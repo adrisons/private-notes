@@ -1,4 +1,9 @@
-import { applySpacePatch, type CustomSpace, type SpaceId, type SpacePatch } from "../../domain";
+import {
+  applySpacePatch,
+  type CustomSpace,
+  type SpaceId,
+  type SpacePatch,
+} from "../../domain";
 import type { VaultSession } from "../vault-session";
 import { guardVaultIO } from "../errors";
 
@@ -7,7 +12,11 @@ export async function updateSpace(
   id: SpaceId,
   patch: SpacePatch,
 ): Promise<CustomSpace | null> {
-  const validated = applySpacePatch(patch);
+  const existing = await session.listSpaces();
+  const otherNames = existing
+    .filter((space) => space.id !== id)
+    .map((space) => space.name);
+  const validated = applySpacePatch(patch, otherNames);
   return guardVaultIO(
     {
       operation: "update-space",

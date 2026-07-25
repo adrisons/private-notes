@@ -1,13 +1,6 @@
 import type { Note, NoteId } from "../../domain";
 import type { VaultSession } from "../vault-session";
-import type { OpenNoteState } from "../view-models";
 import { guardVaultIO } from "../errors";
-
-export interface SaveNoteResult {
-  state: OpenNoteState;
-  gcAttachments: string[];
-  note: Note;
-}
 
 /** Persist note edits and invalidate dropped attachment URLs. */
 export async function saveNote(
@@ -15,7 +8,7 @@ export async function saveNote(
   id: NoteId,
   title: string,
   body: string,
-): Promise<SaveNoteResult> {
+): Promise<{ note: Note; gcAttachments: string[] }> {
   return guardVaultIO(
     {
       operation: "save-note",

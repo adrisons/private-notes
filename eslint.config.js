@@ -117,4 +117,52 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ["src/App.tsx"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [infraImportPattern, domainImportPattern],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/editor/**/*.{ts,tsx}"],
+    ignores: ["src/editor/**/__tests__/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            domainImportPattern,
+            {
+              group: layerGroup("application"),
+              message: "Editor must not import the application layer.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/lib/**/*.{ts,tsx}"],
+    ignores: ["src/lib/**/__tests__/**", "src/lib/validate.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            domainImportPattern,
+            infraImportPattern,
+            {
+              group: layerGroup("application", "screens", "ui", "editor"),
+              message: "Shared kernel must not import outer layers.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

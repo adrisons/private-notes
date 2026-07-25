@@ -1,13 +1,12 @@
-import type { NoteId } from "../../domain";
+import type { Note, NoteId } from "../../domain";
 import type { VaultSession } from "../vault-session";
-import type { OpenNoteState } from "../view-models";
 import { guardVaultIO } from "../errors";
 
-/** Load a note into editor state. */
+/** Load a note from the vault. */
 export async function openNote(
   session: VaultSession,
   id: NoteId,
-): Promise<OpenNoteState | null> {
+): Promise<Note | null> {
   return guardVaultIO(
     {
       operation: "open-note",

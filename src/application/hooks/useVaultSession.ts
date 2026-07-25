@@ -6,7 +6,7 @@ import { openVault } from "../use-cases/open-vault";
 import { repairVault } from "../use-cases/repair-vault";
 import type { VaultSession, VaultStartup } from "../vault-session";
 import type { OpenNoteState } from "../view-models";
-import { toNoteListItems, type NoteListItem } from "../view-models";
+import { toNoteListItems, toOpenNoteState, type NoteListItem } from "../view-models";
 
 const compat = getCompatibility();
 
@@ -44,7 +44,7 @@ function applyStartup(
 ): void {
   setSession(session);
   setSummaries(startup.summaries);
-  setCurrent(startup.current);
+  setCurrent(startup.current ? toOpenNoteState(startup.current, startup.current.updatedAt) : null);
 }
 
 function clearActiveVault(

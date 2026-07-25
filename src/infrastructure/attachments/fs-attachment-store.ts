@@ -1,4 +1,5 @@
 import { AttachmentURLCache } from "./cache";
+import { sweepOrphanAttachments } from "./gc";
 import { addRef } from "./refs";
 import { storeAttachment } from "./storage";
 import type { AttachmentStore } from "../../application/ports/attachment-store";
@@ -39,6 +40,12 @@ export class FsAttachmentStore implements AttachmentStore {
     for (const path of paths) {
       this.cache.invalidate(path);
     }
+  }
+
+  async sweepUnreferenced(liveBodies: string[]) {
+    const paths = await sweepOrphanAttachments(this.root, liveBodies);
+    this.invalidate(paths);
+    return paths;
   }
 
   dispose() {

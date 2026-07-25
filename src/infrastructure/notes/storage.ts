@@ -4,15 +4,27 @@ import { buildEmptyIndex } from "../fs/manifest";
 import { parseNoteIndex } from "../fs/validate";
 import { withIndexLock } from "../fs/locks";
 import { parseJson } from "../../lib/validate";
-import { deleteOrphanAttachments } from "../attachments/gc";
+import {
+  deleteOrphanAttachments,
+  sweepOrphanAttachments,
+} from "../attachments/gc";
 import { extractAttachmentPaths } from "../attachments/paths";
 import {
   addRefsForBody,
   dropNoteRefs,
   syncRefsForBodyChange,
 } from "../attachments/refs";
-import { parseNote, serializeNote, type NoteFrontmatter, type ParsedNote } from "../../domain/note/frontmatter";
-import { GENERAL_SPACE_ID, parseSpaceIds, serializeSpaceIds, type SpaceId } from "../../domain";
+import {
+  GENERAL_SPACE_ID,
+  NoteNotFoundError,
+  parseNote,
+  parseSpaceIds,
+  serializeNote,
+  serializeSpaceIds,
+  type NoteFrontmatter,
+  type ParsedNote,
+  type SpaceId,
+} from "../../domain";
 import { buildNotePath } from "./path";
 import { ulid } from "./id";
 
@@ -165,7 +177,7 @@ export async function updateNote(
 ): Promise<NoteRecord & { gcAttachments: string[] }> {
   const index = await readIndex(io.root);
   const idx = index.notes.findIndex((n) => n.id === id);
-  if (idx < 0) throw new Error(`Note ${id} not found`);
+  if (idx < 0) throw new NoteNotFoundError(id);
   const current = index.notes[idx]!;
   const existingText = await readText(io.root, current.path);
   const existing = parseNote(existingText);
@@ -192,7 +204,6 @@ export async function updateNote(
       existing.body,
       body,
     );
-    await deleteOrphanAttachments(io.root, gcAttachments);
   }
   await mutateIndex(io.root, (fresh) => {
     const i = fresh.notes.findIndex((n) => n.id === id);
@@ -255,6 +266,16 @@ export async function deleteNote(
   await mutateIndex(io.root, (fresh) => {
     fresh.notes = fresh.notes.filter((n) => n.id !== id);
   });
+
+  // Blobs whose refs were cleared during a prior body edit are absent from
+  // this note's current markdown — sweep against the remaining corpus.
+  const remaining = await listNotes(io);
+  const liveBodies: string[] = [];
+  for (const live of remaining) {
+    liveBodies.push(parseNote(await readText(io.root, live.path)).body);
+  }
+  await sweepOrphanAttachments(io.root, liveBodies);
+
   return gcAttachments;
 }
 

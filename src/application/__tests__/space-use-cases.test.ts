@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createNote } from "../../infrastructure/notes/storage";
 import { FsNoteRepository } from "../../infrastructure/notes/fs-note-repository";
 import { FsSpaceRepository } from "../../infrastructure/spaces/fs-space-repository";
@@ -18,6 +18,11 @@ async function makeSession() {
     notes: new FsNoteRepository(io.root),
     spaces: new FsSpaceRepository(io.root),
     attachments: new FsAttachmentStore(io.root),
+    createSemanticSearch: () => ({
+      searchSemantic: vi.fn().mockResolvedValue([]),
+      reindex: vi.fn().mockResolvedValue(undefined),
+      pruneOrphans: vi.fn().mockResolvedValue(undefined),
+    }),
   });
   return { io, session };
 }
@@ -45,6 +50,18 @@ describe("create-space", () => {
     ).rejects.toBeInstanceOf(SpaceValidationError);
 
     expect(await session.listSpaces()).toHaveLength(0);
+    session.dispose();
+  });
+
+  it("refuses a duplicate name before any I/O happens", async () => {
+    const { session } = await makeSession();
+    await createSpace(session, { name: "Work", colorId: "blue" });
+
+    await expect(
+      createSpace(session, { name: " work ", colorId: "red" }),
+    ).rejects.toBeInstanceOf(SpaceValidationError);
+
+    expect(await session.listSpaces()).toHaveLength(1);
     session.dispose();
   });
 });

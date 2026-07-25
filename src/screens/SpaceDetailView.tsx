@@ -15,6 +15,7 @@ import { useDebouncedCallback } from "../lib/useDebouncedCallback";
 import type { NoteListItem, SpaceListItem } from "../application/view-models";
 import {
   GENERAL_SPACE_DESCRIPTION,
+  isDuplicateSpaceName,
   isGeneralSpaceId,
   isReservedSpaceName,
   noteBelongsToSpace,
@@ -109,11 +110,25 @@ export function SpaceDetailView({
   const debouncedSaveRef = useRef(debouncedSave);
   debouncedSaveRef.current = debouncedSave;
 
+  const otherSpaceNames = useMemo(
+    () =>
+      spaceItems
+        .filter((item) => item.id !== space.id && !isGeneralSpaceId(item.id))
+        .map((item) => item.name),
+    [spaceItems, space.id],
+  );
+
   const scheduleSave = useCallback(
     (next: { name: string; description: string; colorId: SpaceColorId }) => {
       if (!custom) return;
       const trimmedName = next.name.trim();
-      if (!trimmedName || isReservedSpaceName(trimmedName)) return;
+      if (
+        !trimmedName ||
+        isReservedSpaceName(trimmedName) ||
+        isDuplicateSpaceName(trimmedName, otherSpaceNames)
+      ) {
+        return;
+      }
       setIsSaving(true);
       debouncedSave(space.id, {
         name: trimmedName,
@@ -122,7 +137,7 @@ export function SpaceDetailView({
         description: next.description.trim() || null,
       });
     },
-    [custom, debouncedSave, space.id],
+    [custom, debouncedSave, space.id, otherSpaceNames],
   );
 
   useEffect(() => {

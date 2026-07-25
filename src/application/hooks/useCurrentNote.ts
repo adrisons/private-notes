@@ -3,12 +3,14 @@ import type { NoteId, SpaceId } from "../../domain";
 import type { ReindexNoteInput } from "../ports/semantic-search";
 import type { VaultSession } from "../vault-session";
 import type { NoteListItem, OpenNoteState } from "../view-models";
+import { toOpenNoteState } from "../view-models";
 import { noteToReindexInput } from "../mappers/reindex";
 import { useAutosave } from "./useAutosave";
 import { createNote } from "../use-cases/create-note";
 import { deleteNote } from "../use-cases/delete-note";
 import { duplicateNote } from "../use-cases/duplicate-note";
 import { openNote } from "../use-cases/open-note";
+import { assignNoteSpaces } from "../use-cases/assign-note-spaces";
 
 export interface UseCurrentNoteOptions {
   session: VaultSession | null;
@@ -90,9 +92,10 @@ export function useCurrentNote({
       }
 
       try {
-        const state = await openNote(session, id as NoteId);
+        const loaded = await openNote(session, id as NoteId);
         // The user may have switched notes while the body loaded.
-        if (!state || openTargetRef.current !== id) return;
+        if (!loaded || openTargetRef.current !== id) return;
+        const state = toOpenNoteState(loaded, loaded.updatedAt);
         // Preserve a title the user edited in the header during the load — its
         // save was deferred while the body was pending, so schedule it now.
         const shown = currentRef.current;
@@ -138,8 +141,8 @@ export function useCurrentNote({
   const handleCreateNote = useCallback(async () => {
     if (!session) return;
     try {
-      const state = await createNote(session);
-      setCurrent(state);
+      const note = await createNote(session);
+      setCurrent(toOpenNoteState(note, note.updatedAt));
       await refreshSummaries();
     } catch (error) {
       onError(error);
@@ -150,12 +153,12 @@ export function useCurrentNote({
     async (id: string) => {
       if (!session) return;
       try {
-        const result = await duplicateNote(session, id as NoteId);
-        if (!result) return;
-        setCurrent(result.state);
+        const note = await duplicateNote(session, id as NoteId);
+        if (!note) return;
+        setCurrent(toOpenNoteState(note, note.updatedAt));
         await refreshSummaries();
         if (embedderReady) {
-          scheduleReindex([noteToReindexInput(result.note)]);
+          scheduleReindex([noteToReindexInput(note)]);
         }
       } catch (error) {
         onError(error);
@@ -198,11 +201,12 @@ export function useCurrentNote({
     async (spaceIds: SpaceId[]) => {
       if (!session || !current) return;
       try {
-        const state = await session.assignNoteSpaces(
+        const note = await assignNoteSpaces(
+          session,
           current.id as NoteId,
           spaceIds,
         );
-        if (state) setCurrent(state);
+        if (note) setCurrent(toOpenNoteState(note, note.updatedAt));
         await refreshSummaries();
       } catch (error) {
         onError(error);

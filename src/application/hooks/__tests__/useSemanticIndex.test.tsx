@@ -17,7 +17,6 @@ const fakeEmbedder = vi.hoisted(() => ({
 }));
 
 vi.mock("../../composition", () => ({
-  createSemanticSearch: vi.fn(() => mockSearch),
   loadDefaultEmbedder: vi.fn(async () => fakeEmbedder),
 }));
 
@@ -27,12 +26,7 @@ describe("useSemanticIndex", () => {
     mockSearch.searchSemantic.mockResolvedValue([
       {
         noteId: "n1",
-        filePath: "notes/2026/05/n1.md",
-        chunkIdx: 0,
         score: 0.9,
-        snippet: "hello world",
-        offset: 0,
-        length: 11,
         matchKind: "semantic",
       },
     ]);
@@ -41,7 +35,8 @@ describe("useSemanticIndex", () => {
 
   function sessionStub(): VaultSession {
     return {
-      root: {} as FileSystemDirectoryHandle,
+      vaultName: "Notes",
+      createSemanticSearch: vi.fn(() => mockSearch),
       listForReindex: vi.fn().mockResolvedValue([
         {
           id: "n1",
@@ -49,7 +44,7 @@ describe("useSemanticIndex", () => {
           body: "hello",
         },
       ]),
-      listSummaries: vi.fn().mockResolvedValue([{ id: "n1", title: "Note", updatedAt: "2026-05-17T10:00:00.000Z", spaceIds: [] }]),
+      sweepOrphanAttachments: vi.fn().mockResolvedValue([]),
     } as unknown as VaultSession;
   }
 
@@ -117,21 +112,5 @@ describe("useSemanticIndex", () => {
         fakeEmbedder,
       );
     });
-  });
-
-  it("pruneOrphans uses live note ids from the session", async () => {
-    const session = sessionStub();
-    const { result } = renderHook(() =>
-      useSemanticIndex({ session, onError: vi.fn() }),
-    );
-
-    await waitFor(() => expect(result.current.embedderReady).toBe(true));
-
-    await act(async () => {
-      await result.current.pruneOrphans();
-    });
-
-    expect(session.listSummaries).toHaveBeenCalled();
-    expect(mockSearch.pruneOrphans).toHaveBeenCalledWith(["n1"]);
   });
 });

@@ -17,6 +17,11 @@ async function sessionWithNote() {
     notes: new FsNoteRepository(io.root),
     spaces: new FsSpaceRepository(io.root),
     attachments: new FsAttachmentStore(io.root),
+    createSemanticSearch: () => ({
+      searchSemantic: vi.fn().mockResolvedValue([]),
+      reindex: vi.fn().mockResolvedValue(undefined),
+      pruneOrphans: vi.fn().mockResolvedValue(undefined),
+    }),
   });
   return { session, noteId: record.id };
 }

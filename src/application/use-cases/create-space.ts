@@ -10,7 +10,11 @@ export async function createSpace(
   session: VaultSession,
   input: SpaceDraft,
 ): Promise<CustomSpace> {
-  const draft = createSpaceDraft(input);
+  const existing = await session.listSpaces();
+  const draft = createSpaceDraft(
+    input,
+    existing.map((space) => space.name),
+  );
   return guardVaultIO(
     {
       operation: "create-space",

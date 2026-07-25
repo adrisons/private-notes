@@ -1,14 +1,32 @@
 import { describe, it, expect, vi } from "vitest";
 import { createNote, updateNote } from "../../infrastructure/notes/storage";
 import { openVault, defaultInfrastructure } from "../use-cases/open-vault";
+import { resolveVaultStartup } from "../use-cases/resolve-startup";
 import { WELCOME_NOTE_TITLE } from "../../domain";
 import { FsNoteRepository } from "../../infrastructure/notes/fs-note-repository";
 import { FsSpaceRepository } from "../../infrastructure/spaces/fs-space-repository";
 import { FsAttachmentStore } from "../../infrastructure/attachments/fs-attachment-store";
 import { VaultSession } from "../vault-session";
 import type { VaultGateway } from "../ports/vault-gateway";
+import type { SemanticSearch } from "../ports/semantic-search";
 import { noteId } from "../../domain";
 import { fakeFile, setupTestVault } from "../../test/vaultFixtures";
+
+const noopSearch: SemanticSearch = {
+  searchSemantic: vi.fn().mockResolvedValue([]),
+  reindex: vi.fn().mockResolvedValue(undefined),
+  pruneOrphans: vi.fn().mockResolvedValue(undefined),
+};
+
+function makeSession(root: FileSystemDirectoryHandle) {
+  return VaultSession.create({
+    root,
+    notes: new FsNoteRepository(root),
+    spaces: new FsSpaceRepository(root),
+    attachments: new FsAttachmentStore(root),
+    createSemanticSearch: () => noopSearch,
+  });
+}
 
 const testVaultGateway: VaultGateway = {
   ensurePermission: vi.fn().mockResolvedValue(undefined),
@@ -57,10 +75,8 @@ describe("VaultSession", () => {
       { title: "Newer", body: "second" },
     );
 
-    const notes = new FsNoteRepository(io.root);
-    const attachments = new FsAttachmentStore(io.root);
-    const session = VaultSession.create({ root: io.root, notes, spaces: new FsSpaceRepository(io.root), attachments });
-    const startup = await session.resolveStartup();
+    const session = makeSession(io.root);
+    const startup = await resolveVaultStartup(session);
 
     expect(startup.summaries).toHaveLength(2);
     expect(startup.current?.title).toBe("Newer");
@@ -81,10 +97,8 @@ describe("VaultSession", () => {
       { body: "edited again" },
     );
 
-    const notes = new FsNoteRepository(io.root);
-    const attachments = new FsAttachmentStore(io.root);
-    const session = VaultSession.create({ root: io.root, notes, spaces: new FsSpaceRepository(io.root), attachments });
-    const startup = await session.resolveStartup();
+    const session = makeSession(io.root);
+    const startup = await resolveVaultStartup(session);
 
     expect(startup.current?.id).toBe(first.id);
     expect(startup.current?.title).toBe("First");
@@ -94,17 +108,15 @@ describe("VaultSession", () => {
 
   it("invalidates removed attachment paths after save", async () => {
     const io = await setupTestVault();
-    const attachments = new FsAttachmentStore(io.root);
-    const notes = new FsNoteRepository(io.root);
-    const session = VaultSession.create({ root: io.root, notes, spaces: new FsSpaceRepository(io.root), attachments });
-    const invalidate = vi.spyOn(attachments, "invalidate");
+    const session = makeSession(io.root);
+    const invalidate = vi.spyOn(session.attachments, "invalidate");
 
-    const { path } = await attachments.store(fakeFile("pic.png", "image/png", [1]));
+    const { path } = await session.attachments.store(fakeFile("pic.png", "image/png", [1]));
     const opened = await session.createNote({
       title: "With image",
       body: `![pic](${path})`,
     });
-    await attachments.addRef(noteId(opened.id), path);
+    await session.attachments.addRef(noteId(opened.id), path);
 
     await session.saveNote(noteId(opened.id), "With image", "plain text");
 

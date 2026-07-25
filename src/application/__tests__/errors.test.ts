@@ -9,10 +9,13 @@ import {
   resetErrorReportingForTests,
   setBackgroundErrorListener,
   userFacingMessage,
-  userFixHint,
   vaultIncompatibleCause,
 } from "../errors";
-import { VaultDataError, VaultIncompatibleError } from "../../lib/validate";
+import {
+  NoteNotFoundError,
+  VaultDataError,
+  VaultIncompatibleError,
+} from "../../domain";
 
 describe("application/errors", () => {
   beforeEach(() => {
@@ -145,6 +148,28 @@ describe("application/errors", () => {
     expect(vaultIncompatibleCause(new Error("other"))).toBeNull();
   });
 
+  it("maps note-not-found to a specific user message", async () => {
+    await expect(
+      guardVaultIO(
+        {
+          operation: "save-note",
+          module: "application/use-cases/save-note.ts",
+          trace: "saveNote → VaultSession.saveNote",
+          fixHint: "Check FsNoteRepository.update.",
+        },
+        "Could not save your note.",
+        "Try again.",
+        async () => {
+          throw new NoteNotFoundError("missing-id");
+        },
+      ),
+    ).rejects.toMatchObject({
+      message: "This note no longer exists.",
+      fixHint:
+        "It may have been deleted in another tab. Pick another note or refresh the list.",
+    });
+  });
+
   it("extracts user-facing text from typed errors", () => {
     const error = new VaultIOError(
       "Could not open this note.",
@@ -158,6 +183,6 @@ describe("application/errors", () => {
     );
 
     expect(userFacingMessage(error)).toBe("Could not open this note.");
-    expect(userFixHint(error)).toBe("Try reopening the folder.");
+    expect(error.fixHint).toBe("Try reopening the folder.");
   });
 });

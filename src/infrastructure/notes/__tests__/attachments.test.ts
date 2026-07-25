@@ -109,7 +109,7 @@ describe("notes with shared attachments", () => {
     expect(await fileExists(io.root, stored.path)).toBe(false);
   });
 
-  it("garbage-collects when an image is removed from the body", async () => {
+  it("defers blob deletion until note delete or a sweep, not on body edit", async () => {
     const io = await setup();
     const stored = await storeAttachment(io.root, fakeFile([5, 6, 7]));
     const note = await createNote(io, {
@@ -118,7 +118,13 @@ describe("notes with shared attachments", () => {
     });
     await addRef(io.root, note.id, stored.path);
 
-    await updateNote(io, note.id, { body: "no images here" });
+    const { gcAttachments } = await updateNote(io, note.id, {
+      body: "no images here",
+    });
+    expect(gcAttachments).toEqual([stored.path]);
+    expect(await fileExists(io.root, stored.path)).toBe(true);
+
+    await deleteNote(io, note.id);
     expect(await fileExists(io.root, stored.path)).toBe(false);
   });
 });

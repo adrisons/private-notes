@@ -1,10 +1,11 @@
 /** Typed application errors with user vs background classification. */
 
 import {
+  NoteNotFoundError,
   VaultDataError,
   VaultIncompatibleError,
   type VaultIncompatibleCode,
-} from "../lib/validate";
+} from "../domain";
 
 export type AppErrorKind = "user" | "background";
 
@@ -144,17 +145,8 @@ export class BackgroundTaskError extends VaultError {
 
 export type AppError = VaultError | VaultIOError | BackgroundTaskError;
 
-export type Result<T, E extends AppError = AppError> =
-  | { ok: true; value: T }
-  | { ok: false; error: E };
-
-export function ok<T>(value: T): Result<T, never> {
-  return { ok: true, value };
-}
-
-export function err<E extends AppError>(error: E): Result<never, E> {
-  return { ok: false, error };
-}
+const NOTE_NOT_FOUND_FIX =
+  "It may have been deleted in another tab. Pick another note or refresh the list.";
 
 const backgroundLog = new Set<string>();
 let backgroundErrorListener: ((error: BackgroundTaskError) => void) | null =
@@ -271,11 +263,6 @@ export function userFacingMessage(error: unknown): string {
   return "Something went wrong";
 }
 
-export function userFixHint(error: unknown): string {
-  if (error instanceof VaultError) return error.fixHint;
-  return "Try again. If it keeps failing, reopen the folder.";
-}
-
 /** Wrap vault I/O with a typed VaultIOError for user toasts and debug logs. */
 export async function guardVaultIO<T>(
   debug: ErrorDebugContext,
@@ -286,6 +273,14 @@ export async function guardVaultIO<T>(
   try {
     return await fn();
   } catch (cause) {
+    if (cause instanceof NoteNotFoundError) {
+      throw new VaultIOError(
+        "This note no longer exists.",
+        debug,
+        NOTE_NOT_FOUND_FIX,
+        cause,
+      );
+    }
     throw new VaultIOError(userMessage, debug, fixHint, cause);
   }
 }
