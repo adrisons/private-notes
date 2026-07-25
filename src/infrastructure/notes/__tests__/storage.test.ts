@@ -7,6 +7,7 @@ import {
   duplicateNote,
   listNotes,
   readNote,
+  readNoteBody,
   updateNote,
 } from "../storage";
 
@@ -42,6 +43,13 @@ describe("notes storage", () => {
     const read = await readNote(io, rec.id);
     expect(read?.parsed.body).toBe("Body");
     expect(read?.parsed.frontmatter.title).toBe("Hi");
+  });
+
+  it("reads a body straight from a record the caller already holds", async () => {
+    const io = await setup();
+    await createNote(io, { title: "Hi", body: "Body" });
+    const [record] = await listNotes(io);
+    expect(await readNoteBody(io, record!)).toBe("Body");
   });
 
   it("updates body and bumps updatedAt", async () => {

@@ -137,6 +137,21 @@ export async function readNote(
   return { record, parsed: parseNote(text) };
 }
 
+/**
+ * Body of a note whose index record the caller already holds.
+ *
+ * `readNote` resolves the record itself, and resolving it costs a full read,
+ * parse and validation of `index.json`. That is fine for one note and
+ * quadratic for a vault walk, so anything iterating every note reads the index
+ * once and comes here.
+ */
+export async function readNoteBody(
+  io: NoteStorageContext,
+  record: NoteRecord,
+): Promise<string> {
+  return parseNote(await readText(io.root, record.path)).body;
+}
+
 export interface UpdateInput {
   title?: string;
   body?: string;

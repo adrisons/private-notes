@@ -1,7 +1,9 @@
 import { readText } from "../fs/handle";
+import { mapWithConcurrency, VAULT_READ_CONCURRENCY } from "../fs/concurrency";
 import { PATHS } from "../fs/schema";
 import { parseNoteIndex } from "../fs/validate";
 import { parseJson } from "../../lib/validate";
+import { canonicalBody } from "../../domain/note/frontmatter";
 import { sha256Hex } from "../attachments/hash";
 import type { ReindexNoteInput } from "../../application/ports/semantic-search";
 import {
@@ -33,13 +35,6 @@ export interface IndexerOptions {
   onProgress?: (progress: { done: number; total: number }) => void;
 }
 
-/**
- * Workers to run the staleness scan with. Each note still needs a vectors-file
- * read when the content-hash hint cannot settle the question, and those checks
- * are independent between notes.
- */
-const STALENESS_SCAN_CONCURRENCY = 12;
-
 async function loadNotePaths(
   root: FileSystemDirectoryHandle,
 ): Promise<Map<string, string>> {
@@ -53,34 +48,18 @@ async function loadNotePaths(
 }
 
 /**
- * Map with a fixed pool of workers pulling from a shared cursor, preserving
- * input order in the result so the embedding pass and progress stay
- * deterministic.
- */
-async function mapWithConcurrency<T, R>(
-  items: readonly T[],
-  limit: number,
-  fn: (item: T, index: number) => Promise<R>,
-): Promise<R[]> {
-  const results = new Array<R>(items.length);
-  let cursor = 0;
-  const worker = async (): Promise<void> => {
-    while (cursor < items.length) {
-      const index = cursor++;
-      results[index] = await fn(items[index]!, index);
-    }
-  };
-  const size = Math.min(limit, items.length);
-  await Promise.all(Array.from({ length: size }, () => worker()));
-  return results;
-}
-
-/**
  * The title is part of what gets embedded, so renaming a note has to
  * invalidate its vectors just like editing it does.
+ *
+ * The body is canonicalised first because the two callers disagree about which
+ * body they hold: autosave passes the editor's text, a reload passes the text
+ * parsed back off disk. Hashing them raw made every note that ended in a space
+ * — or began with a blank line — look stale on the next open.
  */
 async function contentFingerprint(title: string, body: string): Promise<string> {
-  return sha256Hex(new TextEncoder().encode(`${title}\n\n${body}`));
+  return sha256Hex(
+    new TextEncoder().encode(`${title}\n\n${canonicalBody(body)}`),
+  );
 }
 
 /**
@@ -206,8 +185,19 @@ export async function reindex(
   // trusted only when it matches a freshly computed hash *and* the vectors
   // file still exists, so a stale or partially-synced hint costs at most a
   // redundant re-embed, never a wrong skip (ADR-011).
+  //
+  // The next map starts from what is on disk rather than empty: `reindex` also
+  // runs for a single note on every autosave tick (ADR-007), and rebuilding
+  // the map from that one note would strip every other note of its fast path.
+  // Entries whose note is gone are removed by `pruneOrphans`, not here.
   const hints = await readContentHashes(root);
-  const nextHints: ContentHashIndex = {};
+  const nextHints: ContentHashIndex = { ...hints };
+  let hintsChanged = false;
+  const recordHint = (noteId: string, hash: string): void => {
+    if (nextHints[noteId] === hash) return;
+    nextHints[noteId] = hash;
+    hintsChanged = true;
+  };
 
   // First pass: identify stale notes; skip ones still valid. The per-note check
   // is I/O-bound and independent between notes, so it runs with bounded
@@ -219,7 +209,7 @@ export async function reindex(
 
   const scans = await mapWithConcurrency(
     notes,
-    STALENESS_SCAN_CONCURRENCY,
+    VAULT_READ_CONCURRENCY,
     async (note): Promise<Scan> => {
       const hash = await contentFingerprint(note.title, note.body);
       if (hints[note.id] === hash && (await hasNoteEmbeddings(root, note.id))) {
@@ -243,7 +233,7 @@ export async function reindex(
     if (scan.stale) {
       work.push({ note: scan.note, hash: scan.hash });
     } else {
-      nextHints[scan.note.id] = scan.hash;
+      recordHint(scan.note.id, scan.hash);
       skipped++;
     }
   }
@@ -254,7 +244,14 @@ export async function reindex(
 
   for (const item of work) {
     const filePath = notePaths.get(item.note.id) ?? "";
-    const plan = planChunks(item.note.title, item.note.body, embedder);
+    // The same canonical body the hash was taken over, so a chunk's stored
+    // text and offsets describe the file rather than whichever caller we were
+    // handed the note by.
+    const plan = planChunks(
+      item.note.title,
+      canonicalBody(item.note.body),
+      embedder,
+    );
     if (plan.length === 0) {
       // Empty note: persist an empty embeddings record so we do not retry.
       await writeNoteEmbeddings(root, {
@@ -267,7 +264,7 @@ export async function reindex(
         updatedAt: new Date().toISOString(),
         chunks: [],
       });
-      nextHints[item.note.id] = item.hash;
+      recordHint(item.note.id, item.hash);
       done++;
       progress({ done, total });
       continue;
@@ -294,16 +291,17 @@ export async function reindex(
       })),
     };
     await writeNoteEmbeddings(root, record);
-    nextHints[item.note.id] = item.hash;
+    recordHint(item.note.id, item.hash);
     done++;
     progress({ done, total });
   }
 
   // Persist the hints last. The per-note vectors files are the source of truth
   // and are already written, so losing this write only costs a slower next
-  // scan. Built from the live `notes` only, so a note that disappeared drops
-  // out of the map here without a separate cleanup pass.
-  await writeContentHashes(root, nextHints);
+  // scan. The map is vault-wide, so it is only rewritten when something in it
+  // actually moved — otherwise a no-op reload, and every autosave tick that
+  // finds nothing to do, would rewrite the whole file for nothing.
+  if (hintsChanged) await writeContentHashes(root, nextHints);
 
   return { embedded: total, skipped };
 }

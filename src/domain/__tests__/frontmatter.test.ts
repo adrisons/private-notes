@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  canonicalBody,
   parseNote,
   serializeNote,
   FrontmatterError,
@@ -47,6 +48,27 @@ describe("serializeNote / parseNote", () => {
     const body = "Line A\n\nLine B\n\nLine C";
     const parsed = parseNote(serializeNote(baseFrontmatter, body));
     expect(parsed.body).toBe(body);
+  });
+
+  // The incremental reindex fingerprints the body it holds in memory and the
+  // full reindex fingerprints the body it reads back, so the two only agree
+  // while this identity holds for every shape a body can take.
+  it.each([
+    ["plain", "Body goes here."],
+    ["trailing space", "Body goes here. "],
+    ["trailing newlines", "Body goes here.\n\n"],
+    ["trailing mixed whitespace", "Body goes here.\n  \n\t"],
+    ["leading blank line", "\n\nBody goes here."],
+    ["leading indentation", "  indented first line"],
+    ["interior blank lines", "Line A\n\n\n\nLine B"],
+    ["CRLF", "Line A\r\nLine B\r\n"],
+    ["only whitespace", "\n \n"],
+    ["empty", ""],
+  ])("canonicalBody predicts the round trip: %s", (_name, body) => {
+    const parsed = parseNote(serializeNote(baseFrontmatter, body));
+    expect(parsed.body).toBe(canonicalBody(body));
+    // And it is a fixed point, so hashing it twice cannot drift.
+    expect(canonicalBody(parsed.body)).toBe(parsed.body);
   });
 
   it("rejects missing opening delimiter", () => {

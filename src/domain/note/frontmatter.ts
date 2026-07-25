@@ -46,6 +46,26 @@ function unquote(raw: string): string {
   return trimmed;
 }
 
+/**
+ * The body as it will read back from disk: CRLF folded, trailing whitespace
+ * gone, and no blank lines between the closing delimiter and the first line of
+ * prose. Writing and reading a note each normalise a different half of that,
+ * so an in-memory body and the same body after a round trip are not always the
+ * same string.
+ *
+ * Anything that fingerprints a body has to agree on which of the two it means.
+ * When the incremental reindex hashed the editor's text and the next reload
+ * hashed the file's, a note that merely ended in a space was re-embedded on
+ * every open. `serializeNote` applies this on the way out so the identity
+ * `parseNote(serializeNote(fm, body)).body === canonicalBody(body)` holds.
+ */
+export function canonicalBody(body: string): string {
+  return body
+    .replace(/\r\n/g, "\n")
+    .replace(/\s+$/, "")
+    .replace(/^\n+/, "");
+}
+
 export function serializeNote(
   frontmatter: NoteFrontmatter,
   body: string,
@@ -61,7 +81,7 @@ export function serializeNote(
   if (serialized) {
     lines.push(`spaceIds: ${quote(serialized)}`);
   }
-  lines.push(DELIMITER, "", body.replace(/\s+$/, ""), "");
+  lines.push(DELIMITER, "", canonicalBody(body), "");
   return lines.join("\n");
 }
 

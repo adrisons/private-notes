@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-07-21
+- **Updated:** 2026-07-25
 
 ## Context
 
@@ -9,11 +10,10 @@ Every vault open runs `runFullReindex`: `pruneOrphans` then `reindex`. On a
 vault where nothing changed, that pass does no embedding — but it was still
 `O(vault)` of file I/O, and slow enough to be felt on a reload:
 
-- `reindex` read, parsed and hashed every note's Markdown to compute a
-  `contentHash`, **and then opened and JSON-parsed every note's vectors file**
-  (`readNoteEmbeddings`) just to compare that hash. The vectors file is the
-  large one — hundreds of floats per chunk — and parsing those arrays is the
-  dominant cost.
+- `reindex` read every note's Markdown to compute a `contentHash`, **and then
+  opened and JSON-parsed every note's vectors file** (`readNoteEmbeddings`) just
+  to compare that hash. The vectors file is the large one — hundreds of floats
+  per chunk — and parsing those arrays is the dominant cost.
 - `pruneOrphans` streamed and fully parsed **every** vectors file
   (`iterateNoteEmbeddings`) only to collect the note ids it already encodes in
   the filename.
@@ -25,31 +25,66 @@ to see it.
 
 ## Decision
 
-**Write a hint file: `.semantic-index/content-hashes.json`**, a compact
-`noteId → contentHash` map, rebuilt at the end of every `reindex` from the live
-notes.
+### Hint file
 
-`reindex`'s up-to-date check gains a fast path: if the hint for a note equals
-the freshly computed `contentHash` **and** the note's vectors file still exists
-(a cheap existence check, no read), the note is skipped without ever opening
-its vectors. Only when the hint is missing, stale, or the file has vanished
-does it fall back to the precise check that reads the vectors file — which is
-also the first run after upgrade, where the pass repopulates the hints.
+Add `.semantic-index/content-hashes.json`: a compact `noteId → contentHash`
+map. It is a **performance sidecar** — the per-note vectors format from ADR-004
+is unchanged.
 
-**The hint is a cache, never the source of truth.** Each note's own JSON keeps
-its authoritative `contentHash`; the fast path is only ever taken when the hint
-agrees with a hash computed *now* from the note body. So a stale or
-partially-synced hint can only cause a redundant re-embed, not a wrong skip.
-The hint is written *after* the vectors files, and dropped by
-`clearSemanticIndex` (model/schema change) so a wipe cannot leave hints
-pointing at vectors that no longer exist.
+The hint is a **cache, never the source of truth.** Each note's own JSON keeps
+its authoritative `contentHash`. A stale or partially-synced hint can only cause
+a redundant re-embed, never a wrong skip.
 
-**`pruneOrphans` lists directory names instead of parsing files.** The filename
-*is* the note id (`<noteId>.json`), so orphan detection needs no reads at all;
-it also drops the pruned ids from the hint map.
+### Up-to-date check
 
-The per-note on-disk format (ADR-004) is unchanged: the hint file is a new,
-separate performance sidecar.
+`reindex` loads the hint map once, then for each note:
+
+1. Compute a fresh `contentHash` from the note title and `canonicalBody(body)`
+   (see below).
+2. **Fast path:** if the hint for that note equals the fresh hash **and** the
+   vectors file still exists (a cheap existence check, no read), skip the note
+   without opening its vectors.
+3. **Fallback:** read the vectors file and run the precise check from ADR-004
+   (hash, model, schema). Re-embed when stale; skip when already current.
+
+The fallback also runs on first open after upgrade, when no hint file exists
+yet — that pass repopulates the hints for later scans.
+
+### Maintaining the map
+
+`reindex` is called both for the full vault on open (ADR-007) and for a **single
+note** after autosave. The hint map must behave correctly in both cases:
+
+- **Merge on read:** start from the map already on disk, then update entries
+  for the notes in this call. Other notes keep their entries untouched.
+- **Write on change:** persist the file only when at least one entry moved.
+  A no-op scan or an autosave tick that finds nothing to do must not rewrite
+  the whole vault-wide file.
+- **Write last:** flush hints after the per-note vectors files are written, so
+  a lost hint write only costs a slower next scan, not inconsistent vectors.
+- **Prune on delete:** `pruneOrphans` drops entries for note ids it removes.
+  It is the only caller that knows the full set of live notes.
+- **Wipe with the index:** `clearSemanticIndex` (model/schema change, ADR-008)
+  deletes the hint file along with the vectors, so hints never point at files
+  that no longer exist.
+
+### Content fingerprint
+
+The hash is taken over `canonicalBody` (`src/domain/note/frontmatter.ts`) — the
+body as it will read back off disk after `serializeNote` / `parseNote`
+normalisation (CRLF folding, trailing whitespace, blank lines after the
+frontmatter delimiter).
+
+Incremental reindex receives the editor's in-memory text; the full reindex
+holds the parsed file. Without a shared canonical form, those two strings can
+differ while the note content is unchanged, and the up-to-date check would
+disagree with itself. Both callers hash the same canonical body.
+
+### Orphan detection
+
+`pruneOrphans` lists `.semantic-index/notes/` by filename instead of parsing
+files. The filename *is* the note id (`<noteId>.json`), so orphan detection
+needs no reads at all.
 
 ## Consequences
 
@@ -58,8 +93,10 @@ separate performance sidecar.
 - A no-op reload scan no longer opens or parses a single vectors file: it reads
   the note bodies (small), the one hint file, and directory listings. The
   `O(vault)` cost that was felt on reload drops to hashing prose.
-- `pruneOrphans` is name-only, so it also catches a corrupt vectors file that a
-  parse-based scan would silently skip and leak.
+- Incremental reindex after autosave updates one hint entry without disturbing
+  the rest of the vault.
+- `pruneOrphans` is name-only, so it also catches a corrupt vectors file that
+  a parse-based scan would silently skip and leak.
 
 ### Negative
 
@@ -87,21 +124,27 @@ separate performance sidecar.
 ```mermaid
 flowchart TB
   Reload[vault open / reload] --> Prune[pruneOrphans]
-  Prune -->|list note ids from filenames, no reads| Reindex[reindex scan]
-  Reindex --> Hash[read body, compute contentHash]
+  Prune -->|list note ids from filenames| Reindex[reindex]
+  Reindex --> Load[read content-hashes.json]
+  Load --> Hash[for each note: hash title + canonicalBody]
   Hash --> Q{hint == hash<br/>and vectors file exists?}
   Q -->|yes| Skip[skip — never opens vectors]
   Q -->|no| Verify[read vectors file, verify precisely]
-  Verify -->|stale| Embed[re-embed]
+  Verify -->|stale| Embed[re-embed, write vectors]
   Verify -->|current| Skip
-  Embed --> Write[write vectors + hint]
-  Skip --> Write
+  Embed --> Merge[merge updated entries into hint map]
+  Skip --> Merge
+  Merge --> Persist{any entry changed?}
+  Persist -->|yes| Write[write content-hashes.json]
+  Persist -->|no| Done[done]
+  Write --> Done
 ```
 
 ## References
 
 - [ADR-004](./004-semantic-index-persistence.md) — index layout, per-note files, `contentHash`
-- [ADR-007](./007-autosave-eventual-reindex.md) — when reindex runs
+- [ADR-007](./007-autosave-eventual-reindex.md) — when reindex runs (full vault vs single note)
 - [ADR-008](./008-schema-compatibility.md) — schema/model invalidation and wipe
 - Code: `src/infrastructure/search/{indexer,index-fs,types}.ts`,
+  `src/domain/note/frontmatter.ts` (`canonicalBody`),
   `src/infrastructure/search/__benchmarks__/indexer.bench.ts`

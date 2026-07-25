@@ -242,22 +242,39 @@ body::before {
 }
 
 /*
- * Theme palette cross-fade. Applied via data-theme-transition on <html> for
- * one --duration-slow beat while tokens repoint (design.md §4.1).
+ * Theme palette cross-fade (design.md §4.1).
+ *
+ * Preferred path: the View Transitions API, driven from lib/theme.ts. The
+ * browser snapshots the page either side of the token swap and blends the two
+ * snapshots on the compositor — one GPU texture, no per-element style recalc
+ * and no per-frame repaint, so the cost does not grow with the size of the
+ * note list or the editor document.
  */
-html[data-theme-transition] *,
-html[data-theme-transition] *::before,
-html[data-theme-transition] *::after {
-  transition-property:
-    background-color,
-    border-color,
-    box-shadow,
-    color,
-    fill,
-    outline-color,
-    stroke;
-  transition-duration: var(--duration-slow);
-  transition-timing-function: var(--ease-smooth);
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--duration-normal);
+  animation-timing-function: var(--ease-smooth);
+}
+
+/*
+ * Fallback for browsers without View Transitions.
+ *
+ * Deliberately narrow. The previous rule armed seven properties on `*` plus
+ * both pseudo-elements: on a loaded vault that builds thousands of animations
+ * synchronously inside the click handler, then repaints box-shadow — which
+ * cannot be composited — on every frame for the whole beat. That stall is what
+ * read as "slow", before any pixel had moved.
+ *
+ * Only the two properties that actually carry a palette change cross-fade
+ * here. Borders and shadows snap, which is imperceptible under one
+ * --duration-normal beat.
+ */
+@supports not (view-transition-name: none) {
+  html[data-theme-transition] * {
+    transition-property: background-color, color;
+    transition-duration: var(--duration-normal);
+    transition-timing-function: var(--ease-smooth);
+  }
 }
 
 /* Every clickable element responds to press (§5.3). */
@@ -717,6 +734,13 @@ html[data-theme-transition] *::after {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
+  }
+
+  /* lib/theme.ts already skips the view transition; this covers the pseudos
+     if one is ever started from elsewhere. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
   }
 
   .u-press:active:not(:disabled),

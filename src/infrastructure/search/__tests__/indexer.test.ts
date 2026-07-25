@@ -141,6 +141,45 @@ describe("indexer", () => {
     expect(second.skipped).toBe(1);
   });
 
+  it("does not re-embed a body that differs only by what the file format strips", async () => {
+    const io = await setup();
+    await createNote(io, { title: "x", body: "same body" });
+    const embedder = new FakeEmbedder();
+
+    // What autosave hands the indexer: the editor's text, before
+    // `serializeNote` trims it and `parseNote` strips the framing newlines.
+    const [onDisk] = await reindexNotes(io);
+    await reindex(
+      io.root,
+      [{ ...onDisk!, body: "\nsame body \n\n" }],
+      embedder,
+    );
+    // What the next reload hands it: the same note, read back off disk.
+    const second = await reindex(io.root, await reindexNotes(io), embedder);
+
+    expect(second.embedded).toBe(0);
+    expect(second.skipped).toBe(1);
+  });
+
+  it("keeps the other notes' hints when one note is reindexed on its own", async () => {
+    const io = await setup();
+    const a = await createNote(io, { title: "a", body: "one" });
+    const b = await createNote(io, { title: "b", body: "two" });
+    const embedder = new FakeEmbedder();
+    await reindex(io.root, await reindexNotes(io), embedder);
+
+    // Autosave reindexes a single note every 500 ms. Rebuilding the hint map
+    // from that one note left every other note without a fast path, so the
+    // next reload re-read every vectors file on disk.
+    await updateNote(io, a.id, { body: "one more" });
+    const changed = (await reindexNotes(io)).filter((n) => n.id === a.id);
+    await reindex(io.root, changed, embedder);
+
+    const hints = await readContentHashes(io.root);
+    expect(Object.keys(hints).sort()).toEqual([a.id, b.id].sort());
+    expect(hints[b.id]).toBe((await readNoteEmbeddings(io.root, b.id))?.contentHash);
+  });
+
   it("re-embeds when the vectors file vanished even though the hint remains", async () => {
     const io = await setup();
     const rec = await createNote(io, { title: "x", body: "same body" });

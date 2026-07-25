@@ -5,12 +5,17 @@ import {
   duplicateNote,
   listNotes,
   readNote,
+  readNoteBody,
   updateNote,
 } from "./storage";
 import {
   noteFromRecord,
   summaryFromRecord,
 } from "./note-mappers";
+import {
+  mapWithConcurrency,
+  VAULT_READ_CONCURRENCY,
+} from "../fs/concurrency";
 import { noteId, type NoteId, type SpaceId } from "../../domain";
 import type {
   CreateNoteInput,
@@ -36,20 +41,23 @@ export class FsNoteRepository implements NoteRepository {
     return records.map(summaryFromRecord);
   }
 
-  async listForReindex() {
+  /**
+   * Every note with its body, for a full reindex. `listNotes` reads the index
+   * once and the bodies come from `readNoteBody`, which takes the record it
+   * already has: going through `readNote` per note re-read and re-validated
+   * the whole index N times, on the critical path of every vault open.
+   */
+  async listForReindex(): Promise<ReindexNoteInput[]> {
     const records = await listNotes(this.io());
-    const notes = await Promise.all(
-      records.map(async (record) => {
-        const read = await readNote(this.io(), record.id);
-        if (!read) return null;
-        return {
-          id: noteId(record.id),
-          title: record.title,
-          body: read.parsed.body,
-        };
+    return mapWithConcurrency(
+      records,
+      VAULT_READ_CONCURRENCY,
+      async (record) => ({
+        id: noteId(record.id),
+        title: record.title,
+        body: await readNoteBody(this.io(), record),
       }),
     );
-    return notes.filter((note): note is ReindexNoteInput => note !== null);
   }
 
   async read(id: NoteId) {
