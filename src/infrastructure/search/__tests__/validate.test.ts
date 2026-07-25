@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseNoteEmbeddings, parseSemanticManifest } from "../validate";
+import { parseNoteEmbeddings, parseSemanticManifest, parseStoredNoteEmbeddings } from "../validate";
 
 const validManifest = {
   schemaVersion: 1,
@@ -74,5 +74,24 @@ describe("parseNoteEmbeddings", () => {
     expect(
       parseNoteEmbeddings({ ...validEmbeddings, chunks: [legacy] }),
     ).toBeNull();
+  });
+
+  it("accepts v3 sidecar metadata without inline vectors", () => {
+    const stored = {
+      ...validEmbeddings,
+      schemaVersion: 3,
+      chunks: [
+        {
+          idx: 0,
+          kind: "body",
+          text: "hi",
+          offset: 0,
+          length: 2,
+          embeddingOffset: 0,
+        },
+      ],
+    };
+    expect(parseNoteEmbeddings(stored)).toBeNull();
+    expect(parseStoredNoteEmbeddings(stored)?.noteId).toBe("01HX");
   });
 });

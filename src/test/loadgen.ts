@@ -164,7 +164,10 @@ export async function buildFakeVault(options: CorpusOptions): Promise<Corpus> {
         dimensions: embedder.dimensions,
         schemaVersion: SEMANTIC_SCHEMA_VERSION,
         updatedAt: iso,
-        chunks: chunks.map((c, j) => ({ ...c, embedding: vectors[j]! })),
+        chunks: chunks.map((c, j) => ({
+          ...c,
+          embedding: new Float32Array(vectors[j]!),
+        })),
       };
       await writeNoteEmbeddings(root, embeddings);
       totalChunks += chunks.length;

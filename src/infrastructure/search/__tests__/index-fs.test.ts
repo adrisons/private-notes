@@ -32,7 +32,7 @@ function sampleEmbeddings(noteId = "note-1"): NoteEmbeddings {
         text: "hello world",
         offset: 0,
         length: 11,
-        embedding: new Array(32).fill(0.1),
+        embedding: new Float32Array(32).fill(0.1),
       },
     ],
   };
@@ -65,7 +65,26 @@ describe("index-fs", () => {
     const root = await setup();
     const data = sampleEmbeddings();
     await writeNoteEmbeddings(root, data);
-    expect(await readNoteEmbeddings(root, data.noteId)).toEqual(data);
+    const loaded = await readNoteEmbeddings(root, data.noteId);
+    expect(loaded).not.toBeNull();
+    expect(loaded!.noteId).toBe(data.noteId);
+    expect(loaded!.chunks).toHaveLength(1);
+    expect([...loaded!.chunks[0]!.embedding]).toEqual([
+      ...data.chunks[0]!.embedding,
+    ]);
+  });
+
+  it("stores vectors in a sidecar bin file, not inline JSON", async () => {
+    const root = await setup();
+    const data = sampleEmbeddings("sidecar");
+    await writeNoteEmbeddings(root, data);
+    const { readText, readBytes } = await import("../../fs/handle");
+    const json = await readText(root, `.semantic-index/notes/${data.noteId}.json`);
+    const parsed = JSON.parse(json) as { chunks: Array<Record<string, unknown>> };
+    expect(parsed.chunks[0]).not.toHaveProperty("embedding");
+    expect(parsed.chunks[0]?.embeddingOffset).toBe(0);
+    const bin = await readBytes(root, `.semantic-index/notes/${data.noteId}.bin`);
+    expect(bin.byteLength).toBe(data.dimensions * 4);
   });
 
   it("deleteNoteEmbeddings is idempotent", async () => {

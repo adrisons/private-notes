@@ -263,14 +263,14 @@ export function SpaceDetailView({
               No notes in this space yet
             </div>
           }
-          renderItem={(note) => (
+          renderItem={(note, _index, ctx) => (
             <NoteListRow
               note={note}
               spaceChips={resolveNoteSpaceChips(note.spaceIds, spaceItems)}
               selected={false}
               checked={false}
               selectionMode={false}
-              focused={false}
+              tabStop={ctx.tabStop}
               touchActionsEnabled={false}
               swipeOpen={false}
               onSwipeOpenChange={() => {}}

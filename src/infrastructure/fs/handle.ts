@@ -48,6 +48,15 @@ export async function readText(
   return blob.text();
 }
 
+export async function readBytes(
+  root: FileSystemDirectoryHandle,
+  path: string,
+): Promise<ArrayBuffer> {
+  const file = await getFile(root, path);
+  const blob = await file.getFile();
+  return blob.arrayBuffer();
+}
+
 export async function writeText(
   root: FileSystemDirectoryHandle,
   path: string,

@@ -53,7 +53,7 @@ export interface NoteListRowProps {
   selected: boolean;
   checked: boolean;
   selectionMode: boolean;
-  focused: boolean;
+  tabStop: boolean;
   touchActionsEnabled: boolean;
   swipeOpen: boolean;
   onSwipeOpenChange: (open: boolean) => void;
@@ -113,7 +113,7 @@ export const NoteListRow = forwardRef<HTMLButtonElement, NoteListRowProps>(
       selected,
       checked,
       selectionMode,
-      focused,
+      tabStop,
       touchActionsEnabled,
       swipeOpen,
       onSwipeOpenChange,
@@ -164,7 +164,7 @@ export const NoteListRow = forwardRef<HTMLButtonElement, NoteListRowProps>(
             ? `${checked ? "Deselect" : "Select"} ${note.title || "Untitled"}`
             : undefined
         }
-        tabIndex={focused ? 0 : -1}
+        tabIndex={tabStop ? 0 : -1}
         onFocus={onFocus}
         onClick={(event) => {
           if (swipeOpen) {
@@ -201,13 +201,14 @@ export const NoteListRow = forwardRef<HTMLButtonElement, NoteListRowProps>(
             <div
               className="u-swipe-actions u-touch-only items-center justify-end gap-1 pr-3"
               style={{ width: NOTE_SWIPE_ACTIONS_WIDTH }}
-              aria-hidden={!swipeOpen}
+              inert={swipeOpen ? undefined : true}
             >
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 aria-label="Duplicate note"
+                tabIndex={swipeOpen ? 0 : -1}
                 onClick={handleDuplicate}
                 className={cn(
                   iconButtonClass,
@@ -221,6 +222,7 @@ export const NoteListRow = forwardRef<HTMLButtonElement, NoteListRowProps>(
                 variant="danger"
                 size="sm"
                 aria-label="Delete note"
+                tabIndex={swipeOpen ? 0 : -1}
                 onClick={handleDelete}
                 className={iconButtonClass}
               >

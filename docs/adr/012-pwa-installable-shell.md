@@ -32,9 +32,10 @@ Two hard constraints from [AGENTS.md](../../AGENTS.md) shape the design:
 - PNG icons under `public/icons/` at 192 and 512, plus a maskable variant, are
   required for Android install prompts; the existing `favicon.svg` stays for the
   browser tab.
-- `index.html` links the manifest and sets `theme-color` and the Apple
-  `apple-mobile-web-app-*` / `apple-touch-icon` meta. iOS is not a supported
-  runtime (see below), but the tags are harmless and keep the head complete.
+- `index.html` links the manifest and sets `theme-color`, `mobile-web-app-capable`,
+  and the remaining Apple `apple-mobile-web-app-*` / `apple-touch-icon` meta. iOS
+  is not a supported runtime (see below), but the tags are harmless and keep the
+  head complete.
 
 ### Service worker
 

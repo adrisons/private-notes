@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { ComponentProps } from "react";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NotesList } from "../NotesList";
 import { TOUCH_ACTIONS_MEDIA } from "../../lib/touch-actions";
@@ -252,7 +252,11 @@ describe("NotesList", () => {
     const row = screen.getByRole("button", { name: /alpha note/i });
     swipeLeft(row);
 
-    await user.click(screen.getByRole("button", { name: /duplicate note/i }));
+    const actions = row.closest(".u-swipe-row");
+    expect(actions).not.toBeNull();
+    await user.click(
+      within(actions as HTMLElement).getByRole("button", { name: /duplicate note/i }),
+    );
     expect(onDuplicateNote).toHaveBeenCalledWith("a");
     expect(onDeleteNote).not.toHaveBeenCalled();
   });
@@ -264,8 +268,13 @@ describe("NotesList", () => {
 
     renderNotesList({ onDeleteNote });
 
-    swipeLeft(screen.getByRole("button", { name: /beta note/i }));
-    await user.click(screen.getByRole("button", { name: /delete note/i }));
+    const row = screen.getByRole("button", { name: /beta note/i });
+    swipeLeft(row);
+    const actions = row.closest(".u-swipe-row");
+    expect(actions).not.toBeNull();
+    await user.click(
+      within(actions as HTMLElement).getByRole("button", { name: /delete note/i }),
+    );
     expect(onDeleteNote).toHaveBeenCalledWith("b");
   });
 

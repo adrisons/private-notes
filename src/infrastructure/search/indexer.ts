@@ -275,7 +275,10 @@ export async function reindex(
       dimensions: embedder.dimensions,
       schemaVersion: SEMANTIC_SCHEMA_VERSION,
       updatedAt: new Date().toISOString(),
-      chunks: plan.map((c, j) => ({ ...c.record, embedding: vectors[j]! })),
+      chunks: plan.map((c, j) => ({
+        ...c.record,
+        embedding: new Float32Array(vectors[j]!),
+      })),
     };
     await writeNoteEmbeddings(root, record);
     nextHints[item.note.id] = item.hash;

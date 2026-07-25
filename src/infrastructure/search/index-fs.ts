@@ -1,9 +1,17 @@
 import {
   fileExists,
   getDirectory,
+  readBytes,
   readText,
+  removeFile,
+  writeBytes,
   writeText,
 } from "../fs/handle";
+import {
+  hydrateNoteEmbeddings,
+  packEmbeddingVectors,
+  storedNoteFromRecord,
+} from "./embedding-vectors";
 import {
   SEMANTIC_PATHS,
   SEMANTIC_SCHEMA_VERSION,
@@ -11,7 +19,12 @@ import {
   type NoteEmbeddings,
   type SemanticManifest,
 } from "./types";
-import { parseNoteEmbeddings, parseSemanticManifest } from "./validate";
+import {
+  parseLegacyNoteEmbeddings,
+  parseNoteEmbeddings,
+  parseSemanticManifest,
+  parseStoredNoteEmbeddings,
+} from "./validate";
 
 /** Read the semantic manifest if present. */
 export async function readSemanticManifest(
@@ -40,18 +53,53 @@ export async function writeSemanticManifest(
   );
 }
 
-function notePath(noteId: string): string {
+function noteJsonPath(noteId: string): string {
   return `${SEMANTIC_PATHS.notes}/${noteId}.json`;
+}
+
+function noteVectorsPath(noteId: string): string {
+  return `${SEMANTIC_PATHS.notes}/${noteId}.bin`;
+}
+
+async function loadNoteEmbeddingsJson(
+  root: FileSystemDirectoryHandle,
+  noteId: string,
+  raw: unknown,
+): Promise<NoteEmbeddings | null> {
+  const legacy = parseLegacyNoteEmbeddings(raw);
+  if (legacy) return legacy;
+
+  const inline = parseNoteEmbeddings(raw);
+  if (inline) return inline;
+
+  const stored = parseStoredNoteEmbeddings(raw);
+  if (!stored || stored.chunks.length === 0) {
+    return stored ? { ...stored, chunks: [] } : null;
+  }
+
+  if (!(await fileExists(root, noteVectorsPath(noteId)))) return null;
+  try {
+    const vectors = await readBytes(root, noteVectorsPath(noteId));
+    return hydrateNoteEmbeddings(stored, vectors);
+  } catch {
+    return null;
+  }
 }
 
 export async function readNoteEmbeddings(
   root: FileSystemDirectoryHandle,
   noteId: string,
 ): Promise<NoteEmbeddings | null> {
-  if (!(await fileExists(root, notePath(noteId)))) return null;
-  const raw = await readText(root, notePath(noteId));
+  const path = noteJsonPath(noteId);
+  if (!(await fileExists(root, path))) return null;
+  let raw: unknown;
   try {
-    return parseNoteEmbeddings(JSON.parse(raw));
+    raw = JSON.parse(await readText(root, path));
+  } catch {
+    return null;
+  }
+  try {
+    return await loadNoteEmbeddingsJson(root, noteId, raw);
   } catch {
     // Corrupt embeddings file — treat as missing so it gets re-embedded.
     return null;
@@ -63,16 +111,34 @@ export async function writeNoteEmbeddings(
   data: NoteEmbeddings,
 ): Promise<void> {
   await getDirectory(root, SEMANTIC_PATHS.notes, { create: true });
-  await writeText(root, notePath(data.noteId), JSON.stringify(data));
+  const jsonPath = noteJsonPath(data.noteId);
+  const vectorsPath = noteVectorsPath(data.noteId);
+
+  if (data.chunks.length === 0) {
+    await writeText(root, jsonPath, JSON.stringify(storedNoteFromRecord(data)));
+    if (await fileExists(root, vectorsPath)) {
+      await removeFile(root, vectorsPath);
+    }
+    return;
+  }
+
+  const packed = packEmbeddingVectors(data.chunks, data.dimensions);
+  await writeBytes(root, vectorsPath, packed);
+  await writeText(root, jsonPath, JSON.stringify(storedNoteFromRecord(data)));
 }
 
 export async function deleteNoteEmbeddings(
   root: FileSystemDirectoryHandle,
   noteId: string,
 ): Promise<void> {
-  if (!(await fileExists(root, notePath(noteId)))) return;
-  const dir = await getDirectory(root, SEMANTIC_PATHS.notes);
-  await dir.removeEntry(`${noteId}.json`);
+  const jsonPath = noteJsonPath(noteId);
+  if (await fileExists(root, jsonPath)) {
+    await removeFile(root, jsonPath);
+  }
+  const vectorsPath = noteVectorsPath(noteId);
+  if (await fileExists(root, vectorsPath)) {
+    await removeFile(root, vectorsPath);
+  }
 }
 
 /** Cheap existence check for a note's vectors file — no read, no parse. */
@@ -80,13 +146,13 @@ export async function hasNoteEmbeddings(
   root: FileSystemDirectoryHandle,
   noteId: string,
 ): Promise<boolean> {
-  return fileExists(root, notePath(noteId));
+  return fileExists(root, noteJsonPath(noteId));
 }
 
 /**
  * Every note id that has an embeddings file, read from directory *names* only.
  * The filename is `<noteId>.json`, so orphan detection never has to open —
- * let alone JSON-parse the vectors of — a single file.
+ * let alone parse the vectors of — a single file.
  */
 export async function listNoteEmbeddingIds(
   root: FileSystemDirectoryHandle,
@@ -161,10 +227,15 @@ export async function* iterateNoteEmbeddings(
   }
   for await (const [name, handle] of dir.entries()) {
     if (handle.kind !== "file" || !name.endsWith(".json")) continue;
+    const noteId = name.slice(0, -".json".length);
     const file = await (handle as FileSystemFileHandle).getFile();
     let parsed: NoteEmbeddings | null = null;
     try {
-      parsed = parseNoteEmbeddings(JSON.parse(await file.text()));
+      parsed = await loadNoteEmbeddingsJson(
+        root,
+        noteId,
+        JSON.parse(await file.text()),
+      );
     } catch {
       // Skip a corrupt file; a reindex regenerates it.
     }

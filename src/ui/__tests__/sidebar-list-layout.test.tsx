@@ -48,30 +48,30 @@ const notesListProps = {
 describe("sidebar list layout", () => {
   it("applies the shared inset on the notes list wrapper", () => {
     render(<NotesList {...notesListProps} />);
-    const list = screen.getByRole("list", { name: "Notes" });
+    const list = screen.getByRole("list", { name: /^Notes/ });
     const wrapper = list.parentElement;
     expect(wrapper?.className).toContain("px-4");
   });
 
   it("applies the shared inset on the spaces list wrapper", () => {
     render(<NotesList {...notesListProps} mode="spaces" />);
-    const list = screen.getByRole("list", { name: "Spaces" });
+    const list = screen.getByRole("list", { name: /^Spaces/ });
     const wrapper = list.parentElement;
     expect(wrapper?.className).toContain("px-4");
   });
 
   it("uses the same swap animation shell for notes and spaces lists", () => {
     const { unmount } = render(<NotesList {...notesListProps} mode="notes" />);
-    const notesSwap = screen.getByRole("list", { name: "Notes" }).parentElement
+    const notesSwap = screen.getByRole("list", { name: /^Notes/ }).parentElement
       ?.parentElement;
     expect(notesSwap?.className).toBe(SIDEBAR_LIST_SWAP_CLASS);
-    expect(screen.getByRole("list", { name: "Notes" }).parentElement?.className).toBe(
+    expect(screen.getByRole("list", { name: /^Notes/ }).parentElement?.className).toBe(
       SIDEBAR_LIST_INSET_CLASS,
     );
     unmount();
 
     render(<NotesList {...notesListProps} mode="spaces" />);
-    const spacesSwap = screen.getByRole("list", { name: "Spaces" }).parentElement
+    const spacesSwap = screen.getByRole("list", { name: /^Spaces/ }).parentElement
       ?.parentElement;
     expect(spacesSwap?.className).toBe(SIDEBAR_LIST_SWAP_CLASS);
     expect(notesSwap?.className).toBe(spacesSwap?.className);

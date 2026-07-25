@@ -26,7 +26,7 @@ export function l2NormalizeInPlace(v: number[]): number[] {
 }
 
 /** Cosine similarity for unit vectors == dot product. */
-export function dot(a: number[], b: number[]): number {
+export function dot(a: ArrayLike<number>, b: ArrayLike<number>): number {
   const n = Math.min(a.length, b.length);
   let s = 0;
   for (let i = 0; i < n; i++) s += a[i]! * b[i]!;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ContextMenu } from "../ui/ContextMenu";
@@ -103,6 +103,7 @@ export function NotesList({
   const listRef = useRef<HTMLUListElement>(null);
   const virtualListRef = useRef<VirtualListHandle>(null);
   const anchorIndexRef = useRef(0);
+  const focusPendingRef = useRef(false);
   const touchActionsEnabled = useTouchActionsEnabled();
 
   const sortedNotes = useMemo(
@@ -223,12 +224,21 @@ export function NotesList({
 
   const focusRow = useCallback((index: number) => {
     virtualListRef.current?.scrollToIndex(index);
-    if (isNotesMode) {
-      noteRefs.current[index]?.focus();
-    } else {
-      spaceRefs.current[index]?.focus();
+    focusPendingRef.current = true;
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!focusPendingRef.current) return;
+    focusPendingRef.current = false;
+    const target = isNotesMode
+      ? noteRefs.current[focusedIndex]
+      : spaceRefs.current[focusedIndex];
+    if (target) {
+      target.focus();
+      return;
     }
-  }, [isNotesMode]);
+    listRef.current?.focus();
+  }, [focusedIndex, isNotesMode]);
 
   useEffect(() => {
     if (!isNotesMode || !selectedNoteId) return;
@@ -458,6 +468,7 @@ export function NotesList({
             ariaLabel={listAriaLabel}
             scrollMode="external"
             virtualizeThreshold={ALWAYS_VIRTUALIZE_THRESHOLD}
+            focusIndex={focusedIndex}
             className={SIDEBAR_LIST_INSET_CLASS}
             listRef={listRef}
             ariaMultiselectable={selectionMode || undefined}
@@ -468,7 +479,7 @@ export function NotesList({
                 {emptyLabel}
               </div>
             }
-            renderItem={(n, index) => (
+            renderItem={(n, index, ctx) => (
               <NoteListRow
                 ref={(el) => {
                   noteRefs.current[index] = el;
@@ -478,7 +489,7 @@ export function NotesList({
                 selected={selectedNoteId === n.id}
                 checked={checkedIds.has(n.id)}
                 selectionMode={selectionMode}
-                focused={index === focusedIndex}
+                tabStop={ctx.tabStop}
                 touchActionsEnabled={touchActionsEnabled}
                 swipeOpen={openSwipeId === n.id}
                 onSwipeOpenChange={(open) => {
@@ -509,6 +520,7 @@ export function NotesList({
             ariaLabel={listAriaLabel}
             scrollMode="external"
             virtualizeThreshold={ALWAYS_VIRTUALIZE_THRESHOLD}
+            focusIndex={focusedIndex}
             className={SIDEBAR_LIST_INSET_CLASS}
             listRef={listRef}
             ariaMultiselectable={selectionMode || undefined}
@@ -519,7 +531,7 @@ export function NotesList({
                 {emptyLabel}
               </div>
             }
-            renderItem={(space, index) => (
+            renderItem={(space, index, ctx) => (
               <SpaceListRow
                 ref={(el) => {
                   spaceRefs.current[index] = el;
@@ -529,7 +541,7 @@ export function NotesList({
                 checked={checkedIds.has(space.id)}
                 selectionMode={selectionMode}
                 selectable={!isGeneralSpaceId(space.id)}
-                focused={index === focusedIndex}
+                tabStop={ctx.tabStop}
                 onSelect={() => onSelectSpace(space.id)}
                 onToggleCheck={(shiftKey) => handleCheckClick(index, shiftKey)}
                 onFocus={() => setFocusedIndex(index)}

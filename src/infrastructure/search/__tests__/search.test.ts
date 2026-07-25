@@ -41,7 +41,7 @@ function makeRecord(
       text: c.text,
       offset: 0,
       length: c.text.length,
-      embedding: c.embedding,
+      embedding: new Float32Array(c.embedding),
     })),
   };
 }

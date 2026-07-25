@@ -32,6 +32,15 @@ export interface VirtualListHandle {
   scrollToIndex: (index: number) => void;
 }
 
+export interface VirtualListRowContext {
+  /** Whether this row holds the list's roving tab stop. */
+  tabStop: boolean;
+  /** Total items in the list (for windowed rows). */
+  setSize: number;
+  /** One-based position in the full list. */
+  posInSet: number;
+}
+
 export interface VirtualListProps<T> {
   items: T[];
   itemHeight: number;
@@ -44,12 +53,14 @@ export interface VirtualListProps<T> {
   scrollMode?: VirtualListScrollMode;
   /** Item count above which rows are windowed. Defaults to {@link VIRTUAL_LIST_THRESHOLD}. */
   virtualizeThreshold?: number;
+  /** Logical keyboard focus index — tab stop clamps to the rendered window. */
+  focusIndex?: number;
   onKeyDown?: KeyboardEventHandler<HTMLUListElement>;
   listRef?: Ref<HTMLUListElement>;
   ariaMultiselectable?: boolean;
   getItemKey: (item: T, index: number) => string;
-  /** Row root must accept an optional `style` (e.g. `<li>` for NoteListRow). */
-  renderItem: (item: T, index: number) => ReactNode;
+  /** Row root must accept optional `style` and ARIA props (e.g. `<li>`). */
+  renderItem: (item: T, index: number, ctx: VirtualListRowContext) => ReactNode;
 }
 
 function findScrollParent(element: HTMLElement): HTMLElement | null {
@@ -84,6 +95,7 @@ function VirtualListInner<T>(
     listClassName,
     scrollMode = "internal",
     virtualizeThreshold = VIRTUAL_LIST_THRESHOLD,
+    focusIndex,
     onKeyDown,
     listRef,
     ariaMultiselectable,
@@ -186,21 +198,53 @@ function VirtualListInner<T>(
   const totalHeight =
     items.length > 0 ? items.length * stride - gap : 0;
 
-  const renderRow = (item: T, index: number) => {
-    const node = renderItem(item, index);
-    if (!virtualize || !isValidElement(node)) return node;
-    const element = node as ReactElement<{ style?: CSSProperties }>;
-    return cloneElement(element, {
-      style: {
-        ...element.props.style,
-        position: "absolute",
-        top: index * stride,
-        left: 0,
-        right: 0,
-        height: itemHeight,
-      },
-    });
+  const rovingTabIndex =
+    focusIndex === undefined
+      ? undefined
+      : virtualize
+        ? Math.min(endIndex, Math.max(startIndex, focusIndex))
+        : focusIndex;
+
+  const listLabel =
+    virtualize && items.length > 0
+      ? `${ariaLabel}, ${items.length} items`
+      : ariaLabel;
+
+  const rowContext = (index: number): VirtualListRowContext => ({
+    tabStop: rovingTabIndex === index,
+    setSize: items.length,
+    posInSet: index + 1,
+  });
+
+  const decorateRow = (node: ReactNode, index: number) => {
+    if (!isValidElement(node)) return node;
+    const element = node as ReactElement<{
+      style?: CSSProperties;
+      "aria-setsize"?: number;
+      "aria-posinset"?: number;
+    }>;
+    const aria =
+      virtualize && items.length > 0
+        ? { "aria-setsize": items.length, "aria-posinset": index + 1 }
+        : {};
+    const layout =
+      virtualize
+        ? {
+            style: {
+              ...element.props.style,
+              position: "absolute" as const,
+              top: index * stride,
+              left: 0,
+              right: 0,
+              height: itemHeight,
+            },
+          }
+        : {};
+    return cloneElement(element, { ...aria, ...layout });
   };
+
+  const renderRow = (item: T, index: number) =>
+    decorateRow(renderItem(item, index, rowContext(index)), index);
 
   const visibleItems = virtualize
     ? items.slice(startIndex, endIndex + 1)
@@ -210,7 +254,7 @@ function VirtualListInner<T>(
     <ul
       ref={assignListRef}
       role="list"
-      aria-label={ariaLabel}
+      aria-label={listLabel}
       aria-multiselectable={ariaMultiselectable || undefined}
       onKeyDown={onKeyDown}
       className={cn(

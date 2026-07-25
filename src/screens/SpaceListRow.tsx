@@ -16,7 +16,7 @@ export interface SpaceListRowProps {
   checked: boolean;
   selectionMode: boolean;
   selectable: boolean;
-  focused: boolean;
+  tabStop: boolean;
   onSelect: () => void;
   onToggleCheck: (shiftKey: boolean) => void;
   onFocus: () => void;
@@ -32,7 +32,7 @@ export const SpaceListRow = forwardRef<HTMLButtonElement, SpaceListRowProps>(
       checked,
       selectionMode,
       selectable,
-      focused,
+      tabStop,
       onSelect,
       onToggleCheck,
       onFocus,
@@ -61,7 +61,7 @@ export const SpaceListRow = forwardRef<HTMLButtonElement, SpaceListRowProps>(
               ? `${checked ? "Deselect" : "Select"} ${space.name}`
               : `Open ${space.name}`
           }
-          tabIndex={focused ? 0 : -1}
+          tabIndex={tabStop ? 0 : -1}
           onFocus={onFocus}
           onClick={(event) => {
             if (selectionMode && selectable) {

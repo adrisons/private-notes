@@ -5,7 +5,7 @@
  * `.semantic-index/notes/<noteId>.json` to keep sync conflicts narrow.
  * See docs/adr/004-semantic-index-persistence.md and docs/adr/008-schema-compatibility.md
  */
-export const SEMANTIC_SCHEMA_VERSION = 2 as const;
+export const SEMANTIC_SCHEMA_VERSION = 3 as const;
 
 export const SEMANTIC_PATHS = {
   root: ".semantic-index",
@@ -50,8 +50,31 @@ export interface ChunkRecord {
   offset: number;
   /** Character length of the chunk; 0 for a title chunk, which is not a body range. */
   length: number;
-  /** Unit-normalized embedding. Stored as a JSON array (small, deterministic). */
-  embedding: number[];
+  /** Unit-normalized embedding — loaded from the sidecar `.bin` as Float32Array. */
+  embedding: Float32Array;
+}
+
+/** On-disk chunk metadata; vectors live in `.semantic-index/notes/<id>.bin`. */
+export interface StoredChunkRecord {
+  idx: number;
+  kind: ChunkKind;
+  text: string;
+  offset: number;
+  length: number;
+  /** Byte offset of this chunk's vector in the note's `.bin` sidecar. */
+  embeddingOffset: number;
+}
+
+/** JSON half of a v3 embeddings record (see ADR-004). */
+export interface StoredNoteEmbeddings {
+  noteId: string;
+  filePath: string;
+  contentHash: string;
+  modelId: string;
+  dimensions: number;
+  schemaVersion: number;
+  updatedAt: string;
+  chunks: StoredChunkRecord[];
 }
 
 export interface NoteEmbeddings {
