@@ -15,6 +15,7 @@ machine. No account, no server, no sync you did not ask for.
   - [✨ Features](#-features)
   - [💻 Requirements](#-requirements)
   - [📲 Install (PWA)](#-install-pwa)
+  - [🚀 Deploy (production)](#-deploy-production)
   - [🔄 Sync across devices](#-sync-across-devices)
   - [🔍 How search works](#-how-search-works)
   - [📂 Folder layout](#-folder-layout)
@@ -83,6 +84,38 @@ The app is a Progressive Web App: install it straight from the URL, no App Store
 - 📱 **Android (Chrome).** Choose **Install app** / **Add to Home screen**; it launches standalone like a native app.
 
 A service worker precaches only the app shell, so it opens offline after the first visit. Your notes and the embedding model are never uploaded.
+
+## 🚀 Deploy (production)
+
+The production bundle is a static Vite PWA deployed to **Cloudflare Workers** (static assets only — no server-side code). Hosting sends the security headers in `public/_headers` (CSP, COOP, COEP) so cross-origin isolation stays enabled in production ([ADR-012](./docs/adr/012-pwa-installable-shell.md), [ADR-014](./docs/adr/014-cross-origin-isolation.md)).
+
+### Local deploy
+
+```bash
+pnpm install
+pnpm build
+pnpm run deploy   # uploads dist/ via wrangler.jsonc
+```
+
+The first time, authenticate with `pnpm exec wrangler login`.
+
+### Cloudflare Workers Builds (Git)
+
+Connect the repo under **Workers & Pages → Create → Connect to Git**, then set:
+
+| Setting | Value |
+| --- | --- |
+| Build command | `pnpm build` |
+| Deploy command | `pnpm run deploy` |
+| Root directory | *(repository root)* |
+
+Optional environment variable: `NODE_VERSION=22`.
+
+The Worker name in the Cloudflare dashboard should match `"name": "private-notes"` in [`wrangler.jsonc`](./wrangler.jsonc), or update that file to match your project name.
+
+Preview branches can keep the default non-production deploy command (`npx wrangler versions upload`).
+
+After the first successful deploy, open the `*.workers.dev` URL (or attach a custom domain) and install the PWA from there — same flow as [Install (PWA)](#-install-pwa).
 
 ## 🔄 Sync across devices
 
@@ -159,6 +192,7 @@ Embeddings of different models are never mixed. Changing the model deletes the i
 pnpm install
 pnpm dev            # start Vite dev server
 pnpm build          # production build (tsc -b && vite build)
+pnpm run deploy     # upload dist/ to Cloudflare (requires wrangler login)
 pnpm test           # run Vitest (general + integration + relevance)
 pnpm typecheck      # tsc -b --noEmit
 pnpm lint           # eslint
@@ -176,9 +210,9 @@ Engineering docs (architecture overview and ADRs): **[docs/README.md](./docs/REA
 
 ## 🚦 Status
 
-Pre-1.0 and under active development, but usable day to day: creating, editing
-and autosaving notes, organizing them into spaces, pasting images, and hybrid
-search all work. The on-disk format is versioned and migrates forward
-([ADR-008](./docs/adr/008-schema-compatibility.md)), so existing vaults stay
-safe across updates — a model or schema change just triggers a one-time reindex
-on open.
+Production-ready as a hosted PWA: the static shell deploys to Cloudflare,
+installs from the browser, and runs fully on-device after the one-time model
+download. Pre-1.0 on versioning — the on-disk format is versioned and migrates
+forward ([ADR-008](./docs/adr/008-schema-compatibility.md)), so existing vaults
+stay safe across updates; a model or schema change just triggers a one-time
+reindex on open.

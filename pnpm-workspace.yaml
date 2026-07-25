@@ -7,3 +7,4 @@ allowBuilds:
   protobufjs: true
   onnxruntime-node: false
   sharp: false
+  workerd: true

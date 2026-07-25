@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "private-notes",
+  // Static Vite PWA shell (ADR-012). No Worker script — assets only.
+  "compatibility_date": "2026-07-25",
+  "assets": {
+    "directory": "./dist",
+    // Client-side app shell; deep links fall back to index.html.
+    "not_found_handling": "single-page-application"
+  }
+}
