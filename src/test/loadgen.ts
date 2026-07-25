@@ -10,6 +10,8 @@
  * `buildNotePath`, `chunkText`, `writeNoteEmbeddings`) so generated vaults are
  * byte-compatible with what the application reads.
  */
+import type { ReindexNoteInput } from "../application/ports/semantic-search";
+import { noteId } from "../domain";
 import { makeFakeRoot } from "./fakeFs";
 import { initializeVault } from "../infrastructure/fs/vault";
 import { writeText } from "../infrastructure/fs/handle";
@@ -86,6 +88,7 @@ export interface CorpusOptions {
 export interface Corpus {
   root: FileSystemDirectoryHandle;
   records: NoteRecord[];
+  reindexNotes: ReindexNoteInput[];
   embedder: Embedder;
   /** Total chunks across every note (the semantic-search scan size). */
   totalChunks: number;
@@ -174,7 +177,17 @@ export async function buildFakeVault(options: CorpusOptions): Promise<Corpus> {
     }
   }
 
-  return { root, records, embedder, totalChunks };
+  return {
+    root,
+    records,
+    reindexNotes: records.map((record, i) => ({
+      id: noteId(record.id),
+      title: record.title,
+      body: bodies[i]!,
+    })),
+    embedder,
+    totalChunks,
+  };
 }
 
 /** Standard corpus sizes used across the benchmark suite. */

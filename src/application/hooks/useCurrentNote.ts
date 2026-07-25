@@ -1,9 +1,9 @@
 import { useCallback, useRef } from "react";
 import type { NoteId, SpaceId } from "../../domain";
-import type { NoteRecord } from "../ports/note-record";
+import type { ReindexNoteInput } from "../ports/semantic-search";
 import type { VaultSession } from "../vault-session";
 import type { NoteListItem, OpenNoteState } from "../view-models";
-import { noteToReindexRecord } from "../mappers/reindex";
+import { noteToReindexInput } from "../mappers/reindex";
 import { useAutosave } from "./useAutosave";
 import { createNote } from "../use-cases/create-note";
 import { deleteNote } from "../use-cases/delete-note";
@@ -17,7 +17,7 @@ export interface UseCurrentNoteOptions {
   /** In-memory summaries, used to paint a note's header before its body loads. */
   noteItems: NoteListItem[];
   refreshSummaries: () => Promise<void>;
-  scheduleReindex: (records: NoteRecord[]) => void;
+  scheduleReindex: (notes: ReindexNoteInput[]) => void;
   embedderReady: boolean;
   onError: (error: unknown) => void;
 }
@@ -155,7 +155,7 @@ export function useCurrentNote({
         setCurrent(result.state);
         await refreshSummaries();
         if (embedderReady) {
-          scheduleReindex([noteToReindexRecord(result.note)]);
+          scheduleReindex([noteToReindexInput(result.note)]);
         }
       } catch (error) {
         onError(error);

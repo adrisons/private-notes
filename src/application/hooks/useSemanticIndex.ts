@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { NoteRecord } from "../ports/note-record";
+import type { ReindexNoteInput } from "../ports/semantic-search";
 import type { Embedder } from "../ports/embedder";
 import { createSemanticSearch, loadDefaultEmbedder } from "../composition";
 import type { SemanticSearch } from "../ports/semantic-search";
@@ -27,7 +27,7 @@ export interface UseSemanticIndexResult {
   indexError: boolean;
   runReindex: () => Promise<void>;
   onSearch: (query: string) => Promise<SearchResultItem[]>;
-  scheduleReindex: (records: NoteRecord[]) => void;
+  scheduleReindex: (notes: ReindexNoteInput[]) => void;
   pruneOrphans: () => Promise<void>;
 }
 
@@ -80,7 +80,7 @@ export function useSemanticIndex({
   }, [session, onError]);
 
   const scheduleReindex = useCallback(
-    (records: NoteRecord[]) => {
+    (notes: ReindexNoteInput[]) => {
       if (
         !session ||
         !embedderRef.current ||
@@ -93,7 +93,7 @@ export function useSemanticIndex({
         session,
         searchRef.current,
         embedderRef.current,
-        records,
+        notes,
         handleBackgroundError,
       );
     },
@@ -139,8 +139,8 @@ export function useSemanticIndex({
 
   const pruneOrphans = useCallback(async () => {
     if (!session || !embedderRef.current || !searchRef.current) return;
-    const live = await session.listNoteRecords();
-    await searchRef.current.pruneOrphans(live.map((n) => n.id));
+    const summaries = await session.listSummaries();
+    await searchRef.current.pruneOrphans(summaries.map((n) => n.id));
   }, [session]);
 
   return {

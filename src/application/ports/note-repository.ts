@@ -1,5 +1,5 @@
 import type { Note, NoteId, NoteSummary, SpaceId } from "../../domain";
-import type { NoteRecord } from "./note-record";
+import type { ReindexNoteInput } from "./semantic-search";
 
 export interface CreateNoteInput {
   title: string;
@@ -19,7 +19,7 @@ export interface SaveNoteResult {
 
 export interface NoteRepository {
   list(): Promise<NoteSummary[]>;
-  listRecords(): Promise<NoteRecord[]>;
+  listForReindex(): Promise<ReindexNoteInput[]>;
   read(id: NoteId): Promise<Note | null>;
   create(input: CreateNoteInput): Promise<Note>;
   update(id: NoteId, patch: UpdateNoteInput): Promise<SaveNoteResult>;

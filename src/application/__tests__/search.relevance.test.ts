@@ -5,7 +5,8 @@ import {
   RELEVANCE_NOTES,
   type RelevanceCase,
 } from "../../test/relevanceFixtures";
-import { createNote, listNotes } from "../../infrastructure/notes/storage";
+import { createNote } from "../../infrastructure/notes/storage";
+import { FsNoteRepository } from "../../infrastructure/notes/fs-note-repository";
 import { FakeEmbedder } from "../../infrastructure/search/embedder";
 import { reindex } from "../../infrastructure/search/indexer";
 import { searchSemantic } from "../../infrastructure/search/search";
@@ -56,7 +57,7 @@ async function buildHarness(): Promise<Harness> {
     noteIdByKey.set(fixture.key, record.id);
   }
 
-  await reindex(io.root, await listNotes(io), embedder);
+  await reindex(io.root, await new FsNoteRepository(io.root).listForReindex(), embedder);
 
   const notes: NoteListItem[] = RELEVANCE_NOTES.map((fixture) => ({
     id: noteIdByKey.get(fixture.key)!,

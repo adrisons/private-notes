@@ -18,6 +18,7 @@ import type {
   SaveNoteResult,
   UpdateNoteInput,
 } from "../../application/ports/note-repository";
+import type { ReindexNoteInput } from "../../application/ports/semantic-search";
 
 export class FsNoteRepository implements NoteRepository {
   private readonly root: FileSystemDirectoryHandle;
@@ -35,8 +36,20 @@ export class FsNoteRepository implements NoteRepository {
     return records.map(summaryFromRecord);
   }
 
-  async listRecords() {
-    return listNotes(this.io());
+  async listForReindex() {
+    const records = await listNotes(this.io());
+    const notes = await Promise.all(
+      records.map(async (record) => {
+        const read = await readNote(this.io(), record.id);
+        if (!read) return null;
+        return {
+          id: noteId(record.id),
+          title: record.title,
+          body: read.parsed.body,
+        };
+      }),
+    );
+    return notes.filter((note): note is ReindexNoteInput => note !== null);
   }
 
   async read(id: NoteId) {

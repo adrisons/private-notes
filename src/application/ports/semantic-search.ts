@@ -1,6 +1,13 @@
-import type { NoteRecord } from "./note-record";
+import type { NoteId } from "../../domain";
 import type { Embedder } from "./embedder";
 import type { SearchHit } from "./search-hit";
+
+/** Minimal note payload for embedding — no on-disk index row shape. */
+export interface ReindexNoteInput {
+  id: NoteId;
+  title: string;
+  body: string;
+}
 
 export interface SemanticSearchOptions {
   topK?: number;
@@ -21,7 +28,7 @@ export interface SemanticSearch {
     options?: SemanticSearchOptions,
   ): Promise<SearchHit[]>;
   reindex(
-    notes: NoteRecord[],
+    notes: ReindexNoteInput[],
     embedder: Embedder,
     options?: ReindexOptions,
   ): Promise<void>;
@@ -32,4 +39,4 @@ export interface SemanticSearchFactory {
   create(root: FileSystemDirectoryHandle): SemanticSearch;
 }
 
-export type { Embedder, NoteRecord, SearchHit };
+export type { Embedder, SearchHit };

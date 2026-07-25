@@ -1,4 +1,4 @@
-import type { NoteRecord } from "../ports/note-record";
+import type { ReindexNoteInput } from "../ports/semantic-search";
 import type { Embedder } from "../ports/embedder";
 import type { SemanticSearch } from "../ports/semantic-search";
 import type { VaultSession } from "../vault-session";
@@ -14,7 +14,7 @@ const REINDEX_DEBUG = {
   operation: "run-full-reindex",
   module: "application/use-cases/run-full-reindex.ts",
   trace:
-    "runFullReindex → session.listNoteRecords → search.pruneOrphans/reindex",
+    "runFullReindex → session.listForReindex → search.pruneOrphans/reindex",
   fixHint:
     "Inspect fs-semantic-search.ts reindex and the embedder worker; retry via IndexStatus.onReindex.",
 } as const;
@@ -27,7 +27,7 @@ export async function runFullReindex(
   options: RunFullReindexOptions = {},
 ): Promise<BackgroundTaskError | null> {
   try {
-    const live = await session.listNoteRecords();
+    const live = await session.listForReindex();
     await search.pruneOrphans(live.map((n) => n.id));
     await search.reindex(live, embedder, { onProgress: options.onProgress });
     return null;
@@ -43,7 +43,7 @@ export function scheduleReindex(
   _session: VaultSession,
   search: SemanticSearch,
   embedder: Embedder,
-  records: NoteRecord[],
+  records: ReindexNoteInput[],
   onBackgroundError?: (error: BackgroundTaskError) => void,
 ): void {
   if (records.length === 0) return;

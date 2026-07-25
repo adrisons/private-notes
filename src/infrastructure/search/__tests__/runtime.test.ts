@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { makeFakeRoot } from "../../../test/fakeFs";
 import { initializeVault } from "../../fs/vault";
-import { createNote, listNotes } from "../../notes/storage";
+import { createNote } from "../../notes/storage";
+import { FsNoteRepository } from "../../notes/fs-note-repository";
 import { FakeEmbedder } from "../embedder";
 import { loadSearchApi } from "../runtime";
 
@@ -17,7 +18,7 @@ describe("loadSearchApi", () => {
     const root = makeFakeRoot();
     await initializeVault(root);
     await createNote({ root }, { title: "Cats", body: "Cats love pasta." });
-    const notes = await listNotes({ root });
+    const notes = await new FsNoteRepository(root).listForReindex();
     const embedder = new FakeEmbedder();
     const api = await loadSearchApi();
 

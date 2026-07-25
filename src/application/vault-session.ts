@@ -1,6 +1,6 @@
 import type { CustomSpace, Note, NoteId, NoteSummary, SpaceId } from "../domain";
 import type { NoteRepository, CreateNoteInput } from "./ports/note-repository";
-import type { NoteRecord } from "./ports/note-record";
+import type { ReindexNoteInput } from "./ports/semantic-search";
 import type {
   CreateSpaceInput,
   SpaceRepository,
@@ -45,8 +45,8 @@ export class VaultSession {
     return this.notes.list();
   }
 
-  listNoteRecords(): Promise<NoteRecord[]> {
-    return this.notes.listRecords();
+  listForReindex(): Promise<ReindexNoteInput[]> {
+    return this.notes.listForReindex();
   }
 
   resolveStartup(): Promise<VaultStartup> {

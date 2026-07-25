@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { makeFakeRoot } from "../../../test/fakeFs";
+import { describe, it, expect, vi } from "vitest";
+import { makeFakeRoot, FakeFileSystemDirectoryHandle } from "../../../test/fakeFs";
 import { initializeVault } from "../../fs/vault";
 import {
   createNote,
@@ -76,5 +76,18 @@ describe("notes storage", () => {
     await deleteNote(io, rec.id);
     expect(await listNotes(io)).toEqual([]);
     expect(await readNote(io, rec.id)).toBeNull();
+  });
+
+  it("keeps the index entry when file removal fails", async () => {
+    const io = await setup();
+    const rec = await createNote(io, { title: "X", body: "z" });
+
+    vi.spyOn(FakeFileSystemDirectoryHandle.prototype, "removeEntry").mockRejectedValue(
+      new Error("disk error"),
+    );
+
+    await expect(deleteNote(io, rec.id)).rejects.toThrow("disk error");
+    expect(await listNotes(io)).toHaveLength(1);
+    expect(await readNote(io, rec.id)).not.toBeNull();
   });
 });

@@ -1,6 +1,9 @@
 import { readText } from "../fs/handle";
-import { parseNote } from "../../domain/note/frontmatter";
+import { PATHS } from "../fs/schema";
+import { parseNoteIndex } from "../fs/validate";
+import { parseJson } from "../../lib/validate";
 import { sha256Hex } from "../attachments/hash";
+import type { ReindexNoteInput } from "../../application/ports/semantic-search";
 import {
   clearSemanticIndex,
   deleteNoteEmbeddings,
@@ -22,7 +25,6 @@ import {
   type ContentHashIndex,
   type NoteEmbeddings,
 } from "./types";
-import type { NoteRecord } from "../fs/schema";
 
 export interface IndexerOptions {
   /** Batch size for the embedder. Larger = fewer worker round-trips. */
@@ -32,12 +34,23 @@ export interface IndexerOptions {
 }
 
 /**
- * Workers to run the staleness scan with. Each note needs one or two file reads
- * plus a hash, all independent between notes, and the FSA API parallelises reads
- * happily — so a serial scan spends a no-op rescan of a large vault mostly idle,
- * waiting on I/O.
+ * Workers to run the staleness scan with. Each note still needs a vectors-file
+ * read when the content-hash hint cannot settle the question, and those checks
+ * are independent between notes.
  */
 const STALENESS_SCAN_CONCURRENCY = 12;
+
+async function loadNotePaths(
+  root: FileSystemDirectoryHandle,
+): Promise<Map<string, string>> {
+  try {
+    const text = await readText(root, PATHS.index);
+    const index = parseNoteIndex(parseJson(text, PATHS.index), PATHS.index);
+    return new Map(index.notes.map((note) => [note.id, note.path]));
+  } catch {
+    return new Map();
+  }
+}
 
 /**
  * Map with a fixed pool of workers pulling from a shared cursor, preserving
@@ -80,11 +93,11 @@ async function contentFingerprint(title: string, body: string): Promise<string> 
  */
 async function needsReindex(
   root: FileSystemDirectoryHandle,
-  note: NoteRecord,
+  noteId: string,
   embedder: Embedder,
   hash: string,
 ): Promise<boolean> {
-  const existing = await readNoteEmbeddings(root, note.id);
+  const existing = await readNoteEmbeddings(root, noteId);
   if (!existing) return true;
   if (existing.schemaVersion !== SEMANTIC_SCHEMA_VERSION) return true;
   if (
@@ -178,13 +191,14 @@ export async function ensureSemanticManifest(
  */
 export async function reindex(
   root: FileSystemDirectoryHandle,
-  notes: NoteRecord[],
+  notes: ReindexNoteInput[],
   embedder: Embedder,
   options: IndexerOptions = {},
 ): Promise<{ embedded: number; skipped: number }> {
   await ensureSemanticManifest(root, embedder);
   const batchSize = options.batchSize ?? 16;
   const progress = options.onProgress ?? (() => {});
+  const notePaths = await loadNotePaths(root);
 
   // Scan-time hints: `noteId → contentHash` we last embedded. They let the
   // up-to-date check skip a note without opening its (large) vectors file,
@@ -198,18 +212,16 @@ export async function reindex(
   // First pass: identify stale notes; skip ones still valid. The per-note check
   // is I/O-bound and independent between notes, so it runs with bounded
   // concurrency; the results are folded back in input order below.
-  type Work = { note: NoteRecord; body: string; hash: string };
+  type Work = { note: ReindexNoteInput; hash: string };
   type Scan =
-    | { note: NoteRecord; hash: string; stale: false }
-    | { note: NoteRecord; body: string; hash: string; stale: true };
+    | { note: ReindexNoteInput; hash: string; stale: false }
+    | { note: ReindexNoteInput; hash: string; stale: true };
 
   const scans = await mapWithConcurrency(
     notes,
     STALENESS_SCAN_CONCURRENCY,
     async (note): Promise<Scan> => {
-      const text = await readText(root, note.path);
-      const body = parseNote(text).body;
-      const hash = await contentFingerprint(note.title, body);
+      const hash = await contentFingerprint(note.title, note.body);
       if (hints[note.id] === hash && (await hasNoteEmbeddings(root, note.id))) {
         // Fast path: body unchanged and its vectors are on disk. Never opens the
         // vectors file. This is what makes a reload scan cheap.
@@ -218,8 +230,8 @@ export async function reindex(
       // Hint missing, stale, or the vectors file vanished — verify precisely.
       // Also the first run after upgrade, when no hint file exists yet: this
       // pass re-populates the hints so subsequent scans take the fast path.
-      if (await needsReindex(root, note, embedder, hash)) {
-        return { note, body, hash, stale: true };
+      if (await needsReindex(root, note.id, embedder, hash)) {
+        return { note, hash, stale: true };
       }
       return { note, hash, stale: false };
     },
@@ -229,7 +241,7 @@ export async function reindex(
   let skipped = 0;
   for (const scan of scans) {
     if (scan.stale) {
-      work.push({ note: scan.note, body: scan.body, hash: scan.hash });
+      work.push({ note: scan.note, hash: scan.hash });
     } else {
       nextHints[scan.note.id] = scan.hash;
       skipped++;
@@ -241,12 +253,13 @@ export async function reindex(
   progress({ done, total });
 
   for (const item of work) {
-    const plan = planChunks(item.note.title, item.body, embedder);
+    const filePath = notePaths.get(item.note.id) ?? "";
+    const plan = planChunks(item.note.title, item.note.body, embedder);
     if (plan.length === 0) {
       // Empty note: persist an empty embeddings record so we do not retry.
       await writeNoteEmbeddings(root, {
         noteId: item.note.id,
-        filePath: item.note.path,
+        filePath,
         contentHash: item.hash,
         modelId: embedder.id,
         dimensions: embedder.dimensions,
@@ -269,7 +282,7 @@ export async function reindex(
 
     const record: NoteEmbeddings = {
       noteId: item.note.id,
-      filePath: item.note.path,
+      filePath,
       contentHash: item.hash,
       modelId: embedder.id,
       dimensions: embedder.dimensions,

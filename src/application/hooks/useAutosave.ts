@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDebouncedCallback } from "../../lib/useDebouncedCallback";
 import type { NoteId } from "../../domain";
-import type { NoteRecord } from "../ports/note-record";
+import type { ReindexNoteInput } from "../ports/semantic-search";
 import type { VaultSession } from "../vault-session";
 import type { OpenNoteState } from "../view-models";
 import { autosaveNote } from "../use-cases/autosave-note";
@@ -12,7 +12,7 @@ export interface UseAutosaveOptions {
   session: VaultSession | null;
   setCurrent: (current: OpenNoteState | null) => void;
   refreshSummaries: () => Promise<void>;
-  scheduleReindex: (records: NoteRecord[]) => void;
+  scheduleReindex: (notes: ReindexNoteInput[]) => void;
   embedderReady: boolean;
   onError: (error: unknown) => void;
 }

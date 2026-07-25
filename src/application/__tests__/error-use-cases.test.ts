@@ -184,7 +184,7 @@ describe("error use cases", () => {
 
   it("run-full-reindex returns BackgroundTaskError when indexing fails", async () => {
     const session = sessionStub({
-      listNoteRecords: vi.fn().mockResolvedValue([]),
+      listForReindex: vi.fn().mockResolvedValue([]),
     });
     const search = {
       pruneOrphans: vi.fn().mockResolvedValue(undefined),

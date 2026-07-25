@@ -223,11 +223,9 @@ export async function deleteNote(
     attachmentPaths = extractAttachmentPaths(parseNote(text).body);
   }
 
-  // Remove the index entry first so a half-deleted note is invisible.
-  await mutateIndex(io.root, (fresh) => {
-    fresh.notes = fresh.notes.filter((n) => n.id !== id);
-  });
-  // Best-effort file removal — the parent directory layout uses notes/YYYY/MM.
+  // Drop the note file and attachment refs before touching the index. If
+  // removal fails, the index row stays and delete can be retried; removing the
+  // index first left orphan .md files that reconcile re-added on the next open.
   const segments = record.path.split("/");
   const fileName = segments.pop()!;
   let dir = io.root;
@@ -238,6 +236,10 @@ export async function deleteNote(
 
   const gcAttachments = await dropNoteRefs(io.root, id, attachmentPaths);
   await deleteOrphanAttachments(io.root, gcAttachments);
+
+  await mutateIndex(io.root, (fresh) => {
+    fresh.notes = fresh.notes.filter((n) => n.id !== id);
+  });
   return gcAttachments;
 }
 

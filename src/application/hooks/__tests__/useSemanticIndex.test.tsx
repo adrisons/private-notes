@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
+import { noteId } from "../../../domain";
 import type { VaultSession } from "../../vault-session";
 import { useSemanticIndex } from "../useSemanticIndex";
 
@@ -41,15 +42,14 @@ describe("useSemanticIndex", () => {
   function sessionStub(): VaultSession {
     return {
       root: {} as FileSystemDirectoryHandle,
-      listNoteRecords: vi.fn().mockResolvedValue([
+      listForReindex: vi.fn().mockResolvedValue([
         {
           id: "n1",
           title: "Note",
-          path: "notes/2026/05/n1.md",
-          createdAt: "2026-05-17T10:00:00.000Z",
-          updatedAt: "2026-05-17T10:00:00.000Z",
+          body: "hello",
         },
       ]),
+      listSummaries: vi.fn().mockResolvedValue([{ id: "n1", title: "Note", updatedAt: "2026-05-17T10:00:00.000Z", spaceIds: [] }]),
     } as unknown as VaultSession;
   }
 
@@ -101,21 +101,19 @@ describe("useSemanticIndex", () => {
 
     await waitFor(() => expect(result.current.embedderReady).toBe(true));
 
-    const record = {
-      id: "n1",
+    const note = {
+      id: noteId("n1"),
       title: "Note",
-      path: "notes/2026/05/n1.md",
-      createdAt: "2026-05-17T10:00:00.000Z",
-      updatedAt: "2026-05-17T10:00:00.000Z",
+      body: "hello",
     };
 
     act(() => {
-      result.current.scheduleReindex([record]);
+      result.current.scheduleReindex([note]);
     });
 
     await waitFor(() => {
       expect(mockSearch.reindex).toHaveBeenCalledWith(
-        [record],
+        [note],
         fakeEmbedder,
       );
     });
@@ -133,7 +131,7 @@ describe("useSemanticIndex", () => {
       await result.current.pruneOrphans();
     });
 
-    expect(session.listNoteRecords).toHaveBeenCalled();
+    expect(session.listSummaries).toHaveBeenCalled();
     expect(mockSearch.pruneOrphans).toHaveBeenCalledWith(["n1"]);
   });
 });

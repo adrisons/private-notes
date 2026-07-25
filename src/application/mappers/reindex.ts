@@ -1,12 +1,10 @@
 import type { Note } from "../../domain";
-import type { NoteRecord } from "../ports/note-record";
+import type { ReindexNoteInput } from "../ports/semantic-search";
 
-export function noteToReindexRecord(note: Note): NoteRecord {
+export function noteToReindexInput(note: Note): ReindexNoteInput {
   return {
     id: note.id,
     title: note.title,
-    path: note.path,
-    createdAt: note.createdAt,
-    updatedAt: note.updatedAt,
+    body: note.body,
   };
 }

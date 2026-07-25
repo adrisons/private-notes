@@ -17,16 +17,16 @@ describe("buildFakeVault", () => {
   });
 
   it("pre-populates embeddings so search returns hits and reindex is a no-op", async () => {
-    const { root, records, embedder, totalChunks } = await buildFakeVault({
+    const { root, reindexNotes, embedder, totalChunks } = await buildFakeVault({
       notes: 4,
       chunksPerNote: 2,
     });
     expect(totalChunks).toBeGreaterThan(0);
 
     // Every note is already indexed with a matching content hash → all skipped.
-    const { embedded, skipped } = await reindex(root, records, embedder);
+    const { embedded, skipped } = await reindex(root, reindexNotes, embedder);
     expect(embedded).toBe(0);
-    expect(skipped).toBe(records.length);
+    expect(skipped).toBe(reindexNotes.length);
 
     const hits = await searchSemantic(root, "project meeting plan", embedder, {
       minScore: 0,
@@ -36,14 +36,14 @@ describe("buildFakeVault", () => {
   });
 
   it("can skip embeddings for cold-reindex scenarios", async () => {
-    const { root, records, embedder } = await buildFakeVault({
+    const { root, reindexNotes, embedder } = await buildFakeVault({
       notes: 3,
       chunksPerNote: 2,
       withEmbeddings: false,
     });
 
     // No index yet → every note is stale and gets embedded.
-    const { embedded, skipped } = await reindex(root, records, embedder);
+    const { embedded, skipped } = await reindex(root, reindexNotes, embedder);
     expect(embedded).toBe(3);
     expect(skipped).toBe(0);
   });

@@ -28,7 +28,7 @@ const corpora = await Promise.all(
   ),
 );
 await Promise.all(
-  corpora.map((corpus) => reindex(corpus.root, corpus.records, corpus.embedder)),
+  corpora.map((corpus) => reindex(corpus.root, corpus.reindexNotes, corpus.embedder)),
 );
 
 // NOTE: this harness understates the real win. The fake FS keeps files in
@@ -44,11 +44,11 @@ corpora.forEach((corpus, i) => {
     // by the scan it precedes.
     bench("cold (reads every vectors file)", async () => {
       await writeContentHashes(corpus.root, {});
-      await reindex(corpus.root, corpus.records, corpus.embedder);
+      await reindex(corpus.root, corpus.reindexNotes, corpus.embedder);
     });
 
     bench("warm (hint-backed, skips vectors)", async () => {
-      await reindex(corpus.root, corpus.records, corpus.embedder);
+      await reindex(corpus.root, corpus.reindexNotes, corpus.embedder);
     });
   });
 });

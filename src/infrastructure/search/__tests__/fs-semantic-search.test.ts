@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { makeFakeRoot } from "../../../test/fakeFs";
 import { initializeVault } from "../../../infrastructure/fs/vault";
-import { createNote, listNotes } from "../../../infrastructure/notes/storage";
+import { createNote } from "../../../infrastructure/notes/storage";
+import { FsNoteRepository } from "../../../infrastructure/notes/fs-note-repository";
 import { FakeEmbedder } from "../../../infrastructure/search/embedder";
 import { fsSemanticSearchFactory } from "../fs-semantic-search";
 
@@ -20,7 +21,7 @@ describe("fsSemanticSearchFactory", () => {
     const root = makeFakeRoot();
     await initializeVault(root);
     await createNote({ root }, { title: "Cats", body: "Cats love pasta." });
-    const notes = await listNotes({ root });
+    const notes = await new FsNoteRepository(root).listForReindex();
     const embedder = new FakeEmbedder();
 
     const api = {

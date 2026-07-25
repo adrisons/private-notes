@@ -13,7 +13,7 @@ import {
   readSemanticManifest,
 } from "../index-fs";
 import { writeText } from "../../fs/handle";
-import { listNotes } from "../../notes/storage";
+import { FsNoteRepository } from "../../notes/fs-note-repository";
 import { SEMANTIC_PATHS, TITLE_CHUNK_IDX } from "../types";
 
 async function setup() {
@@ -30,11 +30,15 @@ async function setup() {
   return io;
 }
 
+async function reindexNotes(io: { root: FileSystemDirectoryHandle }) {
+  return new FsNoteRepository(io.root).listForReindex();
+}
+
 describe("indexer", () => {
   it("writes a per-note embeddings file and a manifest", async () => {
     const io = await setup();
     await createNote(io, { title: "Cats", body: "Cats love sunny windows." });
-    const notes = await listNotes(io);
+    const notes = await reindexNotes(io);
     const embedder = new FakeEmbedder();
 
     const result = await reindex(io.root, notes, embedder);
@@ -57,10 +61,10 @@ describe("indexer", () => {
     const io = await setup();
     const rec = await createNote(io, { title: "Cats", body: "same body" });
     const embedder = new FakeEmbedder();
-    await reindex(io.root, await listNotes(io), embedder);
+    await reindex(io.root, await reindexNotes(io), embedder);
 
     await updateNote(io, rec.id, { title: "Dogs" });
-    const result = await reindex(io.root, await listNotes(io), embedder);
+    const result = await reindex(io.root, await reindexNotes(io), embedder);
     expect(result.embedded).toBe(1);
   });
 
@@ -77,14 +81,14 @@ describe("indexer", () => {
       },
     };
     await createNote(io, { title: "Tiradito", body: "leche de tigre" });
-    await reindex(io.root, await listNotes(io), spy);
+    await reindex(io.root, await reindexNotes(io), spy);
     expect(seen).toEqual(["Tiradito", "Tiradito\n\nleche de tigre"]);
   });
 
   it("skips notes whose content has not changed", async () => {
     const io = await setup();
     await createNote(io, { title: "x", body: "same body" });
-    const notes = await listNotes(io);
+    const notes = await reindexNotes(io);
     const embedder = new FakeEmbedder();
     await reindex(io.root, notes, embedder);
     const second = await reindex(io.root, notes, embedder);
@@ -96,10 +100,10 @@ describe("indexer", () => {
     const io = await setup();
     const rec = await createNote(io, { title: "x", body: "first body" });
     const embedder = new FakeEmbedder();
-    await reindex(io.root, await listNotes(io), embedder);
+    await reindex(io.root, await reindexNotes(io), embedder);
 
     await updateNote(io, rec.id, { body: "second body" });
-    const result = await reindex(io.root, await listNotes(io), embedder);
+    const result = await reindex(io.root, await reindexNotes(io), embedder);
     expect(result.embedded).toBe(1);
     expect(result.skipped).toBe(0);
   });
@@ -109,7 +113,7 @@ describe("indexer", () => {
     const a = await createNote(io, { title: "a", body: "one" });
     const b = await createNote(io, { title: "b", body: "two" });
     const embedder = new FakeEmbedder();
-    await reindex(io.root, await listNotes(io), embedder);
+    await reindex(io.root, await reindexNotes(io), embedder);
 
     const hints = await readContentHashes(io.root);
     expect(Object.keys(hints).sort()).toEqual([a.id, b.id].sort());
@@ -121,7 +125,7 @@ describe("indexer", () => {
     const io = await setup();
     const rec = await createNote(io, { title: "x", body: "same body" });
     const embedder = new FakeEmbedder();
-    await reindex(io.root, await listNotes(io), embedder);
+    await reindex(io.root, await reindexNotes(io), embedder);
 
     // Corrupt the vectors file but leave it in place. A scan that trusted the
     // hint never opens it; one that parsed it would treat the garbage as stale
@@ -132,7 +136,7 @@ describe("indexer", () => {
       `${SEMANTIC_PATHS.notes}/${rec.id}.json`,
       "not json at all",
     );
-    const second = await reindex(io.root, await listNotes(io), embedder);
+    const second = await reindex(io.root, await reindexNotes(io), embedder);
     expect(second.embedded).toBe(0);
     expect(second.skipped).toBe(1);
   });
@@ -141,12 +145,12 @@ describe("indexer", () => {
     const io = await setup();
     const rec = await createNote(io, { title: "x", body: "same body" });
     const embedder = new FakeEmbedder();
-    await reindex(io.root, await listNotes(io), embedder);
+    await reindex(io.root, await reindexNotes(io), embedder);
 
     // Hint still points at this note, but its vectors are gone. The existence
     // guard must catch that and re-embed rather than fast-skip into a hole.
     await deleteNoteEmbeddings(io.root, rec.id);
-    const second = await reindex(io.root, await listNotes(io), embedder);
+    const second = await reindex(io.root, await reindexNotes(io), embedder);
     expect(second.embedded).toBe(1);
     expect(second.skipped).toBe(0);
   });
@@ -154,7 +158,7 @@ describe("indexer", () => {
   it("drops the hint file when the index is cleared", async () => {
     const io = await setup();
     const rec = await createNote(io, { title: "x", body: "anything" });
-    await reindex(io.root, await listNotes(io), new FakeEmbedder());
+    await reindex(io.root, await reindexNotes(io), new FakeEmbedder());
     expect(await readContentHashes(io.root)).toHaveProperty(rec.id);
 
     // A model change wipes the vectors via clearSemanticIndex; the hints must
@@ -168,16 +172,16 @@ describe("indexer", () => {
     const io = await setup();
     await createNote(io, { title: "x", body: "anything" });
     const e1 = new FakeEmbedder("model-a", 32);
-    await reindex(io.root, await listNotes(io), e1);
+    await reindex(io.root, await reindexNotes(io), e1);
 
     const e2 = new FakeEmbedder("model-b", 32);
-    await reindex(io.root, await listNotes(io), e2);
+    await reindex(io.root, await reindexNotes(io), e2);
 
     const manifest = await readSemanticManifest(io.root);
     expect(manifest?.modelId).toBe("model-b");
     const rec = await readNoteEmbeddings(
       io.root,
-      (await listNotes(io))[0]!.id,
+      (await reindexNotes(io))[0]!.id,
     );
     expect(rec?.modelId).toBe("model-b");
   });
@@ -195,7 +199,7 @@ describe("semantic search", () => {
       body: "Rockets launch into orbit at thousands of kilometers per hour.",
     });
     const embedder = new FakeEmbedder();
-    await reindex(io.root, await listNotes(io), embedder);
+    await reindex(io.root, await reindexNotes(io), embedder);
 
     const hits = await searchSemantic(io.root, "pasta tomato", embedder);
     expect(hits.length).toBeGreaterThan(0);
@@ -209,7 +213,7 @@ describe("pruneOrphans", () => {
     const a = await createNote(io, { title: "a", body: "a" });
     const b = await createNote(io, { title: "b", body: "b" });
     const embedder = new FakeEmbedder();
-    await reindex(io.root, await listNotes(io), embedder);
+    await reindex(io.root, await reindexNotes(io), embedder);
 
     const removed = await pruneOrphans(io.root, [a.id]);
     expect(removed).toBe(1);
@@ -221,7 +225,7 @@ describe("pruneOrphans", () => {
     const a = await createNote(io, { title: "a", body: "a" });
     const b = await createNote(io, { title: "b", body: "b" });
     const embedder = new FakeEmbedder();
-    await reindex(io.root, await listNotes(io), embedder);
+    await reindex(io.root, await reindexNotes(io), embedder);
 
     await pruneOrphans(io.root, [a.id]);
     const hints = await readContentHashes(io.root);
@@ -232,7 +236,7 @@ describe("pruneOrphans", () => {
   it("detects an orphan from its filename, even a corrupt one it cannot parse", async () => {
     const io = await setup();
     const a = await createNote(io, { title: "a", body: "a" });
-    await reindex(io.root, await listNotes(io), new FakeEmbedder());
+    await reindex(io.root, await reindexNotes(io), new FakeEmbedder());
     // A corrupt vectors file for a note that is not live. Name-based pruning
     // still sees it; a parse-based scan would skip it and leak the orphan.
     await writeText(io.root, `${SEMANTIC_PATHS.notes}/ghost.json`, "corrupt");
