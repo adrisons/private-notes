@@ -1030,6 +1030,31 @@ body::before {
   border-color: var(--accent-hover);
 }
 
+.prose-like .attachment-alt-field {
+  display: block;
+  margin-top: 0.5rem;
+  width: min(100%, var(--attachment-max-width));
+}
+
+.prose-like .attachment-alt-field input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
+  color: var(--foreground);
+}
+
+.prose-like .attachment-alt-field input::placeholder {
+  color: var(--foreground-subtle);
+}
+
+.prose-like .attachment-alt-field input:focus-visible {
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
 .prose-like .attachment-placeholder {
   display: grid;
   place-items: center;

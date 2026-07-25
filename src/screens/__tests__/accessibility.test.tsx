@@ -153,7 +153,7 @@ describe("accessibility", () => {
         onCreateSpace={vi.fn().mockResolvedValue(null)}
       />,
     );
-    fireEvent.change(screen.getByLabelText("Add a space"), {
+    fireEvent.change(screen.getByLabelText("Note spaces"), {
       target: { value: "Work" },
     });
     expect(await axe(container)).toHaveNoViolations();

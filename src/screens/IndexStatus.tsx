@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  formatIndexStatusCoarseLabel,
   formatIndexStatusLabel,
   isIndexStatusInteractive,
   type ReindexProgress,
@@ -35,6 +36,11 @@ export function IndexStatus({
     progress,
     indexError,
   );
+  const coarseLabel = formatIndexStatusCoarseLabel(
+    ready,
+    reindexing,
+    indexError,
+  );
   const statusInteractive = isIndexStatusInteractive(
     ready,
     reindexing,
@@ -43,6 +49,9 @@ export function IndexStatus({
 
   return (
     <>
+      <span role="status" aria-live="polite" className="sr-only">
+        {coarseLabel}
+      </span>
       {statusInteractive ? (
         <button
           type="button"
@@ -60,7 +69,7 @@ export function IndexStatus({
         // Work in progress glows the label itself — never a spinner (§5.5).
         <span
           className={`text-xs text-[var(--foreground-muted)] ${reindexing || !ready ? "u-glow" : ""}`}
-          aria-live="polite"
+          aria-hidden="true"
         >
           {statusLabel}
         </span>

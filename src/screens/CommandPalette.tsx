@@ -148,6 +148,7 @@ export function CommandPalette({
   const [hits, setHits] = useState<SearchResultItem[]>([]);
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchSeq = useRef(0);
 
@@ -232,6 +233,25 @@ export function CommandPalette({
     if (active >= items.length) setActive(Math.max(0, items.length - 1));
   }, [items, active]);
 
+  useEffect(() => {
+    if (!open || items.length === 0) return;
+    const option = listRef.current?.querySelector<HTMLElement>(
+      `#command-palette-item-${active}`,
+    );
+    option?.scrollIntoView?.({ block: "nearest" });
+  }, [open, active, items.length, resultsAnimateKey]);
+
+  const resultStatus =
+    query.trim().length === 0
+      ? `${items.length} ${items.length === 1 ? "item" : "items"}`
+      : items.length === 0
+        ? searchReady
+          ? "No matches"
+          : "Indexing"
+        : `${items.length} ${items.length === 1 ? "match" : "matches"}`;
+
+  const pageSize = 10;
+
   const choose = (item: Item) => {
     if (item.kind === "create") onCreate();
     else onOpenNote(item.noteId);
@@ -263,6 +283,18 @@ export function CommandPalette({
           } else if (e.key === "ArrowUp") {
             e.preventDefault();
             setActive((i) => Math.max(0, i - 1));
+          } else if (e.key === "Home") {
+            e.preventDefault();
+            setActive(0);
+          } else if (e.key === "End") {
+            e.preventDefault();
+            setActive(Math.max(0, items.length - 1));
+          } else if (e.key === "PageDown") {
+            e.preventDefault();
+            setActive((i) => Math.min(items.length - 1, i + pageSize));
+          } else if (e.key === "PageUp") {
+            e.preventDefault();
+            setActive((i) => Math.max(0, i - pageSize));
           } else if (e.key === "Enter") {
             const item = items[active];
             if (item) {
@@ -288,13 +320,16 @@ export function CommandPalette({
             items.length > 0 ? `command-palette-item-${active}` : undefined
           }
         />
+        <span role="status" aria-live="polite" className="sr-only">
+          {resultStatus}
+        </span>
         <ul
+          ref={listRef}
           id="command-palette-results"
           key={resultsAnimateKey}
           role="listbox"
           aria-label="Search results"
           className="u-content-swap max-h-[50vh] overflow-y-auto border-y border-[var(--border)] divide-y divide-[var(--border)]"
-          aria-live="polite"
         >
           {items.length === 0 ? (
             <li className="px-4 py-6 text-center text-sm text-[var(--foreground-muted)]">
@@ -310,6 +345,7 @@ export function CommandPalette({
                       id={`command-palette-item-${i}`}
                       type="button"
                       role="option"
+                      tabIndex={-1}
                       aria-selected={isActive}
                       onMouseEnter={() => setActive(i)}
                       onClick={() => choose(item)}
@@ -333,6 +369,7 @@ export function CommandPalette({
                     id={`command-palette-item-${i}`}
                     type="button"
                     role="option"
+                    tabIndex={-1}
                     aria-selected={isActive}
                     onMouseEnter={() => setActive(i)}
                     onClick={() => choose(item)}

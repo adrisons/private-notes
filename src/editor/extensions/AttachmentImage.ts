@@ -13,6 +13,8 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
   type MouseEvent as ReactMouseEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ChangeEvent as ReactChangeEvent,
 } from "react";
 import {
   ATTACHMENT_IMAGE_MAX_WIDTH,
@@ -179,6 +181,26 @@ function AttachmentImageView({
     [updateAttributes, width],
   );
 
+  const onResizeKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      event.stopPropagation();
+
+      const figure = figureRef.current;
+      if (!figure) return;
+
+      const maxWidth =
+        figure.parentElement?.clientWidth ?? ATTACHMENT_IMAGE_MAX_WIDTH;
+      const current = width ?? figure.getBoundingClientRect().width;
+      const delta = event.key === "ArrowRight" ? 16 : -16;
+      updateAttributes({
+        width: clampAttachmentImageWidth(current + delta, maxWidth),
+      });
+    },
+    [updateAttributes, width],
+  );
+
   const imgStyle =
     width !== null ? { width: `${width}px`, maxWidth: "100%" } : undefined;
 
@@ -219,7 +241,30 @@ function AttachmentImageView({
           "aria-label": "Resize image",
           contentEditable: false,
           onPointerDown: onResizePointerDown,
+          onKeyDown: onResizeKeyDown,
         })
+      : null,
+    selected && resolved
+      ? h(
+          "label",
+          {
+            className: "attachment-alt-field",
+            contentEditable: false,
+          },
+          h("span", { className: "sr-only" }, "Image description"),
+          h("input", {
+            type: "text",
+            value: alt,
+            placeholder: "Describe image (optional)",
+            "aria-label": "Image description",
+            onChange: (event: ReactChangeEvent<HTMLInputElement>) => {
+              updateAttributes({ alt: event.target.value });
+            },
+            onKeyDown: (event: ReactKeyboardEvent<HTMLInputElement>) => {
+              event.stopPropagation();
+            },
+          }),
+        )
       : null,
   );
 }

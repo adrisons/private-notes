@@ -57,7 +57,6 @@ export interface VirtualListProps<T> {
   focusIndex?: number;
   onKeyDown?: KeyboardEventHandler<HTMLUListElement>;
   listRef?: Ref<HTMLUListElement>;
-  ariaMultiselectable?: boolean;
   getItemKey: (item: T, index: number) => string;
   /** Row root must accept optional `style` and ARIA props (e.g. `<li>`). */
   renderItem: (item: T, index: number, ctx: VirtualListRowContext) => ReactNode;
@@ -98,7 +97,6 @@ function VirtualListInner<T>(
     focusIndex,
     onKeyDown,
     listRef,
-    ariaMultiselectable,
     getItemKey,
     renderItem,
   }: VirtualListProps<T>,
@@ -255,7 +253,6 @@ function VirtualListInner<T>(
       ref={assignListRef}
       role="list"
       aria-label={listLabel}
-      aria-multiselectable={ariaMultiselectable || undefined}
       onKeyDown={onKeyDown}
       className={cn(
         "outline-none",

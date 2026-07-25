@@ -103,6 +103,18 @@ export function formatIndexingLabel(progress: ReindexProgress | null): string {
   return `Indexing ${pct}%`;
 }
 
+/** Coarse index state for screen-reader announcements (no per-percent updates). */
+export function formatIndexStatusCoarseLabel(
+  ready: boolean,
+  reindexing: boolean,
+  indexError = false,
+): string {
+  if (!ready) return "Loading model…";
+  if (reindexing) return "Indexing notes";
+  if (indexError) return "Index error — tap to retry";
+  return "All indexed";
+}
+
 /** Sidebar status line under the search trigger. */
 export function formatIndexStatusLabel(
   ready: boolean,

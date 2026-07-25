@@ -69,6 +69,9 @@ export function Editor({
         // edge. `--measure` still caps the line length for readability.
         class:
           "prose-like u-content-column outline-none py-8 min-h-[60vh]",
+        role: "textbox",
+        "aria-multiline": "true",
+        "aria-label": "Note body",
       },
       handleDrop(view, event, _slice, moved) {
         if (moved || !onUploadImageRef.current) return false;
@@ -150,7 +153,7 @@ export function Editor({
       .focus()
       .insertContent({
         type: "attachmentImage",
-        attrs: { src, alt: file.name, width },
+        attrs: { src, alt: "", width },
       })
       .run();
   };

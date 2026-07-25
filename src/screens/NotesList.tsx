@@ -393,7 +393,10 @@ export function NotesList({
     <section className={cn("flex flex-col", className)}>
       <div className="flex shrink-0 items-center justify-between gap-2 px-4 py-3">
         {selectionMode ? (
-          <span className="min-w-0 truncate text-xs font-medium uppercase tracking-wider text-[var(--foreground-muted)]">
+          <span
+            role="status"
+            className="min-w-0 truncate text-xs font-medium uppercase tracking-wider text-[var(--foreground-muted)]"
+          >
             {selectionLabel}
           </span>
         ) : (
@@ -471,7 +474,6 @@ export function NotesList({
             focusIndex={focusedIndex}
             className={SIDEBAR_LIST_INSET_CLASS}
             listRef={listRef}
-            ariaMultiselectable={selectionMode || undefined}
             onKeyDown={handleListKeyDown}
             getItemKey={(note) => note.id}
             emptyState={
@@ -523,7 +525,6 @@ export function NotesList({
             focusIndex={focusedIndex}
             className={SIDEBAR_LIST_INSET_CLASS}
             listRef={listRef}
-            ariaMultiselectable={selectionMode || undefined}
             onKeyDown={handleListKeyDown}
             getItemKey={(space) => space.id}
             emptyState={

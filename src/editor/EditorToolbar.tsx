@@ -1,9 +1,11 @@
 import {
+  useEffect,
   useId,
   useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import type { Editor } from "@tiptap/react";
 import { cn } from "../lib/cn";
@@ -73,6 +75,39 @@ function useRowClamp() {
   const clamped = sizes.expanded > sizes.collapsed + 1;
 
   return { rowRef, clipRef, sizes, clamped };
+}
+
+function toolbarFocusables(root: HTMLElement): HTMLElement[] {
+  return Array.from(
+    root.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), select:not([disabled]), label:has(input[type="file"])',
+    ),
+  );
+}
+
+function syncToolbarTabStops(root: HTMLElement, focused?: HTMLElement | null) {
+  const items = toolbarFocusables(root);
+  if (items.length === 0) return;
+  const active =
+    focused && items.includes(focused)
+      ? focused
+      : items.find((item) => item.tabIndex === 0) ?? items[0];
+  for (const item of items) {
+    item.tabIndex = item === active ? 0 : -1;
+  }
+}
+
+function moveToolbarFocus(
+  root: HTMLElement,
+  current: HTMLElement,
+  delta: number,
+) {
+  const items = toolbarFocusables(root);
+  const index = items.indexOf(current);
+  if (index < 0 || items.length === 0) return;
+  const next = items[(index + delta + items.length) % items.length];
+  syncToolbarTabStops(root, next);
+  next.focus();
 }
 
 interface ToolbarProps {
@@ -291,6 +326,52 @@ export function EditorToolbar({ editor, onPickImage }: ToolbarProps) {
   const { rowRef, clipRef, sizes, clamped } = useRowClamp();
   const [expanded, setExpanded] = useState(false);
   const clipId = useId();
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const toolbar = toolbarRef.current;
+    if (!toolbar) return;
+
+    syncToolbarTabStops(toolbar);
+
+    const onFocusIn = (event: FocusEvent) => {
+      syncToolbarTabStops(toolbar, event.target as HTMLElement);
+    };
+
+    const observer = new MutationObserver(() => syncToolbarTabStops(toolbar));
+    observer.observe(toolbar, { childList: true, subtree: true });
+    toolbar.addEventListener("focusin", onFocusIn);
+    return () => {
+      observer.disconnect();
+      toolbar.removeEventListener("focusin", onFocusIn);
+    };
+  }, [clamped, expanded, onPickImage, editor]);
+
+  const onToolbarKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const toolbar = toolbarRef.current;
+    const current = document.activeElement;
+    if (!toolbar || !(current instanceof HTMLElement)) return;
+    const items = toolbarFocusables(toolbar);
+    if (!items.includes(current)) return;
+
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      event.preventDefault();
+      moveToolbarFocus(toolbar, current, 1);
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      event.preventDefault();
+      moveToolbarFocus(toolbar, current, -1);
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      const first = items[0];
+      syncToolbarTabStops(toolbar, first);
+      first.focus();
+    } else if (event.key === "End") {
+      event.preventDefault();
+      const last = items[items.length - 1];
+      syncToolbarTabStops(toolbar, last);
+      last.focus();
+    }
+  };
 
   return (
     // Sticky: the controls stay reachable while reading a long note.
@@ -313,7 +394,14 @@ export function EditorToolbar({ editor, onPickImage }: ToolbarProps) {
       >
         {/* A raised pill rather than a full-bleed bar: a control surface
             floating on the page, in the sidebar's rounded language. */}
-        <div className="absolute inset-x-0 top-0 flex items-start rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-raised)] shadow-[var(--shadow-rest)]">
+        <div
+          ref={toolbarRef}
+          role="toolbar"
+          aria-label="Formatting"
+          aria-orientation="horizontal"
+          onKeyDown={onToolbarKeyDown}
+          className="absolute inset-x-0 top-0 flex items-start rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-raised)] shadow-[var(--shadow-rest)]"
+        >
           {/*
             The padding lives on the clipping box, not on the pill: a control
             zoomed to 1.14 (and its focus ring) would otherwise be cut off by

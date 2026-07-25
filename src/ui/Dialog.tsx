@@ -30,6 +30,10 @@ export function Dialog({
 }: DialogProps) {
   const ref = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const initialFocusRefStable = useRef(initialFocusRef);
+  initialFocusRefStable.current = initialFocusRef;
 
   useEffect(() => {
     if (!open) return;
@@ -40,7 +44,7 @@ export function Dialog({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key === "Tab" && ref.current) {
@@ -50,7 +54,7 @@ export function Dialog({
 
     window.addEventListener("keydown", onKey);
     queueMicrotask(() => {
-      const initial = initialFocusRef?.current;
+      const initial = initialFocusRefStable.current?.current;
       if (initial) {
         initial.focus();
         return;
@@ -61,9 +65,17 @@ export function Dialog({
     return () => {
       window.removeEventListener("keydown", onKey);
       setAppInert(false);
-      previousFocusRef.current?.focus?.();
+      const previous = previousFocusRef.current;
+      if (previous?.isConnected) {
+        previous.focus();
+        return;
+      }
+      const main = document.querySelector<HTMLElement>(
+        'main[aria-label="Note content"]',
+      );
+      main?.focus();
     };
-  }, [open, onClose, initialFocusRef]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -76,7 +88,7 @@ export function Dialog({
     <div
       role="presentation"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) onCloseRef.current();
       }}
       className={`u-enter-backdrop fixed inset-0 z-50 flex items-start justify-center bg-[var(--backdrop)] px-4 ${dialogTop}`}
     >

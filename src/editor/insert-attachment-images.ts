@@ -19,7 +19,7 @@ export async function insertAttachmentImages(
         upload(file),
         defaultAttachmentImageWidth(file),
       ]);
-      const node = nodeType.create({ src, alt: file.name, width });
+      const node = nodeType.create({ src, alt: "", width });
       const transaction = view.state.tr.insert(pos, node);
       view.dispatch(transaction);
       pos += node.nodeSize;

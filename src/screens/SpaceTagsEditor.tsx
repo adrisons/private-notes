@@ -181,11 +181,6 @@ export function SpaceTagsEditor({
   return (
     <div ref={rootRef} className="relative">
       <div
-        role="combobox"
-        aria-expanded={showMenu}
-        aria-haspopup="listbox"
-        aria-controls={showMenu ? suggestionsId : undefined}
-        aria-label="Note spaces"
         onClick={() => inputRef.current?.focus()}
         className={cn(
           "u-focus-within flex min-h-11 flex-wrap items-center gap-1.5",
@@ -205,8 +200,11 @@ export function SpaceTagsEditor({
         <input
           ref={inputRef}
           type="text"
+          role="combobox"
+          aria-expanded={showMenu}
+          aria-haspopup="listbox"
           aria-autocomplete="list"
-          aria-label="Add a space"
+          aria-label="Note spaces"
           aria-controls={showMenu ? suggestionsId : undefined}
           aria-activedescendant={
             showMenu && suggestions.length > 0
@@ -276,6 +274,7 @@ export function SpaceTagsEditor({
                     id={`${suggestionsId}-option-${index}`}
                     type="button"
                     role="option"
+                    tabIndex={-1}
                     aria-selected={active}
                     onMouseEnter={() => setActiveIndex(index)}
                     onClick={() => void applySuggestion(item)}

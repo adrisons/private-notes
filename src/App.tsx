@@ -64,6 +64,7 @@ export function App() {
   });
 
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
+  const [deleteAnnouncement, setDeleteAnnouncement] = useState("");
   const [pendingDeleteSpaceIds, setPendingDeleteSpaceIds] = useState<
     SpaceId[]
   >([]);
@@ -160,6 +161,9 @@ export function App() {
       await note.deleteNotes(ids);
     }
     setPendingDeleteIds([]);
+    setDeleteAnnouncement(
+      ids.length === 1 ? "Note deleted" : `${ids.length} notes deleted`,
+    );
   }, [pendingDeleteIds, note]);
 
   const handleDeleteSpaces = useCallback(
@@ -339,6 +343,9 @@ export function App() {
           onDismiss={dismiss}
         />
       ) : null}
+      <span role="status" aria-live="polite" className="sr-only">
+        {deleteAnnouncement}
+      </span>
       <ConfirmDialog
         open={pendingDeleteIds.length > 0}
         title={deleteDialogTitle}
