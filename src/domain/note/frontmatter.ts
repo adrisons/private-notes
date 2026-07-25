@@ -29,7 +29,23 @@ const DELIMITER = "---";
 
 /** Escape a value so it survives a single-line YAML scalar. */
 function quote(value: string): string {
-  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+  let escaped = "";
+  for (const ch of value) {
+    if (ch === "\\") escaped += "\\\\";
+    else if (ch === '"') escaped += '\\"';
+    else if (ch === "\n") escaped += "\\n";
+    else if (ch === "\r") escaped += "\\r";
+    else if (ch === "\t") escaped += "\\t";
+    else {
+      const code = ch.charCodeAt(0);
+      if (code < 0x20 || code === 0x7f) {
+        escaped += `\\u${code.toString(16).padStart(4, "0")}`;
+      } else {
+        escaped += ch;
+      }
+    }
+  }
+  return `"${escaped}"`;
 }
 
 function unquote(raw: string): string {
@@ -40,6 +56,12 @@ function unquote(raw: string): string {
   ) {
     return trimmed
       .slice(1, -1)
+      .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex: string) =>
+        String.fromCharCode(Number.parseInt(hex, 16)),
+      )
+      .replace(/\\n/g, "\n")
+      .replace(/\\r/g, "\r")
+      .replace(/\\t/g, "\t")
       .replace(/\\"/g, '"')
       .replace(/\\\\/g, "\\");
   }

@@ -3,33 +3,16 @@ import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { CSP_META } from "./src/lib/csp-policy";
 
 /**
- * Content-Security-Policy for the production build. Keep this in sync with
- * `public/_headers` (the hosting-level header, which is the authoritative
- * delivery mechanism). It is injected as a <meta> only into the built
- * `index.html`; the dev server needs inline scripts, `eval`, and a websocket
+ * Content-Security-Policy for the production build. Directives live in
+ * `src/lib/csp-policy.ts` and are mirrored in `public/_headers`; a unit test
+ * asserts they stay in sync. Injected as a `<meta>` only into the built
+ * `index.html` — the dev server needs inline scripts, `eval`, and a websocket
  * for HMR, so applying it there would break `pnpm dev`.
- *
- * - `script-src 'wasm-unsafe-eval'`: onnxruntime-web (via transformers.js)
- *   compiles the embedding model to WebAssembly.
- * - `worker-src blob:`: the threaded WASM backend spawns workers from blobs.
- * - `connect-src` Hugging Face: one-time model weight download; files resolve
- *   to `cdn-lfs*.huggingface.co`.
- * - `img-src blob:`: attachment images are served as blob URLs from the vault.
  */
-const CSP = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  "form-action 'self'",
-  "img-src 'self' blob: data:",
-  "font-src 'self' data:",
-  "style-src 'self' 'unsafe-inline'",
-  "script-src 'self' 'wasm-unsafe-eval'",
-  "worker-src 'self' blob:",
-  "connect-src 'self' https://huggingface.co https://*.huggingface.co",
-].join("; ");
+const CSP = CSP_META;
 
 /** Inject the CSP meta tag into the built HTML only (not the dev server). */
 function cspMeta(): Plugin {
@@ -99,9 +82,10 @@ function pwa(): Plugin[] {
  * biggest single lever on indexing time. These are real HTTP headers (COOP/COEP
  * cannot be expressed in a <meta> tag like the CSP is), so the dev and preview
  * servers set them here to match `public/_headers` in production. `require-corp`
- * makes cross-origin subresources need CORP or CORS; the sole cross-origin
- * request is the Hugging Face model download, which transformers.js fetches with
- * CORS, so it loads under COEP; vault attachments are same-origin blob: URLs.
+ * makes cross-origin subresources need CORP or CORS; allowed egress is the
+ * Hugging Face model download (often via `*.aws.cdn.hf.co`) and the onnxruntime
+ * WASM backend on jsDelivr — see `src/lib/csp-policy.ts`. Vault attachments are
+ * same-origin blob: URLs.
  */
 const crossOriginIsolation = {
   "Cross-Origin-Opener-Policy": "same-origin",

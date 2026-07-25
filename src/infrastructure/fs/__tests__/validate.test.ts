@@ -55,6 +55,18 @@ describe("parseNoteIndex", () => {
     ).toThrow(/notes\[0\]/);
   });
 
+  it("throws when a record path is unsafe", () => {
+    expect(() =>
+      parseNoteIndex(
+        {
+          version: SCHEMA_VERSION,
+          notes: [{ ...validRecord, path: "notes/../evil.md" }],
+        },
+        "index.json",
+      ),
+    ).toThrow(/notes\[0\]/);
+  });
+
   it("tags the error with the file name", () => {
     try {
       parseNoteIndex(null, "index.json");

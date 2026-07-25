@@ -31,10 +31,10 @@ Set the cross-origin isolation pair in every environment:
   not go through the `cspMeta` plugin.
 
 `require-corp` means every cross-origin subresource must opt in with CORP or be
-fetched with CORS. The app has exactly one cross-origin request: the one-time
-Hugging Face model-weights download, which transformers.js fetches with CORS
-(the CDN sends `Access-Control-Allow-Origin`), so it loads under COEP. Vault
-attachments are same-origin `blob:` URLs and are unaffected. The worker is
+fetched with CORS. Allowed egress (see [csp-policy.ts](../../src/lib/csp-policy.ts)):
+the one-time Hugging Face model download — which often redirects to
+`*.aws.cdn.hf.co` — and the onnxruntime WASM backend on jsDelivr, both fetched
+with CORS. Vault attachments are same-origin `blob:` URLs and are unaffected. The worker is
 same-origin. No application code changes — onnxruntime detects isolation and
 threads on its own.
 

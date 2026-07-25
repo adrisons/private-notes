@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { noteId } from "../../domain";
-import { guardVaultIO } from "../errors";
+import { AttachmentRejectedError } from "../../lib/attachment-errors";
+import { guardVaultIO, VaultIOError } from "../errors";
 import type { VaultSession } from "../vault-session";
 
 export interface UseAttachmentsOptions {
@@ -42,6 +43,25 @@ export function useAttachments({
           },
         );
       } catch (error) {
+        const cause =
+          error instanceof VaultIOError ? error.cause : error;
+        if (cause instanceof AttachmentRejectedError) {
+          const vaultError = new VaultIOError(
+            cause.message,
+            {
+              operation: "upload-attachment",
+              module: "application/hooks/useAttachments.ts",
+              trace:
+                "onUploadImage → storeAttachment (attachment rejected before write)",
+              fixHint: cause.fixHint,
+              details: { fileName: file.name, noteId: currentNoteId },
+            },
+            cause.fixHint,
+            cause,
+          );
+          onError(vaultError);
+          throw vaultError;
+        }
         onError(error);
         throw error;
       }

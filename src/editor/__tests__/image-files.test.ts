@@ -31,9 +31,10 @@ describe("imageFilesFromDataTransfer", () => {
     const png = new File(["x"], "photo.png", { type: "image/png" });
     const txt = new File(["y"], "notes.txt", { type: "text/plain" });
     const webp = new File(["z"], "pic.webp", { type: "image/webp" });
+    const svg = new File(["<svg/>"], "payload.svg", { type: "image/svg+xml" });
 
     expect(
-      imageFilesFromDataTransfer(fakeDataTransfer([png, txt, webp])),
+      imageFilesFromDataTransfer(fakeDataTransfer([png, txt, webp, svg])),
     ).toEqual([png, webp]);
   });
 

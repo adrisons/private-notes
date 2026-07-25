@@ -27,6 +27,21 @@ describe("serializeNote / parseNote", () => {
     expect(parsed.frontmatter.title).toBe('She said "hi"');
   });
 
+  it("escapes newlines and control characters in frontmatter strings", () => {
+    const malicious = 'x"\nid: "other\u0007';
+    const text = serializeNote({ ...baseFrontmatter, title: malicious }, "");
+    expect(text).not.toMatch(/^id: "other"/m);
+    const parsed = parseNote(text);
+    expect(parsed.frontmatter.title).toBe(malicious);
+    expect(parsed.frontmatter.id).toBe(baseFrontmatter.id);
+  });
+
+  it("round-trips titles with embedded newlines", () => {
+    const title = "Line one\nLine two";
+    const parsed = parseNote(serializeNote({ ...baseFrontmatter, title }, ""));
+    expect(parsed.frontmatter.title).toBe(title);
+  });
+
   it("round-trips optional spaceIds", () => {
     const text = serializeNote(
       { ...baseFrontmatter, spaceIds: "01SPACE123,01SPACE456" },

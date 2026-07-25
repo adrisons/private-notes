@@ -27,4 +27,9 @@ describe("extractAttachmentPaths", () => {
   it("returns empty for bodies without attachments", () => {
     expect([...extractAttachmentPaths("plain text")]).toEqual([]);
   });
+
+  it("ignores unsafe attachment paths", () => {
+    const md = "![x](attachments/../notes/evil.md) ![ok](attachments/safe.png)";
+    expect([...extractAttachmentPaths(md)]).toEqual(["attachments/safe.png"]);
+  });
 });

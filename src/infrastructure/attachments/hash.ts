@@ -18,14 +18,13 @@ export async function sha256Hex(
     .join("");
 }
 
-/** Pick the file extension for an attachment, preferring the original. */
-export function pickExtension(file: { name: string; type: string }): string {
-  const fromName = file.name.includes(".")
-    ? file.name.split(".").pop()!.toLowerCase()
-    : "";
-  if (fromName.length > 0 && fromName.length <= 5) return fromName;
-  // Fall back to mime type.
-  const m = /image\/(.+)/.exec(file.type);
-  if (m) return m[1] === "jpeg" ? "jpg" : m[1]!;
-  return "bin";
+import { extensionForMime } from "./image-policy";
+
+/** Pick the file extension from a vetted MIME type (never the original name). */
+export function pickExtension(file: { type: string }): string {
+  const ext = extensionForMime(file.type);
+  if (!ext) {
+    throw new Error(`Unsupported attachment MIME type: ${file.type || "(empty)"}`);
+  }
+  return ext;
 }

@@ -5,6 +5,7 @@ import {
   isString,
 } from "../../lib/validate";
 import { isSpaceColorId } from "../../domain/space/space-color";
+import { isSafeRelativePath } from "./handle";
 import type { NoteIndex, NoteRecord, SpacesIndex, SpaceRecord } from "../fs/schema";
 
 function isNoteRecord(v: unknown): v is NoteRecord {
@@ -18,6 +19,7 @@ function isNoteRecord(v: unknown): v is NoteRecord {
   ) {
     return false;
   }
+  if (!isSafeRelativePath(v.path)) return false;
   if (v.spaceIds !== undefined && !isString(v.spaceIds)) return false;
   return true;
 }

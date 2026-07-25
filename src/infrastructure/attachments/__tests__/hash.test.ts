@@ -17,15 +17,14 @@ describe("sha256Hex", () => {
 });
 
 describe("pickExtension", () => {
-  it("uses the file name when possible", () => {
-    expect(pickExtension({ name: "cat.PNG", type: "image/png" })).toBe("png");
+  it("derives the extension from the MIME type", () => {
+    expect(pickExtension({ type: "image/png" })).toBe("png");
+    expect(pickExtension({ type: "image/jpeg" })).toBe("jpg");
   });
 
-  it("falls back to the mime type and normalizes jpeg", () => {
-    expect(pickExtension({ name: "noext", type: "image/jpeg" })).toBe("jpg");
-  });
-
-  it("returns 'bin' when nothing else works", () => {
-    expect(pickExtension({ name: "noext", type: "" })).toBe("bin");
+  it("ignores a misleading file name", () => {
+    expect(() =>
+      pickExtension({ type: "image/svg+xml" }),
+    ).toThrow(/Unsupported attachment MIME type/);
   });
 });

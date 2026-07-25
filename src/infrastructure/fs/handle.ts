@@ -5,6 +5,24 @@
  * All paths passed here are POSIX-style relative paths ("notes/2026/foo.md").
  */
 
+/**
+ * Returns true for a non-empty, vault-relative path with no `.`, `..`, `\`,
+ * or absolute segments. Synced index rows and markdown attachment refs must
+ * pass this before touching the File System Access API.
+ */
+export function isSafeRelativePath(path: string): boolean {
+  if (path.length === 0) return false;
+  if (path.startsWith("/") || path.startsWith("\\")) return false;
+  if (/^[a-zA-Z]:/.test(path)) return false;
+  for (const segment of path.split("/")) {
+    if (segment.length === 0 || segment === "." || segment === "..") {
+      return false;
+    }
+    if (segment.includes("\\")) return false;
+  }
+  return true;
+}
+
 function splitPath(path: string): string[] {
   return path.split("/").filter((s) => s.length > 0);
 }

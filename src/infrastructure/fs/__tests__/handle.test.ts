@@ -4,6 +4,7 @@ import {
   fileExists,
   getFile,
   isEffectivelyEmpty,
+  isSafeRelativePath,
   readText,
   writeBytes,
   writeText,
@@ -47,5 +48,21 @@ describe("handle", () => {
   it("getFile throws on an empty path", async () => {
     const root = makeFakeRoot();
     await expect(getFile(root, "")).rejects.toThrow("Empty path");
+  });
+});
+
+describe("isSafeRelativePath", () => {
+  it("accepts normal vault-relative paths", () => {
+    expect(isSafeRelativePath("notes/2026/05/a-01HX.md")).toBe(true);
+    expect(isSafeRelativePath("attachments/abc123.png")).toBe(true);
+  });
+
+  it("rejects traversal, absolute, and empty segments", () => {
+    expect(isSafeRelativePath("")).toBe(false);
+    expect(isSafeRelativePath("attachments/../notes/evil.md")).toBe(false);
+    expect(isSafeRelativePath("notes/./foo.md")).toBe(false);
+    expect(isSafeRelativePath("/etc/passwd")).toBe(false);
+    expect(isSafeRelativePath("notes//foo.md")).toBe(false);
+    expect(isSafeRelativePath("notes\\foo.md")).toBe(false);
   });
 });

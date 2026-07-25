@@ -1,10 +1,11 @@
 # Hosting-level security headers (Netlify / Cloudflare Pages format).
 # The CSP mirrors the <meta> injected into the built index.html by
-# vite.config.ts (`CSP`). A real response header is the authoritative
-# mechanism: it can express `frame-ancestors`, which browsers ignore in a
-# <meta> tag. Keep both in sync.
+# vite.config.ts, both sourced from src/lib/csp-policy.ts. A real response
+# header is the authoritative mechanism: it can express `frame-ancestors`,
+# which browsers ignore in a <meta> tag. A unit test asserts the two stay
+# in sync.
 /*
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' blob: data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' https://huggingface.co https://*.huggingface.co
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' blob: data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; worker-src 'self' blob:; connect-src 'self' https://huggingface.co https://*.aws.cdn.hf.co https://cdn.jsdelivr.net
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
   X-Frame-Options: DENY

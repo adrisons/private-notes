@@ -1,9 +1,7 @@
-const IMAGE_EXT: Record<string, string> = {
-  "image/png": "png",
-  "image/jpeg": "jpg",
-  "image/gif": "gif",
-  "image/webp": "webp",
-};
+import {
+  extensionForMime,
+  isAllowedImageMime,
+} from "../infrastructure/attachments/image-policy";
 
 /** Image files carried by a drag-and-drop or paste DataTransfer. */
 export function imageFilesFromDataTransfer(
@@ -11,7 +9,7 @@ export function imageFilesFromDataTransfer(
 ): File[] {
   if (!dataTransfer?.files?.length) return [];
   return Array.from(dataTransfer.files).filter((file) =>
-    file.type.startsWith("image/"),
+    isAllowedImageMime(file.type),
   );
 }
 
@@ -23,7 +21,7 @@ export function hasImageFilesInDataTransfer(
 
 /**
  * Collect pasted image files from the clipboard. Browsers expose screenshots
- * as `items`, file copies as `files`, and some apps only as HTML with inline
+ * as `Items`, file copies as `files`, and some apps only as HTML with inline
  * `data:` URLs — ProseMirror would paste the latter verbatim unless we
  * intercept and store the bytes in the vault instead.
  */
@@ -37,7 +35,7 @@ export function imageFilesFromClipboard(
 
   const fromItems: File[] = [];
   for (const item of dataTransfer.items ?? []) {
-    if (item.kind === "file" && item.type.startsWith("image/")) {
+    if (item.kind === "file" && isAllowedImageMime(item.type)) {
       const file = item.getAsFile();
       if (file) fromItems.push(file);
     }
@@ -55,7 +53,7 @@ export function dataUrlToFile(
   if (!match) return null;
 
   const [, mime, encoded] = match;
-  if (!mime.startsWith("image/")) return null;
+  if (!isAllowedImageMime(mime)) return null;
 
   const binary = atob(encoded);
   const bytes = new Uint8Array(binary.length);
@@ -63,7 +61,7 @@ export function dataUrlToFile(
     bytes[index] = binary.charCodeAt(index);
   }
 
-  const extension = IMAGE_EXT[mime] ?? "png";
+  const extension = extensionForMime(mime) ?? "png";
   const name = fallbackName.includes(".")
     ? fallbackName
     : `${fallbackName.replace(/\.[^.]+$/, "")}.${extension}`;
