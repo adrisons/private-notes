@@ -32,6 +32,37 @@ export interface IndexerOptions {
 }
 
 /**
+ * Workers to run the staleness scan with. Each note needs one or two file reads
+ * plus a hash, all independent between notes, and the FSA API parallelises reads
+ * happily — so a serial scan spends a no-op rescan of a large vault mostly idle,
+ * waiting on I/O.
+ */
+const STALENESS_SCAN_CONCURRENCY = 12;
+
+/**
+ * Map with a fixed pool of workers pulling from a shared cursor, preserving
+ * input order in the result so the embedding pass and progress stay
+ * deterministic.
+ */
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+  const worker = async (): Promise<void> => {
+    while (cursor < items.length) {
+      const index = cursor++;
+      results[index] = await fn(items[index]!, index);
+    }
+  };
+  const size = Math.min(limit, items.length);
+  await Promise.all(Array.from({ length: size }, () => worker()));
+  return results;
+}
+
+/**
  * The title is part of what gets embedded, so renaming a note has to
  * invalidate its vectors just like editing it does.
  */
@@ -164,28 +195,43 @@ export async function reindex(
   const hints = await readContentHashes(root);
   const nextHints: ContentHashIndex = {};
 
-  // First pass: identify stale notes; skip ones still valid.
+  // First pass: identify stale notes; skip ones still valid. The per-note check
+  // is I/O-bound and independent between notes, so it runs with bounded
+  // concurrency; the results are folded back in input order below.
   type Work = { note: NoteRecord; body: string; hash: string };
+  type Scan =
+    | { note: NoteRecord; hash: string; stale: false }
+    | { note: NoteRecord; body: string; hash: string; stale: true };
+
+  const scans = await mapWithConcurrency(
+    notes,
+    STALENESS_SCAN_CONCURRENCY,
+    async (note): Promise<Scan> => {
+      const text = await readText(root, note.path);
+      const body = parseNote(text).body;
+      const hash = await contentFingerprint(note.title, body);
+      if (hints[note.id] === hash && (await hasNoteEmbeddings(root, note.id))) {
+        // Fast path: body unchanged and its vectors are on disk. Never opens the
+        // vectors file. This is what makes a reload scan cheap.
+        return { note, hash, stale: false };
+      }
+      // Hint missing, stale, or the vectors file vanished — verify precisely.
+      // Also the first run after upgrade, when no hint file exists yet: this
+      // pass re-populates the hints so subsequent scans take the fast path.
+      if (await needsReindex(root, note, embedder, hash)) {
+        return { note, body, hash, stale: true };
+      }
+      return { note, hash, stale: false };
+    },
+  );
+
   const work: Work[] = [];
   let skipped = 0;
-  for (const note of notes) {
-    const text = await readText(root, note.path);
-    const body = parseNote(text).body;
-    const hash = await contentFingerprint(note.title, body);
-    if (hints[note.id] === hash && (await hasNoteEmbeddings(root, note.id))) {
-      // Fast path: body unchanged and its vectors are on disk. Never opens the
-      // vectors file. This is what makes a reload scan cheap.
-      nextHints[note.id] = hash;
-      skipped++;
-      continue;
-    }
-    // Hint missing, stale, or the vectors file vanished — verify precisely.
-    // Also the first run after upgrade, when no hint file exists yet: this
-    // pass re-populates the hints so subsequent scans take the fast path.
-    if (await needsReindex(root, note, embedder, hash)) {
-      work.push({ note, body, hash });
+  for (const scan of scans) {
+    if (scan.stale) {
+      work.push({ note: scan.note, body: scan.body, hash: scan.hash });
     } else {
-      nextHints[note.id] = hash;
+      nextHints[scan.note.id] = scan.hash;
       skipped++;
     }
   }

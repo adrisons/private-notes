@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { makeFakeRoot } from "../../../test/fakeFs";
 import { initializeVault } from "../../fs/vault";
 import { FakeEmbedder, type Embedder } from "../embedder";
-import { writeNoteEmbeddings } from "../index-fs";
+import { deleteNoteEmbeddings, writeNoteEmbeddings } from "../index-fs";
 import { searchSemantic, type LexicalIndexCache } from "../search";
 import { SEMANTIC_SCHEMA_VERSION, TITLE_CHUNK_IDX } from "../types";
 
@@ -316,6 +316,107 @@ describe("searchSemantic", () => {
     cache.current = null;
     const fresh = await searchSemantic(root, "ceviche", embedder, { minScore: 0.99 }, cache);
     expect(fresh.map((h) => h.noteId)).toContain("ceviche");
+  });
+
+  it("patches a dirty note into the cached index without rebuilding it", async () => {
+    const root = await setupRoot();
+    const embedder = new FakeEmbedder();
+    const [qVec] = await embedder.embed(["pescado"]);
+    // Orthogonal so notes can only ever surface through the lexical index.
+    const orthogonal = qVec!.map((_, i) => (i === 0 ? 1 : 0));
+    // Enough notes that one dirty note stays under the rebuild threshold.
+    for (let i = 0; i < 5; i++) {
+      await writeNoteEmbeddings(
+        root,
+        makeRecord(`filler-${i}`, [{ text: `nota ${i}`, embedding: orthogonal }]),
+      );
+    }
+    await writeNoteEmbeddings(
+      root,
+      makeRecord("target", [{ text: "Tiradito de pescado", embedding: orthogonal }]),
+    );
+
+    const cache: LexicalIndexCache = { current: null, dirty: new Set() };
+    await searchSemantic(root, "pescado", embedder, { minScore: 0.99 }, cache);
+    const built = cache.current;
+    expect(built).not.toBeNull();
+
+    // Rewrite the note (what reindex does on disk) and mark just it dirty.
+    await writeNoteEmbeddings(
+      root,
+      makeRecord("target", [{ text: "Ceviche de corvina", embedding: orthogonal }]),
+    );
+    cache.dirty!.add("target");
+
+    const hits = await searchSemantic(root, "ceviche", embedder, { minScore: 0.99 }, cache);
+    // Same instance, patched in place — not rebuilt.
+    expect(cache.current).toBe(built);
+    expect(hits.map((h) => h.noteId)).toEqual(["target"]);
+    expect(cache.dirty!.size).toBe(0);
+
+    // The old term is gone from the patched index.
+    const stale = await searchSemantic(root, "pescado", embedder, { minScore: 0.99 }, cache);
+    expect(stale.map((h) => h.noteId)).not.toContain("target");
+  });
+
+  it("drops a dirty note whose record vanished, still patching in place", async () => {
+    const root = await setupRoot();
+    const embedder = new FakeEmbedder();
+    const [qVec] = await embedder.embed(["pescado"]);
+    const orthogonal = qVec!.map((_, i) => (i === 0 ? 1 : 0));
+    for (let i = 0; i < 5; i++) {
+      await writeNoteEmbeddings(
+        root,
+        makeRecord(`filler-${i}`, [{ text: `nota ${i}`, embedding: orthogonal }]),
+      );
+    }
+    await writeNoteEmbeddings(
+      root,
+      makeRecord("target", [{ text: "Tiradito de pescado", embedding: orthogonal }]),
+    );
+
+    const cache: LexicalIndexCache = { current: null, dirty: new Set() };
+    await searchSemantic(root, "pescado", embedder, { minScore: 0.99 }, cache);
+    const built = cache.current;
+
+    await deleteNoteEmbeddings(root, "target");
+    cache.dirty!.add("target");
+
+    const hits = await searchSemantic(root, "pescado", embedder, { minScore: 0.99 }, cache);
+    expect(cache.current).toBe(built);
+    expect(hits.map((h) => h.noteId)).not.toContain("target");
+    expect(cache.dirty!.size).toBe(0);
+  });
+
+  it("rebuilds instead of patching when the dirty set rivals the corpus", async () => {
+    const root = await setupRoot();
+    const embedder = new FakeEmbedder();
+    const [qVec] = await embedder.embed(["pescado"]);
+    const orthogonal = qVec!.map((_, i) => (i === 0 ? 1 : 0));
+    await writeNoteEmbeddings(
+      root,
+      makeRecord("a", [{ text: "Pescado", embedding: orthogonal }]),
+    );
+    await writeNoteEmbeddings(
+      root,
+      makeRecord("b", [{ text: "Pollo", embedding: orthogonal }]),
+    );
+
+    const cache: LexicalIndexCache = { current: null, dirty: new Set() };
+    await searchSemantic(root, "pescado", embedder, { minScore: 0.99 }, cache);
+    const built = cache.current;
+
+    // Half the corpus dirty → a fresh build is cheaper than patching each.
+    await writeNoteEmbeddings(
+      root,
+      makeRecord("a", [{ text: "Ceviche", embedding: orthogonal }]),
+    );
+    cache.dirty!.add("a");
+
+    const hits = await searchSemantic(root, "ceviche", embedder, { minScore: 0.99 }, cache);
+    expect(cache.current).not.toBe(built);
+    expect(hits.map((h) => h.noteId)).toEqual(["a"]);
+    expect(cache.dirty!.size).toBe(0);
   });
 
   it("sends the model's query prefix, not the raw query", async () => {

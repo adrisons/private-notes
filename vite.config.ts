@@ -93,9 +93,26 @@ function pwa(): Plugin[] {
   }) as Plugin[];
 }
 
+/**
+ * Cross-origin isolation headers. `crossOriginIsolated` gates SharedArrayBuffer,
+ * which onnxruntime-web needs to run the embedder on multiple WASM threads — the
+ * biggest single lever on indexing time. These are real HTTP headers (COOP/COEP
+ * cannot be expressed in a <meta> tag like the CSP is), so the dev and preview
+ * servers set them here to match `public/_headers` in production. `require-corp`
+ * makes cross-origin subresources need CORP or CORS; the sole cross-origin
+ * request is the Hugging Face model download, which transformers.js fetches with
+ * CORS, so it loads under COEP; vault attachments are same-origin blob: URLs.
+ */
+const crossOriginIsolation = {
+  "Cross-Origin-Opener-Policy": "same-origin",
+  "Cross-Origin-Embedder-Policy": "require-corp",
+};
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss(), ...pwa(), cspMeta()],
+  server: { headers: crossOriginIsolation },
+  preview: { headers: crossOriginIsolation },
   build: {
     rollupOptions: {
       output: {

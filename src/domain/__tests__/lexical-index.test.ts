@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   buildLexicalIndex,
+  refreshLexicalTerms,
+  removeLexicalDocument,
   searchLexicalIndex,
+  upsertLexicalDocument,
   type LexicalDocument,
 } from "../search/lexical-index";
 
@@ -113,5 +116,53 @@ describe("searchLexicalIndex", () => {
 
   it("scores nothing against an empty index", () => {
     expect(searchLexicalIndex(buildLexicalIndex([]), "pescado")).toEqual([]);
+  });
+});
+
+describe("incremental updates", () => {
+  it("replaces a document in place, forgetting its old terms", () => {
+    const index = buildLexicalIndex([
+      { id: "a", title: "Pescado frito", body: "" },
+    ]);
+    upsertLexicalDocument(index, { id: "a", title: "Pollo asado", body: "" });
+    refreshLexicalTerms(index);
+
+    expect(index.documentCount).toBe(1);
+    expect(searchLexicalIndex(index, "pescado")).toEqual([]);
+    expect(searchLexicalIndex(index, "pollo").map((m) => m.id)).toEqual(["a"]);
+  });
+
+  it("adds a new document and keeps prefix expansion working after a refresh", () => {
+    const index = buildLexicalIndex([{ id: "a", title: "Alpha", body: "" }]);
+    upsertLexicalDocument(index, { id: "b", title: "Beta", body: "" });
+    refreshLexicalTerms(index);
+
+    expect(index.documentCount).toBe(2);
+    // Prefix search binary-searches `sortedTerms`, so the refresh must have
+    // re-sorted the vocabulary to include the new term.
+    expect(searchLexicalIndex(index, "bet").map((m) => m.id)).toEqual(["b"]);
+  });
+
+  it("removes a document and its now-orphaned terms", () => {
+    const index = buildLexicalIndex([
+      { id: "a", title: "Ceviche", body: "" },
+      { id: "b", title: "Tiradito", body: "" },
+    ]);
+    removeLexicalDocument(index, "a");
+    refreshLexicalTerms(index);
+
+    expect(index.documentCount).toBe(1);
+    expect(searchLexicalIndex(index, "ceviche")).toEqual([]);
+    expect(searchLexicalIndex(index, "tiradito").map((m) => m.id)).toEqual([
+      "b",
+    ]);
+  });
+
+  it("treats removing an unknown document as a no-op", () => {
+    const index = buildLexicalIndex([{ id: "a", title: "Alpha", body: "" }]);
+    removeLexicalDocument(index, "ghost");
+
+    expect(index.documentCount).toBe(1);
+    expect(searchLexicalIndex(index, "alpha").map((m) => m.id)).toEqual(["a"]);
   });
 });

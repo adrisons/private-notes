@@ -3,7 +3,10 @@ import { dot, toQueryInput, type Embedder } from "./embedder";
 import type { ChunkRecord, NoteEmbeddings } from "./types";
 import {
   createLexicalIndexBuilder,
+  refreshLexicalTerms,
+  removeLexicalDocument,
   searchLexicalIndex,
+  upsertLexicalDocument,
   type LexicalDocument,
   type LexicalIndex,
 } from "../../domain/search/lexical-index";
@@ -44,14 +47,23 @@ const LEXICAL_CANDIDATES = 32;
  * The index is a pure function of the note text already streamed off disk, so
  * rebuilding it on every keystroke is O(corpus) of wasted tokenisation — the
  * dominant cost of a query on a large vault. The session (`fs-semantic-search`)
- * owns one of these per vault and clears it whenever the on-disk index changes
- * (`reindex`, `pruneOrphans`), so the index is built once and reused across a
- * palette's worth of keystrokes. Dense scoring still streams every record —
- * the query vector is new each time — but that pass no longer re-tokenises the
- * corpus. Omitting the cache falls back to building fresh each call.
+ * owns one of these per vault. Rather than clearing it whenever the on-disk
+ * index changes — which made the next keystroke pay a full O(corpus) rebuild,
+ * every time after an autosave tick — the session marks just the changed note
+ * ids `dirty`, and the next query patches those documents in place (`reindex`,
+ * `pruneOrphans`). The index is thus built once and reused across a palette's
+ * worth of keystrokes. Dense scoring still streams every record — the query
+ * vector is new each time — but that pass no longer re-tokenises the corpus.
+ * Omitting the cache falls back to building fresh each call.
  */
 export interface LexicalIndexCache {
   current: LexicalIndex | null;
+  /**
+   * Note ids whose on-disk text changed since `current` was built. The next
+   * query reconciles just these into the index, in the dense pass it already
+   * makes, instead of forcing a full rebuild.
+   */
+  dirty?: Set<string>;
 }
 
 /** One note's contribution to the two candidate lists. */
@@ -117,9 +129,20 @@ export async function searchSemantic(
   if (!qVec) return [];
 
   const candidates = new Map<string, Candidate>();
+
   // Reuse the cached lexical index when the session has one; otherwise build it
   // in this same streaming pass so the corpus is tokenised once, not per query.
-  const cachedLexical = cache?.current ?? null;
+  // When only a handful of notes are dirty (the autosave case), patch those
+  // documents in place instead. A change set that rivals the corpus — a full
+  // reindex — is cheaper to rebuild than to patch note by note, so past a
+  // quarter of the vault we drop the cache and build fresh.
+  const dirty = cache?.dirty;
+  let cachedLexical = cache?.current ?? null;
+  if (cachedLexical && dirty && dirty.size > cachedLexical.documentCount / 4) {
+    cachedLexical = null;
+  }
+  const reconcile =
+    cachedLexical !== null && dirty !== undefined && dirty.size > 0;
   const builder = cachedLexical ? null : createLexicalIndexBuilder();
 
   for await (const rec of iterateNoteEmbeddings(root)) {
@@ -140,10 +163,29 @@ export async function searchSemantic(
     }
     candidates.set(rec.noteId, { record: rec, bestChunk, bestScore });
     builder?.add(toLexicalDocument(rec));
+    if (reconcile && dirty!.has(rec.noteId)) {
+      upsertLexicalDocument(cachedLexical!, toLexicalDocument(rec));
+      dirty!.delete(rec.noteId);
+    }
   }
 
-  const lexicalIndex = cachedLexical ?? builder!.build();
-  if (cache && !cachedLexical) cache.current = lexicalIndex;
+  let lexicalIndex: LexicalIndex;
+  if (cachedLexical) {
+    if (reconcile) {
+      // Dirty ids never seen on disk are deletions (or notes emptied to no
+      // chunks); drop them, then refresh the vocabulary once for the batch.
+      for (const id of dirty!) removeLexicalDocument(cachedLexical, id);
+      dirty!.clear();
+      refreshLexicalTerms(cachedLexical);
+    }
+    lexicalIndex = cachedLexical;
+  } else {
+    lexicalIndex = builder!.build();
+    if (cache) {
+      cache.current = lexicalIndex;
+      cache.dirty?.clear();
+    }
+  }
 
   const dense = [...candidates.values()]
     .filter((c) => c.bestScore >= minScore)

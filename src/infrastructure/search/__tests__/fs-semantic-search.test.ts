@@ -42,8 +42,9 @@ describe("fsSemanticSearchFactory", () => {
       embedder,
       { topK: 3 },
       // A per-session lexical-index cache is threaded through so keystrokes
-      // reuse the index instead of rebuilding it (ADR-010).
-      { current: null },
+      // reuse the index instead of rebuilding it; reindex marks notes dirty in
+      // it rather than dropping it (ADR-010).
+      { current: null, dirty: expect.any(Set) },
     );
 
     await search.pruneOrphans(["n1"]);

@@ -57,6 +57,12 @@ export interface OpenNoteState {
   updatedAt: string;
   savedAt: string | null;
   spaceIds: SpaceId[];
+  /**
+   * Set while a note is opened optimistically: the header renders from the
+   * in-memory summary and the body is still loading from disk. The editor waits
+   * on it, and autosave holds off so the placeholder body is never persisted.
+   */
+  bodyPending?: boolean;
 }
 
 /** Space card in the spaces overview. */

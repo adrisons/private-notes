@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCompatibility } from "../../lib/compatibility";
 import { defaultInfrastructure } from "../composition";
 import { openVaultUserError, reportUserError, vaultIncompatibleCause } from "../errors";
@@ -200,9 +200,14 @@ export function useVaultSession(
     if (!session) setCurrent(null);
   }, [session]);
 
+  // Mapping the summaries is cheap, but returning a fresh array on every render
+  // turns every consumer's `useMemo([noteItems])` into a permanent miss — e.g.
+  // `buildSpaceListItems` would walk every note × space on each keystroke.
+  const noteItems = useMemo(() => toNoteListItems(summaries), [summaries]);
+
   return {
     session,
-    noteItems: toNoteListItems(summaries),
+    noteItems,
     current,
     setCurrent,
     error,

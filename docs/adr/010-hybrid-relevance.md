@@ -140,13 +140,20 @@ disk. On a synthetic FS that assumption ("cheap next to the file reads") was
 wrong: re-tokenising the whole corpus dominated a query and regressed
 `searchSemantic` ~10× on every corpus size. The index is now built once and
 cached per open vault (`LexicalIndexCache`, held by `fs-semantic-search`), fed
-incrementally from the same dense-scoring stream, and dropped whenever the
-on-disk index changes (`reindex`, `pruneOrphans`). Dense scoring still streams
+incrementally from the same dense-scoring stream. Dense scoring still streams
 every record — the query vector is new each keystroke — but the corpus is
-tokenised once per change, not once per keystroke. Prefix expansion is a
-binary search over the sorted vocabulary rather than a full scan. Persisting
-the index to disk (surviving reload, not just the session) remains available if
-the first-query cost after opening a large vault proves to matter.
+tokenised once, not once per keystroke. Prefix expansion is a binary search
+over the sorted vocabulary rather than a full scan.
+
+Invalidating the whole index on every change was the next bottleneck: autosave
+reindexes the open note every 500 ms, so the first search after typing always
+paid a cold rebuild. `reindex` and `pruneOrphans` now mark changed note ids
+`dirty` instead of clearing the cache; the next query patches only those entries
+(`upsert` / `removeLexicalDocument`) during the dense pass it already runs.
+When more than a quarter of the vault changed, rebuilding from scratch is
+cheaper than patching note by note, so the query falls back to a full build.
+Persisting the index to disk (surviving reload, not just the session) remains an
+option if first-query cost on large vaults still matters.
 
 ### Neutral
 

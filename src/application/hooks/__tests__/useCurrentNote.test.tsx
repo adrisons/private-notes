@@ -69,6 +69,7 @@ describe("useCurrentNote", () => {
           session,
           current,
           setCurrent,
+          noteItems: [],
           refreshSummaries,
           scheduleReindex,
           embedderReady: false,

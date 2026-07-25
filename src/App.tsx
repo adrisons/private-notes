@@ -49,6 +49,7 @@ export function App() {
     session: vault.session,
     current: vault.current,
     setCurrent: vault.setCurrent,
+    noteItems: vault.noteItems,
     refreshSummaries: vault.refreshSummaries,
     scheduleReindex: search.scheduleReindex,
     embedderReady: search.embedderReady,
@@ -294,24 +295,33 @@ export function App() {
             isSaving={note.isSaving}
           />
           <div className="flex-1">
-            <Suspense
-              fallback={
-                <div
-                  className="flex h-full items-center justify-center text-sm text-[var(--foreground-muted)]"
-                  aria-live="polite"
-                >
-                  <span className="u-glow">Loading editor…</span>
-                </div>
-              }
-            >
-              <Editor
-                noteId={vault.current.id}
-                value={vault.current.body}
-                onChange={note.onBodyChange}
-                onUploadImage={attachments.onUploadImage}
-                resolveImageSrc={attachments.resolveImageSrc}
-              />
-            </Suspense>
+            {vault.current.bodyPending ? (
+              <div
+                className="flex h-full items-center justify-center text-sm text-[var(--foreground-muted)]"
+                aria-live="polite"
+              >
+                <span className="u-glow">Loading note…</span>
+              </div>
+            ) : (
+              <Suspense
+                fallback={
+                  <div
+                    className="flex h-full items-center justify-center text-sm text-[var(--foreground-muted)]"
+                    aria-live="polite"
+                  >
+                    <span className="u-glow">Loading editor…</span>
+                  </div>
+                }
+              >
+                <Editor
+                  noteId={vault.current.id}
+                  value={vault.current.body}
+                  onChange={note.onBodyChange}
+                  onUploadImage={attachments.onUploadImage}
+                  resolveImageSrc={attachments.resolveImageSrc}
+                />
+              </Suspense>
+            )}
           </div>
         </div>
       ) : (

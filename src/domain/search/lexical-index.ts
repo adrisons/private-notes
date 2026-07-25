@@ -56,6 +56,13 @@ export interface LexicalIndex {
    * for the block of matches instead of a scan of the whole vocabulary.
    */
   readonly sortedTerms: readonly string[];
+  /**
+   * The terms each document contributed. Kept so a single note can be replaced
+   * or dropped in place — the incremental path autosave leans on — without
+   * rescanning the whole vocabulary. Consumers other than the mutators below
+   * should treat it as opaque.
+   */
+  readonly docTerms: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
 /**
@@ -71,41 +78,49 @@ export interface LexicalIndexBuilder {
   build(): LexicalIndex;
 }
 
+/** Fold one field's terms into the shared postings and the doc's own term set. */
+function addFieldTo(
+  postings: Map<string, Map<string, Posting>>,
+  docTermSet: Set<string>,
+  docId: string,
+  text: string,
+  weight: number,
+  isTitle: boolean,
+): void {
+  for (const term of tokenizeSearchText(text)) {
+    let byDoc = postings.get(term);
+    if (!byDoc) {
+      byDoc = new Map();
+      postings.set(term, byDoc);
+    }
+    const existing = byDoc.get(docId);
+    if (existing) {
+      existing.tf += weight;
+      existing.inTitle ||= isTitle;
+    } else {
+      byDoc.set(docId, { tf: weight, inTitle: isTitle });
+    }
+    docTermSet.add(term);
+  }
+}
+
 export function createLexicalIndexBuilder(): LexicalIndexBuilder {
   const postings = new Map<string, Map<string, Posting>>();
-  let documentCount = 0;
-
-  const addField = (
-    docId: string,
-    text: string,
-    weight: number,
-    isTitle: boolean,
-  ) => {
-    for (const term of tokenizeSearchText(text)) {
-      let byDoc = postings.get(term);
-      if (!byDoc) {
-        byDoc = new Map();
-        postings.set(term, byDoc);
-      }
-      const existing = byDoc.get(docId);
-      if (existing) {
-        existing.tf += weight;
-        existing.inTitle ||= isTitle;
-      } else {
-        byDoc.set(docId, { tf: weight, inTitle: isTitle });
-      }
-    }
-  };
+  const docTerms = new Map<string, Set<string>>();
 
   return {
     add(doc) {
-      documentCount++;
-      addField(doc.id, doc.title, TITLE_WEIGHT, true);
-      addField(doc.id, doc.body, 1, false);
+      let terms = docTerms.get(doc.id);
+      if (!terms) {
+        terms = new Set();
+        docTerms.set(doc.id, terms);
+      }
+      addFieldTo(postings, terms, doc.id, doc.title, TITLE_WEIGHT, true);
+      addFieldTo(postings, terms, doc.id, doc.body, 1, false);
     },
     build() {
       const sortedTerms = [...postings.keys()].sort();
-      return { documentCount, postings, sortedTerms };
+      return { documentCount: docTerms.size, postings, sortedTerms, docTerms };
     },
   };
 }
@@ -116,6 +131,67 @@ export function buildLexicalIndex(
   const builder = createLexicalIndexBuilder();
   for (const doc of documents) builder.add(doc);
   return builder.build();
+}
+
+/** The concrete, mutable shape a builder produces. */
+interface MutableLexicalIndex {
+  documentCount: number;
+  postings: Map<string, Map<string, Posting>>;
+  sortedTerms: string[];
+  docTerms: Map<string, Set<string>>;
+}
+
+/**
+ * The builder always materialises real, mutable `Map`/`Set`s; the `readonly`
+ * types only fence off ordinary consumers. The three functions below are the
+ * sanctioned in-place update path — autosave reindexes one note every 500 ms,
+ * so patching that note's postings is far cheaper than re-tokenising the whole
+ * corpus on the next keystroke (ADR-010).
+ */
+function asMutable(index: LexicalIndex): MutableLexicalIndex {
+  return index as unknown as MutableLexicalIndex;
+}
+
+/**
+ * Drop a document's entire contribution. Idempotent — a note never indexed (or
+ * one emptied to no terms) is a no-op. Leaves `sortedTerms` stale; call
+ * `refreshLexicalTerms` once after a batch of edits.
+ */
+export function removeLexicalDocument(index: LexicalIndex, id: string): void {
+  const mut = asMutable(index);
+  const terms = mut.docTerms.get(id);
+  if (!terms) return;
+  for (const term of terms) {
+    const byDoc = mut.postings.get(term);
+    if (!byDoc) continue;
+    byDoc.delete(id);
+    if (byDoc.size === 0) mut.postings.delete(term);
+  }
+  mut.docTerms.delete(id);
+  mut.documentCount = mut.docTerms.size;
+}
+
+/**
+ * Insert a document, or replace it in place when its id is already present.
+ * Leaves `sortedTerms` stale; see `refreshLexicalTerms`.
+ */
+export function upsertLexicalDocument(
+  index: LexicalIndex,
+  doc: LexicalDocument,
+): void {
+  removeLexicalDocument(index, doc.id);
+  const mut = asMutable(index);
+  const terms = new Set<string>();
+  mut.docTerms.set(doc.id, terms);
+  addFieldTo(mut.postings, terms, doc.id, doc.title, TITLE_WEIGHT, true);
+  addFieldTo(mut.postings, terms, doc.id, doc.body, 1, false);
+  mut.documentCount = mut.docTerms.size;
+}
+
+/** Rebuild the sorted vocabulary after a batch of upserts/removals. */
+export function refreshLexicalTerms(index: LexicalIndex): void {
+  const mut = asMutable(index);
+  mut.sortedTerms = [...mut.postings.keys()].sort();
 }
 
 /** Inverse document frequency, BM25 flavour — always positive. */

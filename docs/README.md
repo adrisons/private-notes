@@ -36,6 +36,7 @@ duplicating them inside ADR-003/004.
 | [011](./adr/011-reindex-scan-hint.md) | Content-hash hint for a cheap reindex scan | `indexer.ts`, `index-fs.ts`, `.semantic-index/content-hashes.json` |
 | [012](./adr/012-pwa-installable-shell.md) | PWA installable shell | `vite.config.ts`, `index.html`, `platform/web/pwa/`, `public/icons/` |
 | [013](./adr/013-vault-storage-port.md) | Vault storage port & web platform isolation | `application/ports/vault-storage.ts`, `infrastructure/platform/web/` |
+| [014](./adr/014-cross-origin-isolation.md) | Cross-origin isolation for threaded WASM | `public/_headers`, `vite.config.ts`, embedder worker |
 
 ## Suggested reading order by task
 
@@ -43,6 +44,7 @@ duplicating them inside ADR-003/004.
 |------|------|
 | New on-disk format or migration | 002, 008, 004, 011 |
 | Search quality or model change | 003, 004, 008 |
+| Indexing throughput / WASM threads | 014, 003, 011 |
 | Editor / markdown features | 005, 002 |
 | Images in notes | 006, 005 |
 | Save / sync / data loss | 007, 002, 004 |

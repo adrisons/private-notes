@@ -8,4 +8,12 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
   X-Frame-Options: DENY
+  # COOP + COEP together set `crossOriginIsolated`, which unlocks
+  # SharedArrayBuffer and lets onnxruntime-web run the embedder on multiple
+  # WASM threads — the largest lever on indexing time. `require-corp` means
+  # cross-origin subresources need CORP or CORS; the only one is the Hugging
+  # Face model weights, which transformers.js fetches with CORS. These are HTTP
+  # headers, not CSP, so they cannot live in the <meta> tag — see vite.config.ts
+  # for the dev/preview mirror.
   Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
